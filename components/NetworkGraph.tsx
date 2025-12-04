@@ -48,8 +48,7 @@ export function NetworkGraph({ nodes, edges, userProfileId, onNodeClick }: Netwo
           label: node.name,
           initials: getInitials(node.name),
           hopDistance: node.hopDistance,
-          profilePicture: node.profilePicture,
-          hasPhoto: !!node.profilePicture,
+          profilePicture: node.profilePicture || '',
           linkedUserId: node.linkedUserId,
         },
       })),
@@ -67,12 +66,21 @@ export function NetworkGraph({ nodes, edges, userProfileId, onNodeClick }: Netwo
       container: containerRef.current,
       elements,
       style: [
-        // Nodes WITHOUT photos - show initials
+        // All nodes base style
         {
-          selector: 'node[!hasPhoto]',
+          selector: 'node',
           style: {
             'background-color': (ele: NodeSingular) => getNodeColor(ele.data('hopDistance')),
-            'label': 'data(initials)',
+            'background-image': (ele: NodeSingular) => {
+              const pic = ele.data('profilePicture');
+              return pic ? pic : 'none';
+            },
+            'background-fit': 'cover',
+            'background-clip': 'node',
+            'label': (ele: NodeSingular) => {
+              const pic = ele.data('profilePicture');
+              return pic ? '' : ele.data('initials');
+            },
             'text-valign': 'center',
             'text-halign': 'center',
             'color': '#ffffff',
@@ -81,30 +89,25 @@ export function NetworkGraph({ nodes, edges, userProfileId, onNodeClick }: Netwo
             'font-family': 'DM Sans, sans-serif',
             'width': (ele: NodeSingular) => ele.data('hopDistance') === 0 ? 60 : 44,
             'height': (ele: NodeSingular) => ele.data('hopDistance') === 0 ? 60 : 44,
-            'border-width': (ele: NodeSingular) => ele.data('linkedUserId') ? 0 : 2,
-            'border-style': 'dashed',
-            'border-color': '#94a3b8',
-            'opacity': (ele: NodeSingular) => ele.data('hopDistance') <= 1 ? 1 : 0.7,
-          },
-        },
-        // Nodes WITH photos - show image
-        {
-          selector: 'node[hasPhoto]',
-          style: {
-            'background-image': 'data(profilePicture)',
-            'background-fit': 'cover',
-            'background-clip': 'node',
-            'label': '',
-            'width': (ele: NodeSingular) => ele.data('hopDistance') === 0 ? 60 : 44,
-            'height': (ele: NodeSingular) => ele.data('hopDistance') === 0 ? 60 : 44,
             'border-width': (ele: NodeSingular) => {
-              if (ele.data('hopDistance') === 0) return 3;
-              return ele.data('linkedUserId') ? 2 : 2;
+              const pic = ele.data('profilePicture');
+              if (pic) {
+                return ele.data('hopDistance') === 0 ? 3 : 2;
+              }
+              return ele.data('linkedUserId') ? 0 : 2;
             },
-            'border-style': (ele: NodeSingular) => ele.data('linkedUserId') ? 'solid' : 'dashed',
+            'border-style': (ele: NodeSingular) => {
+              const pic = ele.data('profilePicture');
+              if (pic) return 'solid';
+              return ele.data('linkedUserId') ? 'solid' : 'dashed';
+            },
             'border-color': (ele: NodeSingular) => {
-              if (ele.data('hopDistance') === 0) return '#0d5c5c';
-              return ele.data('linkedUserId') ? '#47afaf' : '#94a3b8';
+              const pic = ele.data('profilePicture');
+              if (pic) {
+                if (ele.data('hopDistance') === 0) return '#0d5c5c';
+                return '#47afaf';
+              }
+              return '#94a3b8';
             },
             'opacity': (ele: NodeSingular) => ele.data('hopDistance') <= 1 ? 1 : 0.7,
           },
