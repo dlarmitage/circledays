@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PhotoUpload } from '@/components/PhotoUpload';
 import { ArrowLeft, UserPlus, Cake } from 'lucide-react';
 
 export default function AddPersonPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -26,7 +28,10 @@ export default function AddPersonPage() {
       const res = await fetch('/api/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          profilePicture: photoUrl,
+        }),
       });
       
       const data = await res.json();
@@ -71,6 +76,16 @@ export default function AddPersonPage() {
       
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Photo Upload */}
+          <div className="flex justify-center">
+            <PhotoUpload
+              currentPhoto={photoUrl}
+              name={formData.name || 'New Person'}
+              onPhotoChange={setPhotoUrl}
+              size="xl"
+            />
+          </div>
+          
           <Input
             label="Name"
             placeholder="e.g., Mom, John Smith"
@@ -111,4 +126,3 @@ export default function AddPersonPage() {
     </div>
   );
 }
-

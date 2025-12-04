@@ -6,10 +6,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Avatar } from '@/components/ui/Avatar';
+import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
 import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS } from '@/lib/constants';
-import { User, Bell, Upload, LogOut, Trash2 } from 'lucide-react';
+import { User, Bell, LogOut } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -92,6 +92,12 @@ export default function SettingsPage() {
     router.push('/login');
   };
   
+  const handlePhotoChange = (url: string | null) => {
+    if (profileData) {
+      setProfileData({ ...profileData, profilePicture: url });
+    }
+  };
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -120,17 +126,15 @@ export default function SettingsPage() {
             Profile
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Avatar
-              src={profileData?.profilePicture}
+        <CardContent className="space-y-6">
+          <div className="flex justify-center">
+            <PhotoUpload
+              currentPhoto={profileData?.profilePicture}
               name={formData.name}
+              profileId={profileData?.id}
+              onPhotoChange={handlePhotoChange}
               size="xl"
             />
-            <Button variant="secondary" size="sm">
-              <Upload className="w-4 h-4 mr-2" />
-              Change Photo
-            </Button>
           </div>
           
           <Input
@@ -211,4 +215,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
