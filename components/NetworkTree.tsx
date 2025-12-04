@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, useImperativeHandle, forwardRef } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
-import { ArrowLeft, Search, ChevronRight, Users } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, Users, X } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -17,7 +17,7 @@ interface Profile {
 interface NetworkTreeProps {
   userProfile: Profile;
   connections: Profile[];
-  onProfileClick: (profileId: string) => void;
+  onProfileClick: (profileId: string, isConnected: boolean) => void;
   onDrillIn: (profileId: string) => Promise<Profile[]>;
   onConnect: (profileId: string) => Promise<void>;
 }
@@ -54,15 +54,53 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   onConnect,
 }, ref) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Profile[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [focusStack, setFocusStack] = useState<{ profile: Profile; connections: Profile[] }[]>([]);
   const [loading, setLoading] = useState(false);
   
   // Current view state
   const currentFocus = focusStack.length > 0 ? focusStack[focusStack.length - 1] : null;
-  const displayedConnections = currentFocus ? currentFocus.connections : connections;
+  const isSearchMode = searchQuery.trim().length >= 2;
+  
+  // Debounced global search
+  useEffect(() => {
+    if (!isSearchMode) {
+      setSearchResults(null);
+      return;
+    }
+    
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/network/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        const data = await res.json();
+        setSearchResults(data.results || []);
+      } catch (error) {
+        console.error('Search failed:', error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, isSearchMode]);
+  
+  // Determine what to display
+  const displayedProfiles = isSearchMode
+    ? searchResults || []
+    : currentFocus
+      ? currentFocus.connections
+      : connections;
+  
+  // Sort connections (search results come pre-sorted)
+  const sortedProfiles = isSearchMode
+    ? displayedProfiles
+    : sortByLastName(displayedProfiles);
   
   // Refresh current drilled-in view (called after connection changes)
-  const refreshCurrentView = async () => {
+  const refreshCurrentView = useCallback(async () => {
     if (currentFocus) {
       const freshConnections = await onDrillIn(currentFocus.profile.id);
       setFocusStack(prev => {
@@ -74,26 +112,19 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
         return newStack;
       });
     }
-  };
+    
+    // If in search mode, refresh search results
+    if (isSearchMode && searchQuery.trim()) {
+      const res = await fetch(`/api/network/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const data = await res.json();
+      setSearchResults(data.results || []);
+    }
+  }, [currentFocus, onDrillIn, isSearchMode, searchQuery]);
   
   // Expose refresh function to parent
   useImperativeHandle(ref, () => ({
     refreshCurrentView,
   }));
-  
-  // Filter and sort connections
-  const filteredConnections = useMemo(() => {
-    let filtered = displayedConnections;
-    
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = displayedConnections.filter(p => 
-        p.name.toLowerCase().includes(query)
-      );
-    }
-    
-    return sortByLastName(filtered);
-  }, [displayedConnections, searchQuery]);
   
   const handleDrillIn = async (profile: Profile) => {
     // If it's a connected profile, drill into their connections
@@ -103,6 +134,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
         const theirConnections = await onDrillIn(profile.id);
         setFocusStack([...focusStack, { profile, connections: theirConnections }]);
         setSearchQuery('');
+        setSearchResults(null);
       } finally {
         setLoading(false);
       }
@@ -115,16 +147,17 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   const handleBack = () => {
     setFocusStack(focusStack.slice(0, -1));
     setSearchQuery('');
+    setSearchResults(null);
   };
   
   const handleProfileTap = (profile: Profile) => {
-    if (profile.isConnectedToUser) {
-      // Connected profile - navigate to full profile
-      onProfileClick(profile.id);
-    } else {
-      // Not connected - this triggers the modal via onProfileClick
-      onProfileClick(profile.id);
-    }
+    // Pass connection status so parent knows whether to show full profile or modal
+    onProfileClick(profile.id, profile.isConnectedToUser);
+  };
+  
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
   };
   
   return (
@@ -135,18 +168,44 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search connections..."
+            placeholder="Search everyone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+            className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
           />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          )}
         </div>
       </div>
       
       {/* Header / Breadcrumb */}
       <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
         <AnimatePresence mode="wait">
-          {currentFocus ? (
+          {isSearchMode ? (
+            <motion.div
+              key="search"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex items-center gap-3"
+            >
+              <Search className="w-5 h-5 text-teal-600" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 truncate">
+                  Search Results
+                </p>
+                <p className="text-xs text-gray-500">
+                  {searchLoading ? 'Searching...' : `${sortedProfiles.length} found`}
+                </p>
+              </div>
+            </motion.div>
+          ) : currentFocus ? (
             <motion.div
               key={currentFocus.profile.id}
               initial={{ opacity: 0, x: 20 }}
@@ -202,32 +261,37 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
       
       {/* Connection List */}
       <div className="flex-1 overflow-y-auto">
-        {loading ? (
+        {loading || searchLoading ? (
           <div className="flex items-center justify-center py-12">
             <Spinner size="lg" />
           </div>
-        ) : filteredConnections.length === 0 ? (
+        ) : sortedProfiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500">
             <Users className="w-12 h-12 mb-3 text-gray-300" />
             <p className="text-sm">
-              {searchQuery ? 'No matches found' : 'No connections yet'}
+              {isSearchMode ? 'No results found' : 'No connections yet'}
             </p>
+            {isSearchMode && (
+              <p className="text-xs text-gray-400 mt-1">
+                Try a different search term
+              </p>
+            )}
           </div>
         ) : (
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentFocus?.profile.id || 'root'}
+              key={isSearchMode ? 'search' : (currentFocus?.profile.id || 'root')}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {filteredConnections.map((profile, index) => (
+              {sortedProfiles.map((profile, index) => (
                 <motion.div
                   key={profile.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02, duration: 0.2 }}
+                  transition={{ delay: Math.min(index * 0.02, 0.5), duration: 0.2 }}
                 >
                   <ConnectionRow
                     profile={profile}
@@ -298,4 +362,3 @@ function ConnectionRow({ profile, onTap, onDrillIn }: ConnectionRowProps) {
     </div>
   );
 }
-

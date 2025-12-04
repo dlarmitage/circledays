@@ -67,11 +67,8 @@ export default function NetworkPage() {
     return data.connections;
   }, []);
   
-  const handleProfileClick = useCallback(async (profileId: string) => {
-    // Check if this is a connected profile
-    const profile = connections.find(c => c.id === profileId);
-    
-    if (profile?.isConnectedToUser) {
+  const handleProfileClick = useCallback(async (profileId: string, isConnected: boolean) => {
+    if (isConnected) {
       // Navigate to full profile
       router.push(`/profile/${profileId}`);
     } else {
@@ -86,7 +83,7 @@ export default function NetworkPage() {
         console.error('Failed to fetch profile preview:', error);
       }
     }
-  }, [connections, router]);
+  }, [router]);
   
   const handleConnect = useCallback(async (profileId: string) => {
     const res = await fetch('/api/connections', {
