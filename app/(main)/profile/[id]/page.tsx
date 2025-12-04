@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { InviteModal } from '@/components/InviteModal';
 import { AddEventModal } from '@/components/AddEventModal';
@@ -25,6 +26,9 @@ import {
   Trash2,
   AlertTriangle,
   X,
+  Phone,
+  Check,
+  User,
 } from 'lucide-react';
 
 interface Event {
@@ -58,6 +62,12 @@ interface ProfileData {
   isCreator: boolean;
   hopDistance?: number;
   userProfileId?: string;
+  userData?: {
+    email: string;
+    mobile: string | null;
+    timezone: string;
+    notificationChannel: 'email' | 'sms' | 'both';
+  };
 }
 
 // Confirmation Modal Component
@@ -137,6 +147,13 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   
+  // Account editing state (for own profile)
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editingMobile, setEditingMobile] = useState(false);
+  const [emailValue, setEmailValue] = useState('');
+  const [mobileValue, setMobileValue] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
+  
   useEffect(() => {
     fetchProfileData();
   }, [id]);
@@ -210,6 +227,42 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     } finally {
       setActionLoading(false);
     }
+  };
+  
+  const handleSaveAccountField = async (field: 'email' | 'mobile') => {
+    setSavingAccount(true);
+    try {
+      const value = field === 'email' ? emailValue : mobileValue;
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [field]: value || null,
+        }),
+      });
+      
+      if (res.ok) {
+        // Refresh data
+        fetchProfileData();
+        if (field === 'email') {
+          setEditingEmail(false);
+        } else {
+          setEditingMobile(false);
+        }
+      }
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+  
+  const startEditingEmail = () => {
+    setEmailValue(data?.userData?.email || '');
+    setEditingEmail(true);
+  };
+  
+  const startEditingMobile = () => {
+    setMobileValue(data?.userData?.mobile || '');
+    setEditingMobile(true);
   };
   
   if (loading) {
@@ -328,6 +381,116 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           </div>
         </CardContent>
       </Card>
+      
+      {/* Account Details - only for own profile */}
+      {isOwnProfile && data.userData && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-teal-600" />
+              Account Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Email
+              </label>
+              {editingEmail ? (
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    value={emailValue}
+                    onChange={(e) => setEmailValue(e.target.value)}
+                    placeholder="your@email.com"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => handleSaveAccountField('email')}
+                    loading={savingAccount}
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingEmail(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">{data.userData.email}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={startEditingEmail}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            
+            {/* Mobile */}
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Mobile Number
+              </label>
+              {editingMobile ? (
+                <div className="flex gap-2">
+                  <Input
+                    type="tel"
+                    value={mobileValue}
+                    onChange={(e) => setMobileValue(e.target.value)}
+                    placeholder="+1 (555) 000-0000"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => handleSaveAccountField('mobile')}
+                    loading={savingAccount}
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingMobile(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span className={data.userData.mobile ? 'text-gray-900' : 'text-gray-400 italic'}>
+                      {data.userData.mobile || 'Not set'}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={startEditingMobile}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              <p className="text-xs text-gray-400 mt-1">
+                Used for SMS reminders
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {/* Events - only show for direct connections */}
       {isDirectConnection && (
