@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
 import { EVENT_TYPES } from '@/lib/constants';
-import { ArrowLeft, Save, Plus, Trash2, Calendar, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Calendar, X, Repeat, CalendarCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Event {
@@ -40,6 +40,7 @@ interface NewEvent {
   type: 'birthday' | 'anniversary' | 'custom';
   customLabel: string;
   date: string;
+  recurring: boolean;
 }
 
 export default function EditProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -148,6 +149,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
           type: newEvent.type,
           customLabel: newEvent.type === 'custom' ? newEvent.customLabel : undefined,
           date: newEvent.date,
+          recurring: newEvent.type === 'custom' ? newEvent.recurring : true,
         }),
       });
       
@@ -347,6 +349,49 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
                   />
                 )}
                 
+                {newEvent.type === 'custom' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Frequency
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewEvent({ ...newEvent, recurring: true })}
+                        className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all ${
+                          newEvent.recurring
+                            ? 'bg-teal-100 border-2 border-teal-500'
+                            : 'bg-white border-2 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Repeat className={`w-4 h-4 ${newEvent.recurring ? 'text-teal-600' : 'text-gray-500'}`} />
+                        <span className={`text-sm font-medium ${newEvent.recurring ? 'text-teal-900' : 'text-gray-700'}`}>
+                          Every Year
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewEvent({ ...newEvent, recurring: false })}
+                        className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all ${
+                          !newEvent.recurring
+                            ? 'bg-teal-100 border-2 border-teal-500'
+                            : 'bg-white border-2 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <CalendarCheck className={`w-4 h-4 ${!newEvent.recurring ? 'text-teal-600' : 'text-gray-500'}`} />
+                        <span className={`text-sm font-medium ${!newEvent.recurring ? 'text-teal-900' : 'text-gray-700'}`}>
+                          One Time
+                        </span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {newEvent.recurring 
+                        ? "You'll be reminded every year" 
+                        : "You'll only be reminded once (e.g., graduation)"}
+                    </p>
+                  </div>
+                )}
+                
                 <Input
                   label="Date"
                   type="date"
@@ -369,7 +414,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
           ) : (
             <Button
               variant="secondary"
-              onClick={() => setNewEvent({ type: 'birthday', customLabel: '', date: '' })}
+              onClick={() => setNewEvent({ type: 'birthday', customLabel: '', date: '', recurring: true })}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Event
