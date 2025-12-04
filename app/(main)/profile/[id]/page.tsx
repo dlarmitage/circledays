@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
+import { InviteModal } from '@/components/InviteModal';
 import { formatDate, calculateAge, getDaysUntilText, daysUntil } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -127,6 +128,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [savingNote, setSavingNote] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
   useEffect(() => {
@@ -286,7 +288,11 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
             ) : null}
             
             {isCreator && !profile.linkedUserId && (
-              <Button variant="secondary" size="sm">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => setShowInviteModal(true)}
+              >
                 <Mail className="w-4 h-4 mr-2" />
                 Invite
               </Button>
@@ -465,6 +471,20 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         message={`Are you sure you want to delete ${profile.name}'s profile? This will remove all their events and cannot be undone.`}
         confirmText="Delete"
         loading={actionLoading}
+      />
+      
+      {/* Invite Modal */}
+      <InviteModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        profileId={profile.id}
+        profileName={profile.name}
+        connections={connections.map(c => ({
+          id: c.id,
+          profileId: c.id,
+          name: c.name,
+          profilePicture: c.profilePicture,
+        }))}
       />
     </div>
   );

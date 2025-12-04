@@ -81,3 +81,4 @@ This document captures technical decisions and assumptions made during developme
 - [ ] i18n support
 - [ ] Dark mode toggle
 
+

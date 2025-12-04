@@ -65,3 +65,4 @@ export function getEventTypeLabel(type: string, customLabel?: string | null): st
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+
