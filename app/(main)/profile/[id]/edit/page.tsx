@@ -27,6 +27,12 @@ interface ProfileData {
   events: Event[];
   isOwnProfile: boolean;
   isCreator: boolean;
+  userData?: {
+    email: string;
+    mobile: string | null;
+    timezone: string;
+    notificationChannel: 'email' | 'sms' | 'both';
+  };
 }
 
 interface NewEvent {
@@ -46,6 +52,8 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
   // Form state
   const [name, setName] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [events, setEvents] = useState<Event[]>([]);
   const [newEvent, setNewEvent] = useState<NewEvent | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -74,6 +82,10 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
       setName(data.profile.name);
       setPhotoUrl(data.profile.profilePicture);
       setEvents(data.events || []);
+      if (data.userData) {
+        setEmail(data.userData.email || '');
+        setMobile(data.userData.mobile || '');
+      }
       setLoading(false);
     } catch {
       router.push('/dashboard');
@@ -85,7 +97,8 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
     setError(null);
     
     try {
-      const res = await fetch(`/api/profiles/${id}`, {
+      // Update profile
+      const profileRes = await fetch(`/api/profiles/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,13 +107,31 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
         }),
       });
       
-      if (!res.ok) {
-        throw new Error('Failed to save');
+      if (!profileRes.ok) {
+        throw new Error('Failed to save profile');
+      }
+      
+      // If own profile, also update user account data
+      if (profileData?.isOwnProfile) {
+        const userRes = await fetch('/api/users/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email: email || undefined,
+            mobile: mobile || null,
+          }),
+        });
+        
+        if (!userRes.ok) {
+          const data = await userRes.json();
+          throw new Error(data.error || 'Failed to save account details');
+        }
       }
       
       router.push(`/profile/${id}`);
     } catch (err) {
-      setError('Failed to save changes');
+      setError(err instanceof Error ? err.message : 'Failed to save changes');
       setSaving(false);
     }
   };
@@ -209,6 +240,29 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter name"
           />
+          
+          {/* Email and Mobile - only for own profile */}
+          {profileData?.isOwnProfile && (
+            <>
+              <Input
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                hint="Used for login and notifications"
+              />
+              
+              <Input
+                label="Mobile Number"
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="+1 (555) 000-0000"
+                hint="Optional - for SMS reminders"
+              />
+            </>
+          )}
         </CardContent>
       </Card>
       

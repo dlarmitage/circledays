@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  email: z.string().email().optional(),
   timezone: z.string().optional(),
   mobile: z.string().nullable().optional(),
   notificationChannel: z.enum(['email', 'sms', 'both']).optional(),

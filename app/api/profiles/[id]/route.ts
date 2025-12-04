@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, profiles, events, notes, connections } from '@/lib/db';
+import { db, profiles, events, notes, connections, users } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq, or, and } from 'drizzle-orm';
 import { z } from 'zod';
@@ -138,6 +138,18 @@ export async function GET(
       .map(c => c.profile)
       .filter(p => p.id !== userProfile.id && p.id !== profile.id);
     
+    // Include user account data if viewing own profile
+    const isOwnProfile = profile.linkedUserId === user.id;
+    let userData = null;
+    if (isOwnProfile) {
+      userData = {
+        email: user.email,
+        mobile: user.mobile,
+        timezone: user.timezone,
+        notificationChannel: user.notificationChannel,
+      };
+    }
+    
     return NextResponse.json({
       profile,
       events: profileEvents,
@@ -146,9 +158,10 @@ export async function GET(
       userConnections: userConnectionsFiltered,
       connectionId: connection?.id || null,
       isDirectConnection: true,
-      isOwnProfile: profile.linkedUserId === user.id,
+      isOwnProfile,
       isCreator: profile.createdByUserId === user.id,
       userProfileId: userProfile.id,
+      userData,
     });
   } catch (error) {
     console.error('Get profile error:', error);
