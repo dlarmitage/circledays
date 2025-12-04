@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { InviteModal } from '@/components/InviteModal';
 import { AddEventModal } from '@/components/AddEventModal';
+import { EditEventModal } from '@/components/EditEventModal';
 import { formatDate, calculateAge, getDaysUntilText, daysUntil } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -133,6 +134,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   
   useEffect(() => {
@@ -347,9 +349,10 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                   const age = event.type === 'birthday' ? calculateAge(event.date) + 1 : null;
                   
                   return (
-                    <div
+                    <button
                       key={event.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-gray-50"
+                      onClick={() => setEditingEvent(event)}
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
@@ -370,7 +373,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                       >
                         {getDaysUntilText(eventDaysUntil)}
                       </Badge>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -504,6 +507,15 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         profileId={profile.id}
         profileName={profile.name}
         onEventAdded={fetchProfileData}
+      />
+      
+      {/* Edit Event Modal */}
+      <EditEventModal
+        isOpen={!!editingEvent}
+        onClose={() => setEditingEvent(null)}
+        event={editingEvent}
+        profileName={profile.name}
+        onEventUpdated={fetchProfileData}
       />
     </div>
   );

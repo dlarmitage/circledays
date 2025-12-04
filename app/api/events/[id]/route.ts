@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, events, profiles } from '@/lib/db';
+import { db, events, profiles, connections } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 const updateEventSchema = z.object({
@@ -9,6 +9,31 @@ const updateEventSchema = z.object({
   customLabel: z.string().nullable().optional(),
   date: z.string().optional(),
 });
+
+// Helper to check if user is connected to a profile
+async function isUserConnectedToProfile(userId: string, profileId: string): Promise<boolean> {
+  const [userProfile] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.linkedUserId, userId))
+    .limit(1);
+  
+  if (!userProfile) return false;
+  
+  const [profileA, profileB] = [userProfile.id, profileId].sort();
+  const [connection] = await db
+    .select()
+    .from(connections)
+    .where(
+      and(
+        eq(connections.profileAId, profileA),
+        eq(connections.profileBId, profileB)
+      )
+    )
+    .limit(1);
+  
+  return !!connection;
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -35,11 +60,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Check permission
+    // Check permission: own profile, creator, connected, or admin
     const isOwn = event.profile.linkedUserId === user.id;
     const isCreator = event.profile.createdByUserId === user.id;
+    const isConnected = await isUserConnectedToProfile(user.id, event.profile.id);
     
-    if (!isOwn && !isCreator && !user.isPlatformAdmin) {
+    if (!isOwn && !isCreator && !isConnected && !user.isPlatformAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -98,11 +124,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Check permission
+    // Check permission: own profile, creator, connected, or admin
     const isOwn = event.profile.linkedUserId === user.id;
     const isCreator = event.profile.createdByUserId === user.id;
+    const isConnected = await isUserConnectedToProfile(user.id, event.profile.id);
     
-    if (!isOwn && !isCreator && !user.isPlatformAdmin) {
+    if (!isOwn && !isCreator && !isConnected && !user.isPlatformAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
