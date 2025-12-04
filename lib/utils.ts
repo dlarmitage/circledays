@@ -14,8 +14,19 @@ export function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+/**
+ * Parse a date string (YYYY-MM-DD) as a local date, not UTC
+ * This prevents timezone shifting issues
+ */
+export function parseLocalDate(dateStr: string): Date {
+  // Handle ISO date strings like "2004-12-10" or "2004-12-10T00:00:00.000Z"
+  const [datePart] = dateStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  return new Date(year, month - 1, day); // month is 0-indexed
+}
+
 export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? parseLocalDate(date) : date;
   return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -25,7 +36,7 @@ export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOpt
 
 export function calculateAge(birthDate: Date | string): number {
   const today = new Date();
-  const birth = typeof birthDate === 'string' ? new Date(birthDate) : birthDate;
+  const birth = typeof birthDate === 'string' ? parseLocalDate(birthDate) : birthDate;
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
@@ -35,7 +46,7 @@ export function calculateAge(birthDate: Date | string): number {
 }
 
 export function daysUntil(date: Date | string): number {
-  const target = typeof date === 'string' ? new Date(date) : date;
+  const target = typeof date === 'string' ? parseLocalDate(date) : date;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -64,5 +75,3 @@ export function getEventTypeLabel(type: string, customLabel?: string | null): st
   if (type === 'custom' && customLabel) return customLabel;
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
-
-

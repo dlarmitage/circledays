@@ -10,6 +10,7 @@ import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
 import { EVENT_TYPES } from '@/lib/constants';
 import { ArrowLeft, Save, Plus, Trash2, Calendar, X } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 interface Event {
   id: string;
@@ -290,7 +291,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
                         : event.type.charAt(0).toUpperCase() + event.type.slice(1)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {new Date(event.date).toLocaleDateString('en-US', {
+                      {formatDate(event.date, {
                         month: 'long',
                         day: 'numeric',
                         year: 'numeric',

@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { getDaysUntilText, getEventTypeLabel } from '@/lib/utils';
+import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
 import { Cake, Heart, Calendar } from 'lucide-react';
 
 interface EventCardProps {
@@ -40,10 +40,7 @@ export function EventCard({
     return 'success';
   };
   
-  const formattedDate = new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  const formattedDate = formatDate(date);
   
   return (
     <Card hover onClick={onClick} className="animate-slide-up">

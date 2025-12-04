@@ -41,9 +41,8 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
     if (isOpen && event) {
       setEventType(event.type);
       setCustomLabel(event.customLabel || '');
-      // Convert date to YYYY-MM-DD format for input
-      const dateObj = new Date(event.date);
-      const formattedDate = dateObj.toISOString().split('T')[0];
+      // Extract YYYY-MM-DD from the date string (handles both "2004-12-10" and "2004-12-10T00:00:00.000Z")
+      const formattedDate = event.date.split('T')[0];
       setDate(formattedDate);
       setError(null);
       setShowDeleteConfirm(false);
