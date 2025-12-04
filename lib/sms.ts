@@ -34,6 +34,7 @@ export async function sendSms({ to, body }: SendSmsOptions) {
 interface EventReminder {
   profileName: string;
   eventType: string;
+  eventDate: string;
   daysUntil: number;
   age?: number;
 }
@@ -41,17 +42,16 @@ interface EventReminder {
 export function generateReminderSms(events: EventReminder[]): string[] {
   const messages: string[] = [];
   
-  // Batch up to 3 events per message
-  for (let i = 0; i < events.length; i += 3) {
-    const batch = events.slice(i, i + 3);
+  // Format that helps iOS/macOS data detectors create better calendar events
+  // Structure: "Event Title on Date (context)"
+  for (const event of events) {
+    const ageText = event.age ? ` turning ${event.age}` : '';
+    const daysText = event.daysUntil === 0 ? 'Today!' : event.daysUntil === 1 ? 'Tomorrow!' : `in ${event.daysUntil} days`;
     
-    const items = batch.map(event => {
-      const daysText = event.daysUntil === 0 ? 'today' : event.daysUntil === 1 ? 'tomorrow' : `in ${event.daysUntil} days`;
-      const ageText = event.age ? ` (turning ${event.age})` : '';
-      return `${event.profileName}'s ${event.eventType.toLowerCase()} ${daysText}${ageText}`;
-    });
-    
-    const message = `🎂 CircleDays: ${items.join(', ')}`;
+    // Format: "Person's Birthday on December 10 (in 3 days)"
+    // This helps data detectors use "Person's Birthday" as the calendar event title
+    const eventTitle = `${event.profileName}'s ${event.eventType}${ageText}`;
+    const message = `🎂 ${eventTitle} on ${event.eventDate} (${daysText})`;
     messages.push(message);
   }
   

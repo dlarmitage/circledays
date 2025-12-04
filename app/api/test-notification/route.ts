@@ -25,13 +25,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const channel = body.channel || 'email'; // 'email', 'sms', or 'both'
     
-    // Sample test data
+    // Sample test data - use a date 3 days from now
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 3);
+    const formattedDate = futureDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    
     const testEvents = [
       {
         profileName: 'Test Person',
         profilePhoto: null,
         eventType: 'Birthday',
-        eventDate: 'December 10',
+        eventDate: formattedDate,
         daysUntil: 3,
         age: 35,
       },
