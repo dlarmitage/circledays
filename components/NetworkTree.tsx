@@ -140,7 +140,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
       }
     } else {
       // Not connected - show their profile (modal will appear)
-      onProfileClick(profile.id);
+      onProfileClick(profile.id, false);
     }
   };
   
