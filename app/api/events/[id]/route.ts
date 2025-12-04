@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db, events, profiles } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+
+const updateEventSchema = z.object({
+  type: z.enum(['birthday', 'anniversary', 'custom']).optional(),
+  customLabel: z.string().nullable().optional(),
+  date: z.string().optional(),
+});
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await requireAuth();
+    const { id } = await params;
+    const body = await request.json();
+    const data = updateEventSchema.parse(body);
+    
+    // Get event with profile
+    const [event] = await db
+      .select({
+        event: events,
+        profile: profiles,
+      })
+      .from(events)
+      .innerJoin(profiles, eq(events.profileId, profiles.id))
+      .where(eq(events.id, id))
+      .limit(1);
+    
+    if (!event) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+    
+    // Check permission
+    const isOwn = event.profile.linkedUserId === user.id;
+    const isCreator = event.profile.createdByUserId === user.id;
+    
+    if (!isOwn && !isCreator && !user.isPlatformAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    // Update event
+    const [updatedEvent] = await db
+      .update(events)
+      .set({
+        ...data,
+        customLabel: data.type === 'custom' ? data.customLabel : null,
+      })
+      .where(eq(events.id, id))
+      .returning();
+    
+    return NextResponse.json({ event: updatedEvent });
+  } catch (error) {
+    console.error('Update event error:', error);
+    
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid data', details: error.issues },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to update event' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await requireAuth();
+    const { id } = await params;
+    
+    // Get event with profile
+    const [event] = await db
+      .select({
+        event: events,
+        profile: profiles,
+      })
+      .from(events)
+      .innerJoin(profiles, eq(events.profileId, profiles.id))
+      .where(eq(events.id, id))
+      .limit(1);
+    
+    if (!event) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+    
+    // Check permission
+    const isOwn = event.profile.linkedUserId === user.id;
+    const isCreator = event.profile.createdByUserId === user.id;
+    
+    if (!isOwn && !isCreator && !user.isPlatformAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    // Delete event
+    await db.delete(events).where(eq(events.id, id));
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete event error:', error);
+    
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to delete event' },
+      { status: 500 }
+    );
+  }
+}
+

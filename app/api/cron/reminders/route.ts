@@ -1,0 +1,228 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db, users, profiles, connections, events, reminderPreferences, reminderOverrides, notificationLogs } from '@/lib/db';
+import { sendEmail, generateReminderEmail } from '@/lib/email';
+import { sendSms, generateReminderSms } from '@/lib/sms';
+import { eq, or, and, sql, inArray } from 'drizzle-orm';
+import { daysUntil, calculateAge, formatDate } from '@/lib/utils';
+
+// This endpoint is called by Vercel Cron every hour
+export async function GET(request: NextRequest) {
+  // Verify cron secret
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const now = new Date();
+    const currentHour = now.getUTCHours();
+    
+    // Find users whose local time is 7:00-7:59 AM
+    // This is simplified - a production app would store UTC offset or use proper timezone handling
+    const allUsers = await db.select().from(users);
+    
+    const usersToNotify = allUsers.filter(user => {
+      try {
+        const userTime = new Date(now.toLocaleString('en-US', { timeZone: user.timezone }));
+        return userTime.getHours() === 7;
+      } catch {
+        // Invalid timezone, skip
+        return false;
+      }
+    });
+    
+    const results = {
+      processed: 0,
+      notified: 0,
+      errors: 0,
+    };
+    
+    for (const user of usersToNotify) {
+      try {
+        results.processed++;
+        
+        // Get user's profile
+        const [userProfile] = await db
+          .select()
+          .from(profiles)
+          .where(eq(profiles.linkedUserId, user.id))
+          .limit(1);
+        
+        if (!userProfile) continue;
+        
+        // Get user's direct connections
+        const connectedProfiles = await db
+          .select({
+            profileId: sql<string>`
+              CASE 
+                WHEN ${connections.profileAId} = ${userProfile.id} THEN ${connections.profileBId}
+                ELSE ${connections.profileAId}
+              END
+            `.as('profile_id'),
+          })
+          .from(connections)
+          .where(
+            or(
+              eq(connections.profileAId, userProfile.id),
+              eq(connections.profileBId, userProfile.id)
+            )
+          );
+        
+        const connectedIds = connectedProfiles.map(c => c.profileId);
+        
+        if (connectedIds.length === 0) continue;
+        
+        // Get all events for connected profiles (excluding own)
+        const allEvents = await db
+          .select({
+            event: events,
+            profile: profiles,
+          })
+          .from(events)
+          .innerJoin(profiles, eq(events.profileId, profiles.id))
+          .where(
+            and(
+              sql`${events.profileId} IN (${sql.join(connectedIds.map(id => sql`${id}`), sql`, `)})`,
+              sql`${profiles.id} != ${userProfile.id}`
+            )
+          );
+        
+        // Get user's reminder preferences
+        const [prefs] = await db
+          .select()
+          .from(reminderPreferences)
+          .where(eq(reminderPreferences.userId, user.id))
+          .limit(1);
+        
+        const defaultLeadDays = prefs?.defaultLeadDays || [0, 1, 7];
+        
+        // Get overrides
+        const overrides = await db
+          .select()
+          .from(reminderOverrides)
+          .where(eq(reminderOverrides.userId, user.id));
+        
+        const overrideMap = new Map(overrides.map(o => [o.eventId, o]));
+        
+        // Filter events that should trigger today
+        const eventsToNotify = allEvents.filter(({ event }) => {
+          const override = overrideMap.get(event.id);
+          
+          // Skip if muted
+          if (override?.muted) return false;
+          
+          const leadDays = override?.customLeadDays || defaultLeadDays;
+          const days = daysUntil(event.date);
+          
+          return leadDays.includes(days);
+        });
+        
+        if (eventsToNotify.length === 0) continue;
+        
+        // Check idempotency - have we already sent for these events today?
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const eventIds = eventsToNotify.map(e => e.event.id);
+        
+        const existingLogs = await db
+          .select()
+          .from(notificationLogs)
+          .where(
+            and(
+              eq(notificationLogs.userId, user.id),
+              sql`${notificationLogs.sentAt} >= ${today}`,
+              sql`${notificationLogs.sentAt} < ${tomorrow}`
+            )
+          );
+        
+        // Filter out events already notified
+        const alreadyNotifiedEventIds = new Set(
+          existingLogs.flatMap(log => log.eventIds)
+        );
+        
+        const newEventsToNotify = eventsToNotify.filter(
+          e => !alreadyNotifiedEventIds.has(e.event.id)
+        );
+        
+        if (newEventsToNotify.length === 0) continue;
+        
+        // Prepare event data
+        const eventData = newEventsToNotify.map(({ event, profile }) => ({
+          profileName: profile.name,
+          profilePhoto: profile.profilePicture,
+          eventType: event.type === 'custom' ? (event.customLabel || 'Event') : event.type,
+          eventDate: formatDate(event.date, { month: 'long', day: 'numeric' }),
+          daysUntil: daysUntil(event.date),
+          age: event.type === 'birthday' ? calculateAge(event.date) + 1 : undefined,
+        }));
+        
+        const newEventIds = newEventsToNotify.map(e => e.event.id);
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        
+        // Send notifications based on preference
+        if (user.notificationChannel === 'email' || user.notificationChannel === 'both') {
+          const { html, text } = generateReminderEmail(user.name, eventData, appUrl);
+          const result = await sendEmail({
+            to: user.email,
+            subject: '🎂 Upcoming birthdays and events',
+            html,
+            text,
+          });
+          
+          await db.insert(notificationLogs).values({
+            userId: user.id,
+            eventIds: newEventIds,
+            channel: 'email',
+            status: result.success ? 'sent' : 'failed',
+            errorMessage: result.success ? null : String(result.error),
+          });
+          
+          if (result.success) results.notified++;
+        }
+        
+        if ((user.notificationChannel === 'sms' || user.notificationChannel === 'both') && user.mobile) {
+          const messages = generateReminderSms(eventData);
+          
+          for (const body of messages) {
+            const result = await sendSms({
+              to: user.mobile,
+              body,
+            });
+            
+            await db.insert(notificationLogs).values({
+              userId: user.id,
+              eventIds: newEventIds,
+              channel: 'sms',
+              status: result.success ? 'sent' : 'failed',
+              errorMessage: result.success ? null : String(result.error),
+            });
+            
+            if (result.success && user.notificationChannel === 'sms') {
+              results.notified++;
+            }
+          }
+        }
+        
+      } catch (error) {
+        console.error(`Error processing user ${user.id}:`, error);
+        results.errors++;
+      }
+    }
+    
+    return NextResponse.json({
+      success: true,
+      ...results,
+      timestamp: now.toISOString(),
+    });
+  } catch (error) {
+    console.error('Cron job error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process reminders' },
+      { status: 500 }
+    );
+  }
+}
+
