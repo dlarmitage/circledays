@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, users, profiles, connections, events, reminderPreferences, reminderOverrides, notificationLogs } from '@/lib/db';
 import { sendEmail, generateReminderEmail } from '@/lib/email';
 import { sendSms, generateReminderSms } from '@/lib/sms';
-import { eq, or, and, sql, inArray } from 'drizzle-orm';
+import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, calculateAge, formatDate } from '@/lib/utils';
 
-// This endpoint is called by Vercel Cron every hour
+// This endpoint is called by Vercel Cron once daily at 14:00 UTC
+// On Hobby plan, we send reminders to all users at once
+// Upgrade to Pro for hourly timezone-aware delivery
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
@@ -15,21 +17,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-    const currentHour = now.getUTCHours();
     
-    // Find users whose local time is 7:00-7:59 AM
-    // This is simplified - a production app would store UTC offset or use proper timezone handling
+    // Get all users (on Pro plan, filter by timezone for 7am delivery)
     const allUsers = await db.select().from(users);
-    
-    const usersToNotify = allUsers.filter(user => {
-      try {
-        const userTime = new Date(now.toLocaleString('en-US', { timeZone: user.timezone }));
-        return userTime.getHours() === 7;
-      } catch {
-        // Invalid timezone, skip
-        return false;
-      }
-    });
     
     const results = {
       processed: 0,
@@ -37,7 +27,7 @@ export async function GET(request: NextRequest) {
       errors: 0,
     };
     
-    for (const user of usersToNotify) {
+    for (const user of allUsers) {
       try {
         results.processed++;
         
@@ -124,8 +114,6 @@ export async function GET(request: NextRequest) {
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        const eventIds = eventsToNotify.map(e => e.event.id);
         
         const existingLogs = await db
           .select()
@@ -225,4 +213,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
