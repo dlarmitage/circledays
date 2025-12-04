@@ -270,7 +270,11 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
             {isOwnProfile || isCreator ? (
-              <Button variant="secondary" size="sm">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => router.push(`/profile/${id}/edit`)}
+              >
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit Profile
               </Button>
