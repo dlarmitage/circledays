@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { InviteModal } from '@/components/InviteModal';
+import { AddEventModal } from '@/components/AddEventModal';
 import { formatDate, calculateAge, getDaysUntilText, daysUntil } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -131,6 +132,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   
   useEffect(() => {
@@ -374,8 +376,13 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
               </div>
             )}
             
-            {(isOwnProfile || isCreator) && (
-              <Button variant="ghost" size="sm" className="mt-4">
+            {isDirectConnection && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mt-4"
+                onClick={() => setShowAddEventModal(true)}
+              >
                 <Calendar className="w-4 h-4 mr-2" />
                 Add Event
               </Button>
@@ -488,6 +495,15 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           profilePicture: c.profilePicture,
         }))}
         userProfileId={data.userProfileId || ''}
+      />
+      
+      {/* Add Event Modal */}
+      <AddEventModal
+        isOpen={showAddEventModal}
+        onClose={() => setShowAddEventModal(false)}
+        profileId={profile.id}
+        profileName={profile.name}
+        onEventAdded={fetchProfileData}
       />
     </div>
   );
