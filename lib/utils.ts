@@ -6,12 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const parts = name.split(' ').filter(part => part.length > 1); // Skip single-letter parts (middle initials)
+  if (parts.length === 0) {
+    // Fallback if name is just initials
+    return name.slice(0, 2).toUpperCase();
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  // Use first and last name
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 /**

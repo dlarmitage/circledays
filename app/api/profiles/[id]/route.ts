@@ -203,11 +203,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
     
-    // Check permission (creator or own profile)
+    // Check permission: own profile OR creator of unlinked profile
     const isOwn = profile.linkedUserId === user.id;
-    const isCreator = profile.createdByUserId === user.id;
+    const isCreatorOfUnlinked = profile.createdByUserId === user.id && !profile.linkedUserId;
     
-    if (!isOwn && !isCreator && !user.isPlatformAdmin) {
+    if (!isOwn && !isCreatorOfUnlinked && !user.isPlatformAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     

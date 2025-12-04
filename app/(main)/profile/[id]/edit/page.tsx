@@ -74,8 +74,9 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
         return;
       }
       
-      // Check permission
-      if (!data.isOwnProfile && !data.isCreator) {
+      // Check permission: can edit if own profile, OR creator of unlinked profile
+      const canEdit = data.isOwnProfile || (data.isCreator && !data.profile.linkedUserId);
+      if (!canEdit) {
         router.push(`/profile/${id}`);
         return;
       }

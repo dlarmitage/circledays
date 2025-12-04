@@ -331,7 +331,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           )}
           
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
-            {isOwnProfile || isCreator ? (
+            {/* Can edit if: own profile, OR creator of unlinked profile */}
+            {isOwnProfile || (isCreator && !profile.linkedUserId) ? (
               <Button 
                 variant="secondary" 
                 size="sm"
