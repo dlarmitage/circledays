@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { NetworkTree } from '@/components/NetworkTree';
+import { NetworkTree, NetworkTreeHandle } from '@/components/NetworkTree';
 import { ConnectionModal } from '@/components/ConnectionModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -34,6 +34,7 @@ interface ModalProfile {
 
 export default function NetworkPage() {
   const router = useRouter();
+  const networkTreeRef = useRef<NetworkTreeHandle>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [connections, setConnections] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +101,9 @@ export default function NetworkPage() {
     
     // Refresh network data
     await fetchNetwork();
+    
+    // Also refresh the current drilled-in view if applicable
+    await networkTreeRef.current?.refreshCurrentView();
   }, []);
   
   const closeModal = useCallback(() => {
@@ -158,6 +162,7 @@ export default function NetworkPage() {
         </div>
       ) : (
         <NetworkTree
+          ref={networkTreeRef}
           userProfile={userProfile}
           connections={connections}
           onProfileClick={handleProfileClick}

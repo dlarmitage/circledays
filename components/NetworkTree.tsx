@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { ArrowLeft, Search, ChevronRight, Users } from 'lucide-react';
 
@@ -22,6 +20,10 @@ interface NetworkTreeProps {
   onProfileClick: (profileId: string) => void;
   onDrillIn: (profileId: string) => Promise<Profile[]>;
   onConnect: (profileId: string) => Promise<void>;
+}
+
+export interface NetworkTreeHandle {
+  refreshCurrentView: () => Promise<void>;
 }
 
 // Sort by last name, fallback to first name
@@ -44,13 +46,13 @@ function formatNameLastFirst(name: string): string {
   return `${lastName}, ${firstName}`;
 }
 
-export function NetworkTree({
+export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(function NetworkTree({
   userProfile,
   connections,
   onProfileClick,
   onDrillIn,
   onConnect,
-}: NetworkTreeProps) {
+}, ref) {
   const [searchQuery, setSearchQuery] = useState('');
   const [focusStack, setFocusStack] = useState<{ profile: Profile; connections: Profile[] }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,26 @@ export function NetworkTree({
   // Current view state
   const currentFocus = focusStack.length > 0 ? focusStack[focusStack.length - 1] : null;
   const displayedConnections = currentFocus ? currentFocus.connections : connections;
+  
+  // Refresh current drilled-in view (called after connection changes)
+  const refreshCurrentView = async () => {
+    if (currentFocus) {
+      const freshConnections = await onDrillIn(currentFocus.profile.id);
+      setFocusStack(prev => {
+        const newStack = [...prev];
+        newStack[newStack.length - 1] = {
+          ...newStack[newStack.length - 1],
+          connections: freshConnections,
+        };
+        return newStack;
+      });
+    }
+  };
+  
+  // Expose refresh function to parent
+  useImperativeHandle(ref, () => ({
+    refreshCurrentView,
+  }));
   
   // Filter and sort connections
   const filteredConnections = useMemo(() => {
@@ -220,7 +242,7 @@ export function NetworkTree({
       </div>
     </div>
   );
-}
+});
 
 interface ConnectionRowProps {
   profile: Profile;
