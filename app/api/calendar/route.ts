@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       let matchesMonth = false;
       let displayDay = eventDay;
       
-      if (event.isRecurring) {
+      if (event.recurring) {
         // Recurring: show if month matches (any year)
         matchesMonth = eventMonth === month;
       } else {
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
           profileId: profile.id,
           profileName: profile.name,
           profilePicture: profile.profilePicture,
-          isRecurring: event.isRecurring,
+          isRecurring: event.recurring,
           originalDate: event.date,
         });
       }
