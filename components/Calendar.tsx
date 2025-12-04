@@ -229,7 +229,7 @@ export function Calendar({ onEventClick }: CalendarProps) {
                   key={index}
                   onClick={() => hasEvents ? setSelectedDate(isSelected ? null : calDay.date) : null}
                   className={`
-                    relative p-1 min-h-[48px] md:min-h-[64px] border-b border-r border-gray-50
+                    relative p-1 min-h-[60px] md:min-h-[80px] border-b border-r border-gray-50
                     ${calDay.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
                     ${hasEvents ? 'cursor-pointer hover:bg-teal-50' : 'cursor-default'}
                     ${isSelected ? 'bg-teal-50 ring-2 ring-teal-500 ring-inset' : ''}
@@ -250,32 +250,80 @@ export function Calendar({ onEventClick }: CalendarProps) {
                   {/* Event indicators - mini avatars with emoji */}
                   {hasEvents && (
                     <div className="flex justify-center items-center mt-1">
-                      <div className="flex -space-x-1">
-                        {dayEvents.slice(0, 3).map((event, i) => (
-                          <div key={i} className="relative">
-                            {/* Mini avatar */}
-                            {event.profilePicture ? (
-                              <img
-                                src={event.profilePicture}
-                                alt=""
-                                className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white object-cover"
-                              />
-                            ) : (
-                              <div className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white bg-teal-500 flex items-center justify-center">
-                                <span className="text-[8px] md:text-[10px] font-bold text-white">
-                                  {event.profileName.charAt(0)}
+                      {/* Dynamic sizing based on event count */}
+                      {dayEvents.length === 1 ? (
+                        // Single event - largest size
+                        <div className="relative">
+                          {dayEvents[0].profilePicture ? (
+                            <img
+                              src={dayEvents[0].profilePicture}
+                              alt=""
+                              className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white object-cover shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white bg-teal-500 flex items-center justify-center shadow-sm">
+                              <span className="text-xs md:text-sm font-bold text-white">
+                                {dayEvents[0].profileName.charAt(0)}
+                              </span>
+                            </div>
+                          )}
+                          <span className="absolute -bottom-1 -right-1 text-sm md:text-base drop-shadow-sm">
+                            {getEventEmoji(dayEvents[0].type)}
+                          </span>
+                        </div>
+                      ) : dayEvents.length === 2 ? (
+                        // Two events - medium size
+                        <div className="flex -space-x-2">
+                          {dayEvents.slice(0, 2).map((event, i) => (
+                            <div key={i} className="relative">
+                              {event.profilePicture ? (
+                                <img
+                                  src={event.profilePicture}
+                                  alt=""
+                                  className="w-7 h-7 md:w-8 md:h-8 rounded-full border-2 border-white object-cover shadow-sm"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full border-2 border-white bg-teal-500 flex items-center justify-center shadow-sm">
+                                  <span className="text-[10px] md:text-xs font-bold text-white">
+                                    {event.profileName.charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                              <span className="absolute -bottom-1 -right-1 text-xs md:text-sm drop-shadow-sm">
+                                {getEventEmoji(event.type)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        // 3+ events - smaller size with count
+                        <div className="flex items-center">
+                          <div className="flex -space-x-2">
+                            {dayEvents.slice(0, 3).map((event, i) => (
+                              <div key={i} className="relative">
+                                {event.profilePicture ? (
+                                  <img
+                                    src={event.profilePicture}
+                                    alt=""
+                                    className="w-6 h-6 md:w-7 md:h-7 rounded-full border-2 border-white object-cover shadow-sm"
+                                  />
+                                ) : (
+                                  <div className="w-6 h-6 md:w-7 md:h-7 rounded-full border-2 border-white bg-teal-500 flex items-center justify-center shadow-sm">
+                                    <span className="text-[8px] md:text-[10px] font-bold text-white">
+                                      {event.profileName.charAt(0)}
+                                    </span>
+                                  </div>
+                                )}
+                                <span className="absolute -bottom-1 -right-1 text-[10px] md:text-xs drop-shadow-sm">
+                                  {getEventEmoji(event.type)}
                                 </span>
                               </div>
-                            )}
-                            {/* Emoji badge */}
-                            <span className="absolute -bottom-1 -right-1 text-[10px] md:text-xs drop-shadow-sm">
-                              {getEventEmoji(event.type)}
-                            </span>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      {dayEvents.length > 3 && (
-                        <span className="text-[10px] text-gray-500 ml-1 font-medium">+{dayEvents.length - 3}</span>
+                          {dayEvents.length > 3 && (
+                            <span className="text-xs text-gray-500 ml-1 font-semibold">+{dayEvents.length - 3}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
