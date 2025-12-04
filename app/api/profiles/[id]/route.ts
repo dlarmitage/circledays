@@ -116,6 +116,7 @@ export async function GET(
       isDirectConnection: true,
       isOwnProfile: profile.linkedUserId === user.id,
       isCreator: profile.createdByUserId === user.id,
+      userProfileId: userProfile.id,
     });
   } catch (error) {
     console.error('Get profile error:', error);

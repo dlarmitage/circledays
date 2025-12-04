@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { X, Mail, Users, Check, Copy, ExternalLink } from 'lucide-react';
+import { Avatar } from '@/components/ui/Avatar';
+import { X, Mail, Users, Check, Copy, ExternalLink, User, UsersRound } from 'lucide-react';
 
 interface Connection {
   id: string;
@@ -19,10 +20,14 @@ interface InviteModalProps {
   profileId: string;
   profileName: string;
   connections: Connection[];
+  userProfileId: string;
 }
 
-export function InviteModal({ isOpen, onClose, profileId, profileName, connections }: InviteModalProps) {
+type ConnectionOption = 'just-me' | 'all' | 'custom';
+
+export function InviteModal({ isOpen, onClose, profileId, profileName, connections, userProfileId }: InviteModalProps) {
   const [email, setEmail] = useState('');
+  const [connectionOption, setConnectionOption] = useState<ConnectionOption>('just-me');
   const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +38,7 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
   useEffect(() => {
     if (isOpen) {
       setEmail('');
+      setConnectionOption('just-me');
       setSelectedConnections([]);
       setError(null);
       setSuccess(null);
@@ -46,6 +52,28 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
         ? prev.filter(c => c !== id)
         : [...prev, id]
     );
+  };
+  
+  const getSeedConnectionIds = (): string[] => {
+    switch (connectionOption) {
+      case 'just-me':
+        // Just connect with the inviter's profile
+        return userProfileId ? [userProfileId] : [];
+      case 'all':
+        // Connect with all the inviter's connections plus the inviter
+        const allIds = connections.map(c => c.profileId);
+        if (userProfileId) allIds.push(userProfileId);
+        return allIds;
+      case 'custom':
+        // Connect with selected connections plus the inviter
+        const customIds = [...selectedConnections];
+        if (userProfileId && !customIds.includes(userProfileId)) {
+          customIds.push(userProfileId);
+        }
+        return customIds;
+      default:
+        return [];
+    }
   };
   
   const handleSend = async () => {
@@ -64,7 +92,7 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
         body: JSON.stringify({
           profileId,
           email,
-          seedConnectionIds: selectedConnections,
+          seedConnectionIds: getSeedConnectionIds(),
         }),
       });
       
@@ -91,6 +119,27 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
   };
   
   if (!isOpen) return null;
+  
+  const connectionOptions: { value: ConnectionOption; label: string; description: string; icon: typeof User }[] = [
+    {
+      value: 'just-me',
+      label: 'Just me',
+      description: `${profileName} will only be connected to you`,
+      icon: User,
+    },
+    {
+      value: 'all',
+      label: 'All my connections',
+      description: `${profileName} will be connected to you and all ${connections.length} of your connections`,
+      icon: UsersRound,
+    },
+    {
+      value: 'custom',
+      label: 'Custom selection',
+      description: 'Choose specific people to connect them with',
+      icon: Users,
+    },
+  ];
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -154,7 +203,7 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <p className="text-sm text-gray-600">
                 Send an email invitation to {profileName} so they can claim their profile and start managing their own connections.
               </p>
@@ -168,52 +217,113 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
                 required
               />
               
-              {connections.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Users className="w-4 h-4 inline mr-1" />
-                    Start them off with connections (optional)
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Select people to automatically connect with {profileName} when they join
-                  </p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {connections.map(conn => (
-                      <label
-                        key={conn.id}
-                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                          selectedConnections.includes(conn.profileId)
-                            ? 'bg-teal-50 border border-teal-200'
-                            : 'bg-gray-50 hover:bg-gray-100'
-                        }`}
+              {/* Connection Options */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Start them off connected to:
+                </label>
+                <div className="space-y-2">
+                  {connectionOptions.map(option => {
+                    const Icon = option.icon;
+                    const isSelected = connectionOption === option.value;
+                    const isDisabled = option.value === 'all' && connections.length === 0;
+                    
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => setConnectionOption(option.value)}
+                        className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all ${
+                          isSelected
+                            ? 'bg-teal-50 border-2 border-teal-500'
+                            : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                        } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedConnections.includes(conn.profileId)}
-                          onChange={() => toggleConnection(conn.profileId)}
-                          className="sr-only"
-                        />
-                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                          selectedConnections.includes(conn.profileId)
-                            ? 'bg-teal-600 border-teal-600'
-                            : 'border-gray-300'
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isSelected ? 'bg-teal-100' : 'bg-gray-200'
                         }`}>
-                          {selectedConnections.includes(conn.profileId) && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
+                          <Icon className={`w-5 h-5 ${isSelected ? 'text-teal-600' : 'text-gray-500'}`} />
                         </div>
-                        <span className="text-sm text-gray-900">{conn.name}</span>
-                      </label>
-                    ))}
-                  </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${isSelected ? 'text-teal-900' : 'text-gray-900'}`}>
+                              {option.label}
+                            </span>
+                            {isSelected && (
+                              <Check className="w-4 h-4 text-teal-600" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {option.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+              
+              {/* Custom Selection */}
+              {connectionOption === 'custom' && connections.length > 0 && (
+                <div className="border-t pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select connections ({selectedConnections.length} selected)
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {connections.map(conn => {
+                      const isSelected = selectedConnections.includes(conn.profileId);
+                      return (
+                        <label
+                          key={conn.id}
+                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-teal-50 border border-teal-200'
+                              : 'bg-gray-50 hover:bg-gray-100 border border-transparent'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleConnection(conn.profileId)}
+                            className="sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                            isSelected
+                              ? 'bg-teal-600 border-teal-600'
+                              : 'border-gray-300 bg-white'
+                          }`}>
+                            {isSelected && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <Avatar
+                            src={conn.profilePicture}
+                            name={conn.name}
+                            size="sm"
+                          />
+                          <span className="text-sm text-gray-900 truncate">{conn.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Note: {profileName} will always be connected to you
+                  </p>
+                </div>
+              )}
+              
+              {connectionOption === 'custom' && connections.length === 0 && (
+                <p className="text-sm text-gray-500 italic">
+                  You don't have any other connections yet. {profileName} will be connected to just you.
+                </p>
               )}
               
               {error && (
                 <p className="text-sm text-coral-600">{error}</p>
               )}
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="secondary"
                   className="flex-1"
@@ -237,4 +347,3 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
     </div>
   );
 }
-

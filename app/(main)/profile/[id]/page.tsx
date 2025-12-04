@@ -54,6 +54,7 @@ interface ProfileData {
   isOwnProfile: boolean;
   isCreator: boolean;
   hopDistance?: number;
+  userProfileId?: string;
 }
 
 // Confirmation Modal Component
@@ -485,6 +486,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           name: c.name,
           profilePicture: c.profilePicture,
         }))}
+        userProfileId={data.userProfileId || ''}
       />
     </div>
   );
