@@ -42,16 +42,22 @@ interface EventReminder {
 export function generateReminderSms(events: EventReminder[]): string[] {
   const messages: string[] = [];
   
-  // Format that helps iOS/macOS data detectors create better calendar events
-  // Structure: "Event Title on Date (context)"
   for (const event of events) {
-    const ageText = event.age ? ` turning ${event.age}` : '';
-    const daysText = event.daysUntil === 0 ? 'Today!' : event.daysUntil === 1 ? 'Tomorrow!' : `in ${event.daysUntil} days`;
+    const daysText = event.daysUntil === 0 ? 'today' : event.daysUntil === 1 ? 'tomorrow' : `in ${event.daysUntil} days`;
     
-    // Format: "Person's Birthday on December 10 (in 3 days)"
-    // This helps data detectors use "Person's Birthday" as the calendar event title
-    const eventTitle = `${event.profileName}'s ${event.eventType}${ageText}`;
-    const message = `🎂 ${eventTitle} on ${event.eventDate} (${daysText})`;
+    let message: string;
+    
+    if (event.eventType.toLowerCase() === 'birthday' && event.age) {
+      // "🎂 Test Person turns 35 on December 10 (in 3 days)"
+      // Avoids "Birthday" keyword so macOS might use full phrase as title
+      message = `🎂 ${event.profileName} turns ${event.age} on ${event.eventDate} (${daysText})`;
+    } else if (event.eventType.toLowerCase() === 'birthday') {
+      message = `🎂 ${event.profileName}'s 🎂 is on ${event.eventDate} (${daysText})`;
+    } else {
+      // Anniversaries and custom events
+      message = `🎉 ${event.profileName}'s ${event.eventType} on ${event.eventDate} (${daysText})`;
+    }
+    
     messages.push(message);
   }
   
