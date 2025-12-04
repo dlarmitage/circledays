@@ -8,6 +8,14 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
     
+    // Check if blob storage is configured
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json(
+        { error: 'Photo uploads are not configured. Please add BLOB_READ_WRITE_TOKEN.' },
+        { status: 503 }
+      );
+    }
+    
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const profileId = formData.get('profileId') as string;
@@ -59,6 +67,7 @@ export async function POST(request: NextRequest) {
           await del(profile.profilePicture);
         } catch (e) {
           // Ignore deletion errors
+          console.log('Could not delete old photo:', e);
         }
       }
     }
@@ -70,7 +79,6 @@ export async function POST(request: NextRequest) {
     // Upload to Vercel Blob
     const blob = await put(filename, file, {
       access: 'public',
-      addRandomSuffix: false,
     });
     
     // Update profile with new photo URL if profileId provided
@@ -89,10 +97,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    // Return more specific error message
+    const message = error instanceof Error ? error.message : 'Failed to upload file';
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: message },
       { status: 500 }
     );
   }
 }
-

@@ -117,7 +117,7 @@ export function NetworkGraph({ nodes, edges, userProfileId, onNodeClick }: Netwo
       },
       minZoom: 0.3,
       maxZoom: 2,
-      wheelSensitivity: 0.3,
+      wheelSensitivity: 1,
     });
     
     // Handle node clicks
