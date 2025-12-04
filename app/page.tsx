@@ -5,10 +5,15 @@ import { Button } from '@/components/ui/Button';
 import { Users, Bell, Sparkles } from 'lucide-react';
 
 export default async function HomePage() {
-  const user = await getCurrentUser();
-  
-  if (user) {
-    redirect('/dashboard');
+  // Try to check if user is logged in, but don't crash if DB isn't available
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      redirect('/dashboard');
+    }
+  } catch (error) {
+    // Database not available, show landing page
+    console.error('Auth check failed:', error);
   }
   
   return (
