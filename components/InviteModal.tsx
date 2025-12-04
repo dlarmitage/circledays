@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { X, Mail, Users, Check, Copy, ExternalLink, User, UsersRound } from 'lucide-react';
+import { X, Mail, Users, Check, Copy, ExternalLink, User, UsersRound, CheckSquare, Square } from 'lucide-react';
 
 interface Connection {
   id: string;
@@ -46,6 +46,13 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
     }
   }, [isOpen]);
   
+  // When switching to custom, pre-select all connections
+  useEffect(() => {
+    if (connectionOption === 'custom') {
+      setSelectedConnections(connections.map(c => c.profileId));
+    }
+  }, [connectionOption, connections]);
+  
   const toggleConnection = (id: string) => {
     setSelectedConnections(prev => 
       prev.includes(id) 
@@ -53,6 +60,17 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
         : [...prev, id]
     );
   };
+  
+  const selectAll = () => {
+    setSelectedConnections(connections.map(c => c.profileId));
+  };
+  
+  const deselectAll = () => {
+    setSelectedConnections([]);
+  };
+  
+  const allSelected = selectedConnections.length === connections.length;
+  const noneSelected = selectedConnections.length === 0;
   
   const getSeedConnectionIds = (): string[] => {
     switch (connectionOption) {
@@ -136,15 +154,15 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
     {
       value: 'custom',
       label: 'Custom selection',
-      description: 'Choose specific people to connect them with',
+      description: 'Remove specific people from the list',
       icon: Users,
     },
   ];
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-teal-600" />
             {success ? 'Invite Sent!' : `Invite ${profileName}`}
@@ -157,7 +175,7 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
           </button>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="overflow-y-auto flex-1">
           {success ? (
             <div className="space-y-4">
               <div className="p-4 bg-green-50 rounded-xl">
@@ -228,6 +246,11 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
                     const isSelected = connectionOption === option.value;
                     const isDisabled = option.value === 'all' && connections.length === 0;
                     
+                    // Hide custom option if no connections
+                    if (option.value === 'custom' && connections.length === 0) {
+                      return null;
+                    }
+                    
                     return (
                       <button
                         key={option.value}
@@ -266,57 +289,80 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
               
               {/* Custom Selection */}
               {connectionOption === 'custom' && connections.length > 0 && (
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select connections ({selectedConnections.length} selected)
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {connections.map(conn => {
+                <div className="border rounded-xl overflow-hidden">
+                  {/* Sticky header with Select All/Deselect All */}
+                  <div className="bg-gray-50 border-b p-3 flex items-center justify-between sticky top-0">
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedConnections.length} of {connections.length} selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={allSelected ? deselectAll : selectAll}
+                      className="flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors px-2 py-1 rounded-lg hover:bg-teal-50"
+                    >
+                      {allSelected ? (
+                        <>
+                          <Square className="w-4 h-4" />
+                          <span className="hidden sm:inline">Deselect All</span>
+                          <span className="sm:hidden">None</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckSquare className="w-4 h-4" />
+                          <span className="hidden sm:inline">Select All</span>
+                          <span className="sm:hidden">All</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* Connection list */}
+                  <div className="max-h-56 overflow-y-auto">
+                    {connections.map((conn, index) => {
                       const isSelected = selectedConnections.includes(conn.profileId);
                       return (
-                        <label
+                        <button
                           key={conn.id}
-                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                          type="button"
+                          onClick={() => toggleConnection(conn.profileId)}
+                          className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${
                             isSelected
-                              ? 'bg-teal-50 border border-teal-200'
-                              : 'bg-gray-50 hover:bg-gray-100 border border-transparent'
-                          }`}
+                              ? 'bg-teal-50'
+                              : 'bg-white hover:bg-gray-50'
+                          } ${index !== connections.length - 1 ? 'border-b' : ''}`}
                         >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleConnection(conn.profileId)}
-                            className="sr-only"
-                          />
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                          {/* Custom checkbox - larger for mobile */}
+                          <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                             isSelected
                               ? 'bg-teal-600 border-teal-600'
                               : 'border-gray-300 bg-white'
                           }`}>
                             {isSelected && (
-                              <Check className="w-3 h-3 text-white" />
+                              <Check className="w-4 h-4 text-white" strokeWidth={3} />
                             )}
                           </div>
+                          
                           <Avatar
                             src={conn.profilePicture}
                             name={conn.name}
                             size="sm"
                           />
-                          <span className="text-sm text-gray-900 truncate">{conn.name}</span>
-                        </label>
+                          
+                          <span className={`text-sm truncate ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                            {conn.name}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Note: {profileName} will always be connected to you
-                  </p>
+                  
+                  {/* Footer note */}
+                  <div className="bg-gray-50 border-t px-3 py-2">
+                    <p className="text-xs text-gray-500">
+                      ✓ {profileName} will always be connected to you
+                    </p>
+                  </div>
                 </div>
-              )}
-              
-              {connectionOption === 'custom' && connections.length === 0 && (
-                <p className="text-sm text-gray-500 italic">
-                  You don't have any other connections yet. {profileName} will be connected to just you.
-                </p>
               )}
               
               {error && (
