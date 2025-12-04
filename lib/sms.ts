@@ -43,21 +43,13 @@ export function generateReminderSms(events: EventReminder[]): string[] {
   const messages: string[] = [];
   
   for (const event of events) {
-    const daysText = event.daysUntil === 0 ? 'today' : event.daysUntil === 1 ? 'tomorrow' : `in ${event.daysUntil} days`;
+    const daysText = event.daysUntil === 0 ? 'today!' : event.daysUntil === 1 ? 'tomorrow!' : `in ${event.daysUntil} days`;
+    const ageText = event.age ? ` (turning ${event.age})` : '';
+    const emoji = event.eventType.toLowerCase() === 'birthday' ? '🎂' : 
+                  event.eventType.toLowerCase() === 'anniversary' ? '❤️' : '🎉';
     
-    let message: string;
-    
-    if (event.eventType.toLowerCase() === 'birthday' && event.age) {
-      // "🎂 Test Person turns 35 on December 10 (in 3 days)"
-      // Avoids "Birthday" keyword so macOS might use full phrase as title
-      message = `🎂 ${event.profileName} turns ${event.age} on ${event.eventDate} (${daysText})`;
-    } else if (event.eventType.toLowerCase() === 'birthday') {
-      message = `🎂 ${event.profileName}'s 🎂 is on ${event.eventDate} (${daysText})`;
-    } else {
-      // Anniversaries and custom events
-      message = `🎉 ${event.profileName}'s ${event.eventType} on ${event.eventDate} (${daysText})`;
-    }
-    
+    // Clean, readable format
+    const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}`;
     messages.push(message);
   }
   
