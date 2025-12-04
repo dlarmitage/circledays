@@ -21,9 +21,11 @@ export default async function HomePage() {
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">C</span>
-          </div>
+          <img 
+            src="/icons/touch-icon-96x96.png" 
+            alt="CircleDays" 
+            className="w-10 h-10 rounded-xl"
+          />
           <span className="font-display text-xl font-bold text-teal-600">CircleDays</span>
         </div>
         <Link href="/login">
