@@ -20,6 +20,7 @@
     "cytoscape": "^3.33.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.44.7",
+    "framer-motion": "^12.23.25",
     "iron-session": "^8.0.4",
     "lucide-react": "^0.555.0",
     "nanoid": "^5.1.6",

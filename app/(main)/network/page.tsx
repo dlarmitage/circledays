@@ -1,55 +1,112 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { NetworkGraph } from '@/components/NetworkGraph';
+import { AnimatePresence } from 'framer-motion';
+import { NetworkTree } from '@/components/NetworkTree';
+import { ConnectionModal } from '@/components/ConnectionModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
-import { STRINGS } from '@/lib/constants';
 import { Plus, Users } from 'lucide-react';
 
-interface GraphNode {
+interface Profile {
   id: string;
   name: string;
   profilePicture: string | null;
-  hopDistance: number;
-  linkedUserId: string | null;
+  connectionCount: number;
+  isConnectedToUser: boolean;
 }
 
-interface GraphEdge {
-  source: string;
-  target: string;
+interface MutualConnection {
+  id: string;
+  name: string;
+  profilePicture: string | null;
 }
 
-interface NetworkData {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
-  userProfileId: string;
+interface ModalProfile {
+  id: string;
+  name: string;
+  profilePicture: string | null;
+  isClaimed: boolean;
+  connectionCount: number;
 }
 
 export default function NetworkPage() {
   const router = useRouter();
-  const [networkData, setNetworkData] = useState<NetworkData | null>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [connections, setConnections] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Modal state
+  const [modalProfile, setModalProfile] = useState<ModalProfile | null>(null);
+  const [modalMutualConnections, setModalMutualConnections] = useState<MutualConnection[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  
   useEffect(() => {
-    fetch('/api/network')
-      .then(res => res.json())
-      .then(data => {
-        setNetworkData(data);
-        setLoading(false);
-      });
+    fetchNetwork();
   }, []);
   
-  const handleNodeClick = (nodeId: string, hopDistance: number) => {
-    if (hopDistance <= 1) {
-      router.push(`/profile/${nodeId}`);
-    } else {
-      // For 2+ hop nodes, could show a modal or limited view
-      router.push(`/profile/${nodeId}`);
+  const fetchNetwork = async () => {
+    try {
+      const res = await fetch('/api/network/tree');
+      const data = await res.json();
+      setUserProfile(data.userProfile);
+      setConnections(data.connections);
+    } catch (error) {
+      console.error('Failed to fetch network:', error);
+    } finally {
+      setLoading(false);
     }
   };
+  
+  const handleDrillIn = useCallback(async (profileId: string): Promise<Profile[]> => {
+    const res = await fetch(`/api/network/tree?profileId=${profileId}`);
+    const data = await res.json();
+    return data.connections;
+  }, []);
+  
+  const handleProfileClick = useCallback(async (profileId: string) => {
+    // Check if this is a connected profile
+    const profile = connections.find(c => c.id === profileId);
+    
+    if (profile?.isConnectedToUser) {
+      // Navigate to full profile
+      router.push(`/profile/${profileId}`);
+    } else {
+      // Show connection modal for non-connected profiles
+      try {
+        const res = await fetch(`/api/network/preview?profileId=${profileId}`);
+        const data = await res.json();
+        setModalProfile(data.profile);
+        setModalMutualConnections(data.mutualConnections);
+        setModalOpen(true);
+      } catch (error) {
+        console.error('Failed to fetch profile preview:', error);
+      }
+    }
+  }, [connections, router]);
+  
+  const handleConnect = useCallback(async (profileId: string) => {
+    const res = await fetch('/api/connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileId }),
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to connect');
+    }
+    
+    // Refresh network data
+    await fetchNetwork();
+  }, []);
+  
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+    setModalProfile(null);
+    setModalMutualConnections([]);
+  }, []);
   
   if (loading) {
     return (
@@ -59,69 +116,68 @@ export default function NetworkPage() {
     );
   }
   
-  const connectionCount = networkData?.nodes.filter(n => n.hopDistance === 1).length || 0;
+  if (!userProfile) {
+    return (
+      <div className="p-4">
+        <EmptyState
+          icon={<Users className="w-8 h-8" />}
+          title="Network unavailable"
+          description="Unable to load your network"
+        />
+      </div>
+    );
+  }
   
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
-        <div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-900">
-            {STRINGS.network.myNetwork}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {connectionCount} {STRINGS.network.connections}
-          </p>
-        </div>
-        <Button onClick={() => router.push('/add-person')}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Person
+    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] flex flex-col bg-white md:rounded-2xl md:shadow-soft md:m-4 overflow-hidden">
+      {/* Header with Add Person button */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <h1 className="font-display text-lg font-bold text-gray-900">
+          Network
+        </h1>
+        <Button size="sm" onClick={() => router.push('/add-person')}>
+          <Plus className="w-4 h-4 mr-1" />
+          Add
         </Button>
       </div>
       
-      {/* Graph */}
-      {connectionCount === 0 ? (
-        <EmptyState
-          icon={<Users className="w-8 h-8" />}
-          title={STRINGS.network.noConnections}
-          description={STRINGS.network.startBuilding}
-          action={
-            <Button onClick={() => router.push('/add-person')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Connection
-            </Button>
-          }
-        />
-      ) : (
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-soft overflow-hidden" style={{ height: '60vh', minHeight: '400px' }}>
-            <NetworkGraph
-              nodes={networkData?.nodes || []}
-              edges={networkData?.edges || []}
-              userProfileId={networkData?.userProfileId || ''}
-              onNodeClick={handleNodeClick}
-            />
-          </div>
-          
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mt-4 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-teal-600" />
-              <span>You</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-teal-400" />
-              <span>Direct connections</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-teal-200" />
-              <span>2nd degree</span>
-            </div>
-          </div>
+      {/* Tree Navigation */}
+      {connections.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <EmptyState
+            icon={<Users className="w-8 h-8" />}
+            title="No connections yet"
+            description="Start building your network by adding people you know"
+            action={
+              <Button onClick={() => router.push('/add-person')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Connection
+              </Button>
+            }
+          />
         </div>
+      ) : (
+        <NetworkTree
+          userProfile={userProfile}
+          connections={connections}
+          onProfileClick={handleProfileClick}
+          onDrillIn={handleDrillIn}
+          onConnect={handleConnect}
+        />
       )}
+      
+      {/* Connection Modal */}
+      <AnimatePresence>
+        {modalOpen && (
+          <ConnectionModal
+            isOpen={modalOpen}
+            onClose={closeModal}
+            profile={modalProfile}
+            mutualConnections={modalMutualConnections}
+            onConnect={handleConnect}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
-
