@@ -49,6 +49,7 @@ interface ProfileData {
   events: Event[];
   note: { content: string } | null;
   connections: Connection[];
+  userConnections?: Connection[];
   connectionId?: string;
   isDirectConnection: boolean;
   isOwnProfile: boolean;
@@ -480,7 +481,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         onClose={() => setShowInviteModal(false)}
         profileId={profile.id}
         profileName={profile.name}
-        connections={connections.map(c => ({
+        connections={(data.userConnections || []).map(c => ({
           id: c.id,
           profileId: c.id,
           name: c.name,

@@ -148,13 +148,13 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
     {
       value: 'all',
       label: 'All my connections',
-      description: `${profileName} will be connected to you and all ${connections.length} of your connections`,
+      description: `Connected to you + ${connections.length} other${connections.length === 1 ? '' : 's'}`,
       icon: UsersRound,
     },
     {
       value: 'custom',
       label: 'Custom selection',
-      description: 'Remove specific people from the list',
+      description: 'Choose which of your connections to include',
       icon: Users,
     },
   ];

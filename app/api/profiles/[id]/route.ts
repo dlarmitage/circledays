@@ -81,7 +81,7 @@ export async function GET(
       )
       .limit(1);
     
-    // Get profile's connections
+    // Get profile's connections (for display on profile page)
     const profileConnections = await db
       .select({
         profile: profiles,
@@ -107,11 +107,43 @@ export async function GET(
         )
       );
     
+    // Get user's connections (for invite modal - excludes user's own profile and the profile being viewed)
+    const userConnections = await db
+      .select({
+        profile: profiles,
+      })
+      .from(connections)
+      .innerJoin(
+        profiles,
+        or(
+          and(
+            eq(connections.profileAId, userProfile.id),
+            eq(profiles.id, connections.profileBId)
+          ),
+          and(
+            eq(connections.profileBId, userProfile.id),
+            eq(profiles.id, connections.profileAId)
+          )
+        )
+      )
+      .where(
+        or(
+          eq(connections.profileAId, userProfile.id),
+          eq(connections.profileBId, userProfile.id)
+        )
+      );
+    
+    // Filter out user's own profile and the profile being viewed
+    const userConnectionsFiltered = userConnections
+      .map(c => c.profile)
+      .filter(p => p.id !== userProfile.id && p.id !== profile.id);
+    
     return NextResponse.json({
       profile,
       events: profileEvents,
       note: userNote || null,
       connections: profileConnections.map(c => c.profile),
+      userConnections: userConnectionsFiltered,
       connectionId: connection?.id || null,
       isDirectConnection: true,
       isOwnProfile: profile.linkedUserId === user.id,
