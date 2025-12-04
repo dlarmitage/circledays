@@ -26,8 +26,22 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     title: 'CircleDays - Never Miss a Special Day',
-    description: 'Track birthdays and special dates for the people you care about.',
+    description: 'Track birthdays, anniversaries, and special moments for everyone in your life. Get timely reminders via email or SMS.',
     siteName: 'CircleDays',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'CircleDays - Never Miss a Special Day',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CircleDays - Never Miss a Special Day',
+    description: 'Track birthdays, anniversaries, and special moments for everyone in your life.',
+    images: ['/og-image.png'],
   },
 };
 
