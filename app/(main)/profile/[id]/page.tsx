@@ -296,14 +296,21 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm font-medium">Back</span>
-      </button>
+      {/* Header with Back and Add buttons */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+        
+        <Button size="sm" onClick={() => router.push('/add-person')}>
+          <UserPlus className="w-4 h-4 mr-1" />
+          Add
+        </Button>
+      </div>
       
       {/* Profile Header */}
       <Card className="mb-6">
