@@ -66,7 +66,7 @@ export async function GET() {
 const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
   birthdate: z.string(), // ISO date string, required
-  profilePicture: z.string().url().optional(),
+  profilePicture: z.string().url().nullable().optional(),
 });
 
 // Create a new profile
