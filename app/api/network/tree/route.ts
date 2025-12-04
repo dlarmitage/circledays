@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, connections } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import { eq, or, and, sql, ne } from 'drizzle-orm';
+import { eq, or, and, sql } from 'drizzle-orm';
 
 // Get connections for a specific profile (for tree navigation drill-in)
 export async function GET(request: NextRequest) {
@@ -23,14 +23,7 @@ export async function GET(request: NextRequest) {
     
     // Get user's direct connection IDs (for marking isConnectedToUser)
     const userConnectionRows = await db
-      .select({
-        profileId: sql<string>`
-          CASE 
-            WHEN ${connections.profileAId} = ${userProfile.id} THEN ${connections.profileBId}
-            ELSE ${connections.profileAId}
-          END
-        `.as('profile_id'),
-      })
+      .select()
       .from(connections)
       .where(
         or(
@@ -39,7 +32,14 @@ export async function GET(request: NextRequest) {
         )
       );
     
-    const userConnectionIds = new Set(userConnectionRows.map(r => r.profileId));
+    const userConnectionIds = new Set<string>();
+    userConnectionRows.forEach(conn => {
+      if (conn.profileAId === userProfile.id) {
+        userConnectionIds.add(conn.profileBId);
+      } else {
+        userConnectionIds.add(conn.profileAId);
+      }
+    });
     userConnectionIds.add(userProfile.id); // Include self
     
     // If no profileId specified, return user's connections
@@ -52,24 +52,9 @@ export async function GET(request: NextRequest) {
     }
     
     // Get connections for the target profile
-    const targetConnections = await db
-      .select({
-        profile: profiles,
-      })
+    const targetConnectionRows = await db
+      .select()
       .from(connections)
-      .innerJoin(
-        profiles,
-        or(
-          and(
-            eq(connections.profileAId, targetProfileId),
-            eq(profiles.id, connections.profileBId)
-          ),
-          and(
-            eq(connections.profileBId, targetProfileId),
-            eq(profiles.id, connections.profileAId)
-          )
-        )
-      )
       .where(
         or(
           eq(connections.profileAId, targetProfileId),
@@ -77,37 +62,43 @@ export async function GET(request: NextRequest) {
         )
       );
     
-    // For each connection, get their connection count
-    const connectionIds = targetConnections.map(c => c.profile.id);
+    // Get the profile IDs of target's connections
+    const targetConnectionIds = targetConnectionRows.map(conn => 
+      conn.profileAId === targetProfileId ? conn.profileBId : conn.profileAId
+    );
     
-    const connectionCounts = await db
+    // Get profile data for these connections
+    const connectionProfiles = targetConnectionIds.length > 0 
+      ? await db
+          .select()
+          .from(profiles)
+          .where(
+            sql`${profiles.id} IN (${sql.join(targetConnectionIds.map(id => sql`${id}`), sql`, `)})`
+          )
+      : [];
+    
+    // Get connection counts for each profile
+    const allConnectionCounts = await db
       .select({
-        profileId: sql<string>`
-          CASE 
-            WHEN ${connections.profileAId} = ANY(${connectionIds}) THEN ${connections.profileAId}
-            ELSE ${connections.profileBId}
-          END
-        `.as('profile_id'),
-        count: sql<number>`count(*)`.as('count'),
+        profileAId: connections.profileAId,
+        profileBId: connections.profileBId,
       })
-      .from(connections)
-      .where(
-        or(
-          sql`${connections.profileAId} = ANY(${connectionIds})`,
-          sql`${connections.profileBId} = ANY(${connectionIds})`
-        )
-      )
-      .groupBy(sql`profile_id`);
+      .from(connections);
     
-    const countMap = new Map(connectionCounts.map(c => [c.profileId, Number(c.count)]));
+    // Build a count map
+    const countMap = new Map<string, number>();
+    allConnectionCounts.forEach(conn => {
+      countMap.set(conn.profileAId, (countMap.get(conn.profileAId) || 0) + 1);
+      countMap.set(conn.profileBId, (countMap.get(conn.profileBId) || 0) + 1);
+    });
     
     // Build response
-    const result = targetConnections.map(c => ({
-      id: c.profile.id,
-      name: c.profile.name,
-      profilePicture: c.profile.profilePicture,
-      connectionCount: countMap.get(c.profile.id) || 0,
-      isConnectedToUser: userConnectionIds.has(c.profile.id),
+    const result = connectionProfiles.map(profile => ({
+      id: profile.id,
+      name: profile.name,
+      profilePicture: profile.profilePicture,
+      connectionCount: countMap.get(profile.id) || 0,
+      isConnectedToUser: userConnectionIds.has(profile.id),
     }));
     
     // Also return user profile info
@@ -136,4 +127,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
