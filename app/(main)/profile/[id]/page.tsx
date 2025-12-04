@@ -19,6 +19,9 @@ import {
   UserMinus,
   Mail,
   Pencil,
+  Trash2,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 
 interface Event {
@@ -45,10 +48,74 @@ interface ProfileData {
   events: Event[];
   note: { content: string } | null;
   connections: Connection[];
+  connectionId?: string;
   isDirectConnection: boolean;
   isOwnProfile: boolean;
   isCreator: boolean;
   hopDistance?: number;
+}
+
+// Confirmation Modal Component
+function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
+  loading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText: string;
+  loading: boolean;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50" 
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-large max-w-md w-full p-6 animate-slide-up">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-coral-50 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-coral-600" />
+          </div>
+          <h2 className="font-display text-lg font-semibold text-gray-900">
+            {title}
+          </h2>
+        </div>
+        
+        <p className="text-gray-600 mb-6">
+          {message}
+        </p>
+        
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onConfirm} loading={loading} className="flex-1">
+            {confirmText}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,19 +125,25 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [loading, setLoading] = useState(true);
   const [noteContent, setNoteContent] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   
   useEffect(() => {
-    fetch(`/api/profiles/${id}`)
-      .then(res => res.json())
-      .then(profileData => {
-        setData(profileData);
-        setNoteContent(profileData.note?.content || '');
-        setLoading(false);
-      })
-      .catch(() => {
-        router.push('/dashboard');
-      });
-  }, [id, router]);
+    fetchProfileData();
+  }, [id]);
+  
+  const fetchProfileData = async () => {
+    try {
+      const res = await fetch(`/api/profiles/${id}`);
+      const profileData = await res.json();
+      setData(profileData);
+      setNoteContent(profileData.note?.content || '');
+      setLoading(false);
+    } catch {
+      router.push('/dashboard');
+    }
+  };
   
   const handleSaveNote = async () => {
     setSavingNote(true);
@@ -93,8 +166,41 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     });
     
     if (res.ok) {
-      // Refresh the page data
       window.location.reload();
+    }
+  };
+  
+  const handleDisconnect = async () => {
+    if (!data?.connectionId) return;
+    
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/connections/${data.connectionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setShowDisconnectModal(false);
+        router.push('/dashboard');
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+  
+  const handleDeleteProfile = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/profiles/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setShowDeleteModal(false);
+        router.push('/dashboard');
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
   
@@ -111,6 +217,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   }
   
   const { profile, events, connections, isDirectConnection, isOwnProfile, isCreator } = data;
+  
+  // Can delete if: creator of an unlinked profile, or own profile
+  const canDelete = (isCreator && !profile.linkedUserId) || isOwnProfile;
+  
+  // Can disconnect if: directly connected and not own profile
+  const canDisconnect = isDirectConnection && !isOwnProfile;
   
   const getEventIcon = (type: string) => {
     switch (type) {
@@ -156,7 +268,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
             </Badge>
           )}
           
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4 justify-center">
             {isOwnProfile || isCreator ? (
               <Button variant="secondary" size="sm">
                 <Pencil className="w-4 h-4 mr-2" />
@@ -173,6 +285,28 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
               <Button variant="secondary" size="sm">
                 <Mail className="w-4 h-4 mr-2" />
                 Invite
+              </Button>
+            )}
+            
+            {canDisconnect && (
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => setShowDisconnectModal(true)}
+              >
+                <UserMinus className="w-4 h-4 mr-2" />
+                Disconnect
+              </Button>
+            )}
+            
+            {canDelete && (
+              <Button 
+                variant="danger" 
+                size="sm"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
               </Button>
             )}
           </div>
@@ -306,7 +440,28 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           </CardContent>
         </Card>
       )}
+      
+      {/* Disconnect Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDisconnectModal}
+        onClose={() => setShowDisconnectModal(false)}
+        onConfirm={handleDisconnect}
+        title="Disconnect"
+        message={`Are you sure you want to disconnect from ${profile.name}? You'll no longer receive reminders about their events.`}
+        confirmText="Disconnect"
+        loading={actionLoading}
+      />
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteProfile}
+        title="Delete Profile"
+        message={`Are you sure you want to delete ${profile.name}'s profile? This will remove all their events and cannot be undone.`}
+        confirmText="Delete"
+        loading={actionLoading}
+      />
     </div>
   );
 }
-

@@ -112,6 +112,7 @@ export async function GET(
       events: profileEvents,
       note: userNote || null,
       connections: profileConnections.map(c => c.profile),
+      connectionId: connection?.id || null,
       isDirectConnection: true,
       isOwnProfile: profile.linkedUserId === user.id,
       isCreator: profile.createdByUserId === user.id,
