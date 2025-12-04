@@ -45,12 +45,18 @@ export function calculateAge(birthDate: Date | string): number {
   return age;
 }
 
-export function daysUntil(date: Date | string): number {
+export function daysUntil(date: Date | string, recurring: boolean = true): number {
   const target = typeof date === 'string' ? parseLocalDate(date) : date;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Get this year's occurrence
+  if (!recurring) {
+    // One-time event: just calculate days until the exact date
+    const diffTime = target.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  
+  // Recurring event: get this year's occurrence
   const thisYear = new Date(today.getFullYear(), target.getMonth(), target.getDate());
   
   // If it's already passed this year, get next year's occurrence
@@ -63,6 +69,7 @@ export function daysUntil(date: Date | string): number {
 }
 
 export function getDaysUntilText(days: number): string {
+  if (days < 0) return 'Passed';
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
   if (days < 7) return `In ${days} days`;

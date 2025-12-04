@@ -8,6 +8,7 @@ const updateEventSchema = z.object({
   type: z.enum(['birthday', 'anniversary', 'custom']).optional(),
   customLabel: z.string().nullable().optional(),
   date: z.string().optional(),
+  recurring: z.boolean().optional(),
 });
 
 // Helper to check if user is connected to a profile
@@ -70,11 +71,16 @@ export async function PATCH(
     }
     
     // Update event
+    // If type is birthday or anniversary, force recurring to true
+    const effectiveType = data.type || event.event.type;
+    const isRecurring = effectiveType !== 'custom' ? true : (data.recurring ?? event.event.recurring);
+    
     const [updatedEvent] = await db
       .update(events)
       .set({
         ...data,
-        customLabel: data.type === 'custom' ? data.customLabel : null,
+        customLabel: effectiveType === 'custom' ? data.customLabel : null,
+        recurring: isRecurring,
       })
       .where(eq(events.id, id))
       .returning();

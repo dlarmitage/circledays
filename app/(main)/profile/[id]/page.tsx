@@ -36,6 +36,7 @@ interface Event {
   type: 'birthday' | 'anniversary' | 'custom';
   customLabel: string | null;
   date: string;
+  recurring?: boolean;
 }
 
 interface Connection {
@@ -508,8 +509,9 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
               <div className="space-y-3">
                 {events.map(event => {
                   const Icon = getEventIcon(event.type);
-                  const eventDaysUntil = daysUntil(event.date);
+                  const eventDaysUntil = daysUntil(event.date, event.recurring ?? true);
                   const age = event.type === 'birthday' ? calculateAge(event.date) + 1 : null;
+                  const isPastOneTime = !event.recurring && eventDaysUntil < 0;
                   
                   return (
                     <button
@@ -532,7 +534,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                         </div>
                       </div>
                       <Badge
-                        variant={eventDaysUntil === 0 ? 'danger' : eventDaysUntil <= 7 ? 'warning' : 'success'}
+                        variant={isPastOneTime ? 'default' : eventDaysUntil === 0 ? 'danger' : eventDaysUntil <= 7 ? 'warning' : 'success'}
                       >
                         {getDaysUntilText(eventDaysUntil)}
                       </Badge>

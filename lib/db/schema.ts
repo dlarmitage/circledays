@@ -66,6 +66,7 @@ export const events = pgTable('events', {
   type: eventTypeEnum('type').notNull(),
   customLabel: text('custom_label'),
   date: date('date').notNull(),
+  recurring: boolean('recurring').notNull().default(true), // false for one-time events like graduation
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

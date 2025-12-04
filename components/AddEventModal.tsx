@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { X, Calendar, Cake, Heart } from 'lucide-react';
+import { X, Calendar, Cake, Heart, Repeat, CalendarCheck } from 'lucide-react';
 
 interface AddEventModalProps {
   isOpen: boolean;
@@ -25,6 +24,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
   const [eventType, setEventType] = useState<'birthday' | 'anniversary' | 'custom'>('birthday');
   const [customLabel, setCustomLabel] = useState('');
   const [date, setDate] = useState('');
+  const [recurring, setRecurring] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -34,6 +34,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
       setEventType('birthday');
       setCustomLabel('');
       setDate('');
+      setRecurring(true);
       setError(null);
     }
   }, [isOpen]);
@@ -60,6 +61,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
           type: eventType,
           customLabel: eventType === 'custom' ? customLabel : undefined,
           date,
+          recurring: eventType === 'custom' ? recurring : true,
         }),
       });
       
@@ -141,6 +143,50 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
             />
           )}
           
+          {/* Recurring toggle (only for custom events) */}
+          {eventType === 'custom' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Frequency
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRecurring(true)}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all ${
+                    recurring
+                      ? 'bg-teal-50 border-2 border-teal-500'
+                      : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                  }`}
+                >
+                  <Repeat className={`w-4 h-4 ${recurring ? 'text-teal-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${recurring ? 'text-teal-900' : 'text-gray-700'}`}>
+                    Every Year
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecurring(false)}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all ${
+                    !recurring
+                      ? 'bg-teal-50 border-2 border-teal-500'
+                      : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                  }`}
+                >
+                  <CalendarCheck className={`w-4 h-4 ${!recurring ? 'text-teal-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${!recurring ? 'text-teal-900' : 'text-gray-700'}`}>
+                    One Time
+                  </span>
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {recurring 
+                  ? "You'll be reminded every year" 
+                  : "You'll only be reminded once (e.g., graduation)"}
+              </p>
+            </div>
+          )}
+          
           {/* Date */}
           <Input
             label="Date"
@@ -177,4 +223,3 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
     </div>
   );
 }
-

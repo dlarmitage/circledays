@@ -8,6 +8,7 @@ const createEventSchema = z.object({
   type: z.enum(['birthday', 'anniversary', 'custom']),
   customLabel: z.string().optional(),
   date: z.string(), // ISO date string
+  recurring: z.boolean().optional(), // default true, false for one-time events
 });
 
 export async function POST(
@@ -67,6 +68,9 @@ export async function POST(
     }
     
     // Create event
+    // Birthdays and anniversaries are always recurring, custom can be either
+    const isRecurring = data.type !== 'custom' ? true : (data.recurring ?? true);
+    
     const [newEvent] = await db
       .insert(events)
       .values({
@@ -74,6 +78,7 @@ export async function POST(
         type: data.type,
         customLabel: data.type === 'custom' ? data.customLabel : null,
         date: data.date,
+        recurring: isRecurring,
       })
       .returning();
     
