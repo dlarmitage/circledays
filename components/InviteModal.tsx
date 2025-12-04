@@ -231,7 +231,7 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={`${profileName.toLowerCase().replace(' ', '.')}@example.com`}
+                placeholder="Enter their email address"
                 required
               />
               
