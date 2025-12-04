@@ -55,6 +55,17 @@ function getEventColor(type: string) {
   }
 }
 
+function getEventEmoji(type: string) {
+  switch (type.toLowerCase()) {
+    case 'birthday':
+      return '🎂';
+    case 'anniversary':
+      return '❤️';
+    default:
+      return '🎆';
+  }
+}
+
 export function Calendar({ onEventClick }: CalendarProps) {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -236,17 +247,35 @@ export function Calendar({ onEventClick }: CalendarProps) {
                     {calDay.day}
                   </span>
                   
-                  {/* Event dots */}
+                  {/* Event indicators - mini avatars with emoji */}
                   {hasEvents && (
-                    <div className="flex justify-center gap-0.5 mt-1 flex-wrap">
-                      {dayEvents.slice(0, 3).map((event, i) => (
-                        <div
-                          key={i}
-                          className={`w-1.5 h-1.5 rounded-full ${getEventColor(event.type)}`}
-                        />
-                      ))}
+                    <div className="flex justify-center items-center mt-1">
+                      <div className="flex -space-x-1">
+                        {dayEvents.slice(0, 3).map((event, i) => (
+                          <div key={i} className="relative">
+                            {/* Mini avatar */}
+                            {event.profilePicture ? (
+                              <img
+                                src={event.profilePicture}
+                                alt=""
+                                className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white object-cover"
+                              />
+                            ) : (
+                              <div className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white bg-teal-500 flex items-center justify-center">
+                                <span className="text-[8px] md:text-[10px] font-bold text-white">
+                                  {event.profileName.charAt(0)}
+                                </span>
+                              </div>
+                            )}
+                            {/* Emoji badge */}
+                            <span className="absolute -bottom-1 -right-1 text-[10px] md:text-xs drop-shadow-sm">
+                              {getEventEmoji(event.type)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                       {dayEvents.length > 3 && (
-                        <span className="text-[10px] text-gray-400 ml-0.5">+{dayEvents.length - 3}</span>
+                        <span className="text-[10px] text-gray-500 ml-1 font-medium">+{dayEvents.length - 3}</span>
                       )}
                     </div>
                   )}
@@ -291,22 +320,23 @@ export function Calendar({ onEventClick }: CalendarProps) {
                     onClick={() => onEventClick(event.profileId)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                   >
-                    <Avatar
-                      src={event.profilePicture}
-                      name={event.profileName}
-                      size="sm"
-                    />
+                    <div className="relative">
+                      <Avatar
+                        src={event.profilePicture}
+                        name={event.profileName}
+                        size="md"
+                      />
+                      <span className="absolute -bottom-1 -right-1 text-base drop-shadow-sm">
+                        {getEventEmoji(event.type)}
+                      </span>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 truncate">
                         {event.profileName}
                       </p>
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
-                        {getEventIcon(event.type)}
-                        <span>{event.name || event.type}</span>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {event.name || event.type}
                       </p>
-                    </div>
-                    <div className={`p-2 rounded-full ${getEventColor(event.type)} text-white`}>
-                      {getEventIcon(event.type)}
                     </div>
                   </button>
                 ))}
