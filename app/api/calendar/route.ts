@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         dateEventsMap.get(dateKey)!.push({
           id: event.id,
           type: event.type,
-          name: event.name,
+          name: event.customLabel,
           profileId: profile.id,
           profileName: profile.name,
           profilePicture: profile.profilePicture,
