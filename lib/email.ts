@@ -56,38 +56,87 @@ export function generateMagicLinkEmail(name: string, magicLink: string) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
-  <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-    <div style="text-align: center; margin-bottom: 32px;">
-      <h1 style="color: #0d5c5c; font-size: 28px; margin: 0;">CircleDays</h1>
-    </div>
-    
-    <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-      Hi${name ? ` ${name}` : ''},
-    </p>
-    
-    <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 32px;">
-      Click the button below to sign in to CircleDays. This link will expire in 15 minutes.
-    </p>
-    
-    <div style="text-align: center; margin-bottom: 32px;">
-      <a href="${magicLink}" style="display: inline-block; background: linear-gradient(135deg, #0d5c5c 0%, #0a4a4a 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        Sign In to CircleDays
-      </a>
-    </div>
-    
-    <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">
-      Or copy and paste this link into your browser:
-    </p>
-    
-    <p style="color: #0d5c5c; font-size: 14px; word-break: break-all; background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 32px;">
-      ${magicLink}
-    </p>
-    
-    <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-      If you didn't request this email, you can safely ignore it.
-    </p>
-  </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; background: #ffffff; border-radius: 16px;">
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Logo -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 32px;">
+                    <h1 style="color: #0d9488; font-size: 28px; margin: 0; font-weight: 700;">CircleDays</h1>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Greeting -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 24px;">
+                    Hi${name ? ` ${name}` : ''},
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Message -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 32px;">
+                    Click the button below to sign in to CircleDays. This link will expire in 15 minutes.
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 32px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#0d9488" style="background-color: #0d9488; border-radius: 8px;">
+                          <a href="${magicLink}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">Sign In to CircleDays</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Alt link text -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #666666; font-size: 14px; line-height: 1.6; padding-bottom: 16px;">
+                    Or copy and paste this link into your browser:
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Link -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-bottom: 32px;">
+                    <a href="${magicLink}" style="color: #0d9488; font-size: 14px; word-break: break-all; text-decoration: none;">${magicLink}</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="color: #999999; font-size: 12px;">
+                    If you didn't request this email, you can safely ignore it.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();
@@ -118,20 +167,36 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
   const eventItems = events.map(event => {
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` - turning ${event.age}` : '';
+    const initial = event.profileName.charAt(0).toUpperCase();
     
     return `
-      <div style="display: flex; align-items: center; padding: 16px; background: #f9fafb; border-radius: 12px; margin-bottom: 12px;">
-        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #0d5c5c 0%, #0a4a4a 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 16px; flex-shrink: 0;">
-          ${event.profilePhoto ? `<img src="${event.profilePhoto}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : event.profileName.charAt(0).toUpperCase()}
-        </div>
-        <div style="flex: 1;">
-          <p style="margin: 0; font-weight: 600; color: #333;">${event.profileName}</p>
-          <p style="margin: 4px 0 0; color: #666; font-size: 14px;">${event.eventType} - ${event.eventDate}${ageText}</p>
-        </div>
-        <div style="background: #e8f5f5; color: #0d5c5c; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 500;">
-          ${daysText}
-        </div>
-      </div>
+      <tr>
+        <td style="padding: 12px 0;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9fafb; border-radius: 12px;">
+            <tr>
+              <td style="padding: 16px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td width="48" valign="top">
+                      ${event.profilePhoto 
+                        ? `<img src="${event.profilePhoto}" width="48" height="48" style="width: 48px; height: 48px; border-radius: 50%; display: block;" alt="${event.profileName}">`
+                        : `<table width="48" height="48" cellpadding="0" cellspacing="0" border="0" style="border-radius: 50%; background-color: #0d9488;"><tr><td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 18px;">${initial}</td></tr></table>`
+                      }
+                    </td>
+                    <td style="padding-left: 16px;" valign="middle">
+                      <p style="margin: 0; font-weight: 600; color: #333333; font-size: 16px;">${event.profileName}</p>
+                      <p style="margin: 4px 0 0; color: #666666; font-size: 14px;">${event.eventType} - ${event.eventDate}${ageText}</p>
+                    </td>
+                    <td width="100" align="right" valign="middle">
+                      <span style="background-color: #e8f5f5; color: #0d9488; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; display: inline-block;">${daysText}</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
     `;
   }).join('');
 
@@ -142,30 +207,65 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
-  <div style="max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-    <div style="text-align: center; margin-bottom: 24px;">
-      <h1 style="color: #0d5c5c; font-size: 24px; margin: 0;">🎂 Upcoming Celebrations</h1>
-    </div>
-    
-    <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-      Hi ${userName}, here are your upcoming celebrations:
-    </p>
-    
-    <div style="margin-bottom: 32px;">
-      ${eventItems}
-    </div>
-    
-    <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #0d5c5c 0%, #0a4a4a 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        View in CircleDays
-      </a>
-    </div>
-    
-    <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-      <a href="${appUrl}/settings" style="color: #999;">Manage notification preferences</a>
-    </p>
-  </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; background: #ffffff; border-radius: 16px;">
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Header -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <h1 style="color: #0d9488; font-size: 24px; margin: 0;">🎂 Upcoming Celebrations</h1>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Greeting -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 24px;">
+                    Hi ${userName}, here are your upcoming celebrations:
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Events -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                ${eventItems}
+              </table>
+              
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#0d9488" style="background-color: #0d9488; border-radius: 8px;">
+                          <a href="${appUrl}/dashboard" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">View in CircleDays</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="color: #999999; font-size: 12px;">
+                    <a href="${appUrl}/settings" style="color: #999999; text-decoration: none;">Manage notification preferences</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();
