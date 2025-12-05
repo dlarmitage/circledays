@@ -1,0 +1,294 @@
+# CircleDays Knowledge Base
+
+> This document serves as the comprehensive knowledge source for the CircleDays AI assistant. It covers all features, concepts, and user flows in the application.
+
+---
+
+## What is CircleDays?
+
+CircleDays is a **birthday and special occasion reminder app** built around a social graph model. Unlike traditional reminder apps where you manually track everyone yourself, CircleDays lets you **connect with others** and share the responsibility of keeping track of important dates.
+
+**Core Philosophy**: "Never forget a birthday again" - but make it social and collaborative.
+
+---
+
+## Core Concepts
+
+### Profiles
+A **Profile** represents a person in the system. Every profile has:
+- **Name** (required)
+- **Profile Picture** (optional, can be cropped/centered)
+- **Events** (birthdays, anniversaries, custom events)
+- **Notes** (private annotations only you can see)
+
+Profiles can be:
+- **Linked** (claimed): Associated with a user account - the person has logged in and owns their profile
+- **Unlinked** (unclaimed): Created by someone else, not yet associated with an account
+
+### Users vs Profiles
+- A **User** is someone with a login account (email-based, magic link authentication)
+- A **Profile** is the data record representing a person
+- When you create an account, a Profile is created for you automatically
+- You can create Profiles for others (family, friends) who may or may not ever create accounts
+
+### Connections
+A **Connection** is a two-way relationship between profiles. If you're connected to someone:
+- You can see their events and get reminders
+- You can add events to their profile
+- You can view their connections (2nd-order discovery)
+- You can add private notes about them
+
+Connections are **symmetric** - if you're connected to Kerry, Kerry is connected to you.
+
+### Events
+Events are special dates associated with a profile:
+
+1. **Birthday**: The person's birthday (always recurring yearly)
+2. **Anniversary**: A relationship anniversary (always recurring yearly)  
+3. **Custom Event**: Any other special date
+   - Can be **recurring** (every year) or **one-time** (like a graduation)
+   - Has a custom label (e.g., "Work Anniversary", "First Date")
+
+**Event Visibility**:
+- **Shared**: All connections can see this event and get reminders
+- **Private**: Only you (the creator) can see it and get reminders
+
+**Unknown Birth Year**: If you don't know someone's birth year, you can check "I don't know the birth year" - they'll still get birthday reminders, but no age will be calculated or displayed.
+
+### Notes
+Notes are **private annotations** you can add to any profile you're connected to. Only you can see your notes - they're never shared with the profile owner or other connections.
+
+---
+
+## Features & How to Use Them
+
+### Home / Dashboard
+The dashboard shows your **upcoming events** for the next 30 or 90 days, grouped by:
+- Today
+- Tomorrow
+- This Week
+- This Month
+- Later
+
+If someone has suggested connections for you, a **Suggested Connections card** appears at the top where you can accept or decline them.
+
+### Connections (Network View)
+The Connections page shows your social graph as a **hierarchical tree**:
+
+**Your Connections View**:
+- Lists all people you're directly connected to
+- Sorted alphabetically by last name
+- Shows their profile picture (or initials)
+- Shows the count of their connections (tap to drill in)
+
+**Drilling In**:
+- Tap the number badge to see someone's connections
+- Their connections appear in a list
+- **Full color** = You're also connected to this person
+- **Grayed out** = They're connected to your friend, but not to you
+- Tap a grayed-out person to see a preview and connect
+
+**Search**:
+- The search bar searches **everyone** in the system, not just your connections
+- Results show whether each person is connected to you or not
+
+**Select Mode**:
+- Tap "Select" to enter multi-select mode
+- Check profiles you want to suggest to someone
+- Tap "Suggest" to send them to a connection who has an account
+
+### Adding a Person
+Tap "+ Add" to create a new profile:
+1. Enter their name
+2. Enter their birthday (can check "I don't know the birth year")
+3. Optionally add a photo (with crop/center tool)
+4. Save
+
+The system checks for **duplicates** - if someone with a similar name and birthday exists, you'll be asked if it's the same person.
+
+### Profile Page
+When viewing a profile:
+
+**Header**:
+- Photo and name
+- Birthday and age (if known)
+- "Days until birthday" countdown
+
+**If it's your own profile or an unlinked profile you created**:
+- "Edit Profile" button to change name/photo
+
+**For any connection**:
+- "Add Event" button to add birthdays, anniversaries, or custom events
+- "My Notes" section for your private notes
+- "Invite" button (if unlinked) to invite them to create an account
+
+**Events Section**:
+- Shows all events on this profile
+- Tap an event to edit it (change date, type, visibility, delete)
+- Private events show a 🔒 lock icon
+
+**Connections Section**:
+- Shows who this person is connected to
+- You can tap to view those profiles
+
+### Inviting Someone
+If you've created a profile for someone (like a family member), you can invite them to claim it:
+
+1. Go to their profile
+2. Tap "Invite"
+3. Enter their email
+4. Choose what connections to seed them with:
+   - **Just me**: They'll only be connected to you
+   - **All my connections**: They'll be connected to everyone you're connected to
+   - **Custom selection**: Pick specific people
+
+They'll receive an email with a link to create their account and claim the profile.
+
+### Suggesting Connections
+If someone already has an account, you can suggest people they might want to connect with:
+
+1. Go to Connections page
+2. Tap "Select"
+3. Check the profiles you want to suggest
+4. Tap "Suggest"
+5. Select one or more recipients (only people with accounts shown)
+6. Send
+
+Recipients will see the suggestions on their dashboard and can Accept All or accept/decline individually.
+
+### Calendar
+The Calendar page shows events in two views:
+
+**Calendar View** (default):
+- Monthly calendar with navigation arrows
+- Days with events show mini avatars with emoji badges:
+  - 🎂 Birthday
+  - ❤️ Anniversary
+  - 🎆 Custom event
+- Tap a day to see event details below
+
+**List View**:
+- Shows all events for the next 12 months
+- Grouped by timeframe (This Month, Next Month, etc.)
+- Quick way to see everything coming up
+
+### Settings
+The Settings page lets you manage:
+
+**Profile**:
+- Your photo (with crop tool)
+- Your name
+- Your timezone
+
+**Notifications**:
+- **Remind me**: Choose when to get reminders (day of, 1 day, 3 days, 1 week, 2 weeks before)
+- **Notification method**: Email, SMS, or both
+- **Mobile number**: Required if using SMS
+
+**My Events**:
+- See and edit events on your own profile
+- Add your birthday if it's missing
+- Fix birth year if someone created your profile without it
+
+**Sign Out**: Log out of your account
+
+---
+
+## Notifications & Reminders
+
+### How Reminders Work
+- Reminders are sent daily at 2 PM UTC
+- You receive reminders based on your **Remind me** settings (e.g., 7 days before, 1 day before, day of)
+- Only events for people you're connected to trigger reminders
+- Private events only send reminders to the person who created them
+- Unlinked profiles (no account) don't receive reminders - only users with accounts do
+
+### Notification Channels
+- **Email**: HTML email with event details and links
+- **SMS**: Text message with event summary
+- **Both**: Receive both email and SMS
+
+---
+
+## Privacy & Visibility
+
+### What Others Can See
+- Your name and profile picture
+- Events marked as "Shared" on your profile
+- Your connections (when they drill into your profile)
+
+### What's Private
+- Your email address (only you can see it)
+- Your mobile number (only you can see it)
+- Events marked as "Private"
+- Your notes on other profiles
+- Other people's notes about you (you can't see them)
+
+### Profile Ownership
+- Only you can edit your own profile (name, photo) once you've claimed it
+- If someone created your profile before you had an account, they can edit it until you claim it
+- Once claimed, only the profile owner can make changes
+
+---
+
+## Common Questions
+
+### "Why can't I see someone's birthday?"
+- They might not have a birthday event added yet
+- The event might be marked as Private by whoever created it
+- You might not be connected to them
+
+### "Why is someone grayed out in my connections?"
+They're connected to the person you're viewing, but not to you. Tap them to see their profile preview and connect.
+
+### "How do I fix an incorrect birthday?"
+If it's your own profile: Settings → My Events → tap the event → edit
+If it's someone else's profile: Go to their profile → tap the event → edit (if you created it)
+
+### "What happens when I delete a profile?"
+All their events, notes, and connections are deleted. If they had an account, they'll need to create a new profile.
+
+### "Can someone see that I added an event to their profile?"
+Shared events are visible to all their connections. The event doesn't show who created it, but it's visible.
+
+### "How do I know if someone has an account?"
+In the Suggest modal, only people with accounts appear as possible recipients. When viewing connections, there's no explicit indicator, but you can try inviting them - if they already have an account, they don't need an invite.
+
+### "Why didn't my friend get my suggestion?"
+Make sure they have an account (have logged in at least once). Suggestions only work for users with accounts.
+
+### "How do I add my own birthday?"
+Settings → My Events → "+ Add" or "Add Your Birthday"
+
+### "What's the lock icon on an event?"
+It means the event is Private - only you can see it and get reminders for it.
+
+### "Can I connect to someone without them knowing?"
+Yes, connecting to an unclaimed profile is instant. If the profile is claimed (they have an account), they might notice you in their connections, but there's no explicit notification.
+
+---
+
+## Tips & Best Practices
+
+1. **Start with family**: Add your immediate family members first, then branch out
+2. **Use the Suggest feature**: When a family member joins, suggest your other family members to them
+3. **Set multiple reminder times**: "1 week before" gives you time to buy a gift, "day of" ensures you don't forget to call
+4. **Use private events for personal milestones**: First date, day you met someone, etc.
+5. **Check "unknown year" if unsure**: Better to track the date without age than not track at all
+6. **Add photos**: They help you quickly identify people in lists and the calendar
+7. **Use the calendar List view**: Great for planning ahead for the whole year
+
+---
+
+## Technical Notes
+
+- CircleDays is a Progressive Web App (PWA) - you can install it on your phone's home screen
+- Authentication uses magic links - no passwords to remember
+- Data is stored securely in the cloud
+- Photos are stored in Vercel Blob storage
+- The app works on desktop and mobile
+
+---
+
+*This knowledge base is maintained by the CircleDays team and reflects the current state of the application.*
+

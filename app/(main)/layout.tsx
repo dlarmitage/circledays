@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { Navigation } from '@/components/Navigation';
+import { HelpChat } from '@/components/HelpChat';
 
 export default async function MainLayout({
   children,
@@ -21,6 +22,9 @@ export default async function MainLayout({
       <main className="md:ml-64 pb-20 md:pb-0">
         {children}
       </main>
+      
+      {/* Help Chat Assistant */}
+      <HelpChat />
     </div>
   );
 }
