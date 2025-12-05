@@ -82,12 +82,17 @@ export async function PATCH(
     const effectiveType = data.type || event.event.type;
     const isRecurring = effectiveType !== 'custom' ? true : (data.recurring ?? event.event.recurring);
     
+    // If making private and no creator set, assign current user as creator
+    // This handles legacy events that don't have createdByUserId
+    const shouldSetCreator = data.isPrivate && !event.event.createdByUserId;
+    
     const [updatedEvent] = await db
       .update(events)
       .set({
         ...data,
         customLabel: effectiveType === 'custom' ? data.customLabel : null,
         recurring: isRecurring,
+        ...(shouldSetCreator && { createdByUserId: user.id }),
       })
       .where(eq(events.id, id))
       .returning();
