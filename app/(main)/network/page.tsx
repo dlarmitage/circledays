@@ -122,7 +122,7 @@ export default function NetworkPage() {
       <div className="p-4">
         <EmptyState
           icon={<Users className="w-8 h-8" />}
-          title="Network unavailable"
+          title="Connections unavailable"
           description="Unable to load your network"
         />
       </div>
@@ -134,7 +134,7 @@ export default function NetworkPage() {
       {/* Header with Add Person button */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h1 className="font-display text-lg font-bold text-gray-900">
-          Network
+          Connections
         </h1>
         <Button size="sm" onClick={() => router.push('/add-person')}>
           <Plus className="w-4 h-4 mr-1" />

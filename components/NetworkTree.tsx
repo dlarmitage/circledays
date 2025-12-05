@@ -248,7 +248,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 truncate">
-                  Your Network
+                  Your Connections
                 </p>
                 <p className="text-xs text-gray-500">
                   {connections.length} connections

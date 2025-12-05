@@ -120,13 +120,13 @@ export default async function HomePage() {
               </p>
             </div>
             
-            {/* Network */}
+            {/* Connections */}
             <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-teal-600" />
               </div>
               <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Your Network
+                Your Connections
               </h3>
               <p className="text-sm text-gray-600">
                 Browse your connections and discover friends-of-friends. 

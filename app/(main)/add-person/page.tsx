@@ -115,7 +115,7 @@ export default function AddPersonPage() {
             loading={loading}
           >
             <Cake className="w-4 h-4 mr-2" />
-            Add to My Network
+            Add to My Connections
           </Button>
         </form>
       </Card>
