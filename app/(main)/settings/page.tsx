@@ -9,9 +9,10 @@ import { Select } from '@/components/ui/Select';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
 import { EditEventModal } from '@/components/EditEventModal';
+import { AddEventModal } from '@/components/AddEventModal';
 import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS } from '@/lib/constants';
 import { formatDate, parseLocalDate } from '@/lib/utils';
-import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock } from 'lucide-react';
+import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -60,9 +61,10 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
-  // Edit event modal state
+  // Event modal state
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -181,6 +183,13 @@ export default function SettingsPage() {
   const handleEventUpdated = () => {
     setEditModalOpen(false);
     setEditingEvent(null);
+    if (profileData?.id) {
+      fetchEvents(profileData.id);
+    }
+  };
+  
+  const handleEventAdded = () => {
+    setAddModalOpen(false);
     if (profileData?.id) {
       fetchEvents(profileData.id);
     }
@@ -335,11 +344,19 @@ export default function SettingsPage() {
       
       {/* My Events Section */}
       <Card className="mb-6">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-teal-600" />
             My Events
           </CardTitle>
+          <Button 
+            size="sm" 
+            variant="secondary"
+            onClick={() => setAddModalOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-500 mb-4">
@@ -347,9 +364,19 @@ export default function SettingsPage() {
           </p>
           
           {events.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">
-              No events yet
-            </p>
+            <div className="text-center py-6">
+              <Cake className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm text-gray-400 mb-3">
+                No events yet
+              </p>
+              <Button 
+                size="sm" 
+                onClick={() => setAddModalOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Your Birthday
+              </Button>
+            </div>
           ) : (
             <div className="space-y-2">
               {events.map(event => {
@@ -449,6 +476,17 @@ export default function SettingsPage() {
           event={editingEvent}
           profileName={formData.name}
           onEventUpdated={handleEventUpdated}
+        />
+      )}
+      
+      {/* Add Event Modal */}
+      {profileData && (
+        <AddEventModal
+          isOpen={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          profileId={profileData.id}
+          profileName={formData.name}
+          onEventAdded={handleEventAdded}
         />
       )}
     </div>
