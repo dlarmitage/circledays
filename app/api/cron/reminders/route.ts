@@ -23,6 +23,7 @@ function getCurrentHourInTimezone(timezone: string): number {
 
 // This endpoint is called hourly by GitHub Actions
 // It sends reminders to users who are currently at 7 AM in their timezone
+// Add ?test=true&email=user@example.com to test for a specific user (bypasses timezone)
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
@@ -32,18 +33,33 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
+    const { searchParams } = new URL(request.url);
+    const testMode = searchParams.get('test') === 'true';
+    const testEmail = searchParams.get('email');
     const targetHour = 7; // 7 AM local time
     
     // Get all users
     const allUsers = await db.select().from(users);
     
-    // Filter to users whose local time is currently 7 AM
-    const usersToNotify = allUsers.filter(user => {
-      const userHour = getCurrentHourInTimezone(user.timezone);
-      return userHour === targetHour;
-    });
+    let usersToNotify;
     
-    console.log(`[Reminders] ${now.toISOString()} - Found ${usersToNotify.length} users at ${targetHour}:00 local time`);
+    if (testMode && testEmail) {
+      // Test mode: send to specific user regardless of timezone
+      usersToNotify = allUsers.filter(user => user.email === testEmail);
+      console.log(`[Reminders] TEST MODE - Targeting user: ${testEmail}`);
+    } else if (testMode) {
+      // Test mode without email: send to all users (for debugging)
+      usersToNotify = allUsers;
+      console.log(`[Reminders] TEST MODE - Targeting all ${allUsers.length} users`);
+    } else {
+      // Production mode: filter by timezone
+      usersToNotify = allUsers.filter(user => {
+        const userHour = getCurrentHourInTimezone(user.timezone);
+        return userHour === targetHour;
+      });
+    }
+    
+    console.log(`[Reminders] ${now.toISOString()} - Found ${usersToNotify.length} users to notify`);
     
     const results = {
       totalUsers: allUsers.length,
