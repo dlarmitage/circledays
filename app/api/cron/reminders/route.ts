@@ -44,9 +44,20 @@ export async function GET(request: NextRequest) {
     let usersToNotify;
     
     if (testMode && testEmail) {
-      // Test mode: send to specific user regardless of timezone
-      usersToNotify = allUsers.filter(user => user.email === testEmail);
-      console.log(`[Reminders] TEST MODE - Targeting user: ${testEmail}`);
+      // Test mode: send to specific user regardless of timezone (case-insensitive)
+      usersToNotify = allUsers.filter(user => user.email.toLowerCase() === testEmail.toLowerCase());
+      console.log(`[Reminders] TEST MODE - Targeting user: ${testEmail}, found: ${usersToNotify.length}`);
+      
+      if (usersToNotify.length === 0) {
+        // Return helpful debug info
+        return NextResponse.json({
+          success: false,
+          error: 'User not found',
+          searchedFor: testEmail,
+          availableEmails: allUsers.map(u => u.email),
+          hint: 'Check that the email matches exactly',
+        });
+      }
     } else if (testMode) {
       // Test mode without email: send to all users (for debugging)
       usersToNotify = allUsers;
