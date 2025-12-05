@@ -18,7 +18,7 @@ interface SuggestModalProps {
   onClose: () => void;
   selectedProfiles: Profile[];
   connections: Profile[];
-  onSuggest: (toUserId: string) => Promise<void>;
+  onSuggest: (toUserIds: string[]) => Promise<void>;
 }
 
 export function SuggestModal({ 
@@ -28,28 +28,55 @@ export function SuggestModal({
   connections,
   onSuggest 
 }: SuggestModalProps) {
-  const [selectedRecipient, setSelectedRecipient] = useState<string | null>(null);
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   
   // Filter to only show connections who have accounts (can receive suggestions)
-  const eligibleRecipients = connections.filter(c => c.linkedUserId);
+  // Also exclude people who are being suggested (they shouldn't suggest to themselves)
+  const selectedProfileIds = new Set(selectedProfiles.map(p => p.id));
+  const eligibleRecipients = connections.filter(c => 
+    c.linkedUserId && !selectedProfileIds.has(c.id)
+  );
   
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setSelectedRecipient(null);
+      setSelectedRecipients(new Set());
       setSending(false);
       setSuccess(false);
     }
   }, [isOpen]);
   
+  const toggleRecipient = (userId: string) => {
+    setSelectedRecipients(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+  
+  const selectAll = () => {
+    const allUserIds = eligibleRecipients
+      .map(r => r.linkedUserId)
+      .filter((id): id is string => id !== null);
+    setSelectedRecipients(new Set(allUserIds));
+  };
+  
+  const deselectAll = () => {
+    setSelectedRecipients(new Set());
+  };
+  
   const handleSend = async () => {
-    if (!selectedRecipient) return;
+    if (selectedRecipients.size === 0) return;
     
     setSending(true);
     try {
-      await onSuggest(selectedRecipient);
+      await onSuggest(Array.from(selectedRecipients));
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -63,7 +90,12 @@ export function SuggestModal({
   
   if (!isOpen) return null;
   
-  const selectedRecipientProfile = eligibleRecipients.find(r => r.linkedUserId === selectedRecipient);
+  const allSelected = eligibleRecipients.length > 0 && 
+    eligibleRecipients.every(r => r.linkedUserId && selectedRecipients.has(r.linkedUserId));
+  
+  const selectedRecipientNames = eligibleRecipients
+    .filter(r => r.linkedUserId && selectedRecipients.has(r.linkedUserId))
+    .map(r => r.name);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -89,7 +121,10 @@ export function SuggestModal({
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Suggestions Sent!</h3>
               <p className="text-sm text-gray-600">
-                {selectedRecipientProfile?.name} will be notified.
+                {selectedRecipients.size === 1 
+                  ? `${selectedRecipientNames[0]} will be notified.`
+                  : `${selectedRecipients.size} people will be notified.`
+                }
               </p>
             </div>
           ) : (
@@ -121,9 +156,25 @@ export function SuggestModal({
               
               {/* Recipient selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Suggest to:
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Suggest to:
+                    {selectedRecipients.size > 0 && (
+                      <span className="ml-2 text-teal-600">
+                        ({selectedRecipients.size} selected)
+                      </span>
+                    )}
+                  </label>
+                  {eligibleRecipients.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={allSelected ? deselectAll : selectAll}
+                      className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                    >
+                      {allSelected ? 'Deselect All' : 'Select All'}
+                    </button>
+                  )}
+                </div>
                 
                 {eligibleRecipients.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
@@ -133,35 +184,44 @@ export function SuggestModal({
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {eligibleRecipients.map(recipient => (
-                      <button
-                        key={recipient.id}
-                        type="button"
-                        onClick={() => setSelectedRecipient(recipient.linkedUserId)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
-                          selectedRecipient === recipient.linkedUserId
-                            ? 'bg-teal-50 border-2 border-teal-500'
-                            : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                        }`}
-                      >
-                        <Avatar 
-                          src={recipient.profilePicture} 
-                          name={recipient.name} 
-                          size="md" 
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {recipient.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Has an account
-                          </p>
-                        </div>
-                        {selectedRecipient === recipient.linkedUserId && (
-                          <Check className="w-5 h-5 text-teal-600 flex-shrink-0" />
-                        )}
-                      </button>
-                    ))}
+                    {eligibleRecipients.map(recipient => {
+                      const isSelected = recipient.linkedUserId && selectedRecipients.has(recipient.linkedUserId);
+                      return (
+                        <button
+                          key={recipient.id}
+                          type="button"
+                          onClick={() => recipient.linkedUserId && toggleRecipient(recipient.linkedUserId)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
+                            isSelected
+                              ? 'bg-teal-50 border-2 border-teal-500'
+                              : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                          }`}
+                        >
+                          {/* Checkbox */}
+                          <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected 
+                              ? 'bg-teal-500 border-teal-500' 
+                              : 'border-gray-300'
+                          }`}>
+                            {isSelected && <Check className="w-4 h-4 text-white" />}
+                          </div>
+                          
+                          <Avatar 
+                            src={recipient.profilePicture} 
+                            name={recipient.name} 
+                            size="md" 
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {recipient.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Has an account
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -178,11 +238,11 @@ export function SuggestModal({
                 <Button
                   className="flex-1"
                   onClick={handleSend}
-                  disabled={!selectedRecipient || sending}
+                  disabled={selectedRecipients.size === 0 || sending}
                   loading={sending}
                 >
                   <Send className="w-4 h-4 mr-2" />
-                  Send
+                  Send{selectedRecipients.size > 1 ? ` to ${selectedRecipients.size}` : ''}
                 </Button>
               </div>
             </>
@@ -192,4 +252,3 @@ export function SuggestModal({
     </div>
   );
 }
-

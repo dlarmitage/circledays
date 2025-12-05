@@ -139,18 +139,27 @@ export default function NetworkPage() {
     });
   }, []);
   
-  const handleSuggest = useCallback(async (toUserId: string) => {
+  const handleSuggest = useCallback(async (toUserIds: string[]) => {
     const profileIds = Array.from(selectedIds);
     
-    const res = await fetch('/api/suggestions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toUserId, profileIds }),
-    });
+    // Send suggestions to each recipient
+    const results = await Promise.allSettled(
+      toUserIds.map(toUserId =>
+        fetch('/api/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toUserId, profileIds }),
+        }).then(res => {
+          if (!res.ok) throw new Error('Failed');
+          return res.json();
+        })
+      )
+    );
     
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to send suggestions');
+    // Check if any failed
+    const failures = results.filter(r => r.status === 'rejected');
+    if (failures.length === toUserIds.length) {
+      throw new Error('Failed to send suggestions');
     }
     
     // Clear selection and exit select mode
