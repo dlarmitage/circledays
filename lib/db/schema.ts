@@ -16,6 +16,7 @@ export const eventTypeEnum = pgEnum('event_type', ['birthday', 'anniversary', 'c
 export const connectionRequestStatusEnum = pgEnum('connection_request_status', ['pending', 'accepted', 'declined']);
 export const inviteStatusEnum = pgEnum('invite_status', ['pending', 'accepted', 'expired']);
 export const notificationStatusEnum = pgEnum('notification_status', ['sent', 'failed']);
+export const suggestionStatusEnum = pgEnum('suggestion_status', ['pending', 'accepted', 'declined']);
 
 // Users - represents a login/account
 export const users = pgTable('users', {
@@ -136,6 +137,18 @@ export const magicLinks = pgTable('magic_links', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Connection Suggestions - recommend profiles to other users
+export const connectionSuggestions = pgTable('connection_suggestions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fromUserId: uuid('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  toUserId: uuid('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  suggestedProfileId: uuid('suggested_profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  status: suggestionStatusEnum('status').notNull().default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  unique('unique_suggestion').on(table.toUserId, table.suggestedProfileId),
+]);
+
 // Types for application use
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -151,5 +164,6 @@ export type ReminderPreference = typeof reminderPreferences.$inferSelect;
 export type ReminderOverride = typeof reminderOverrides.$inferSelect;
 export type NotificationLog = typeof notificationLogs.$inferSelect;
 export type MagicLink = typeof magicLinks.$inferSelect;
+export type ConnectionSuggestion = typeof connectionSuggestions.$inferSelect;
 
 

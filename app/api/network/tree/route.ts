@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
       profilePicture: profile.profilePicture,
       connectionCount: countMap.get(profile.id) || 0,
       isConnectedToUser: userConnectionIds.has(profile.id),
+      linkedUserId: profile.linkedUserId,
     }));
     
     // Also return user profile info

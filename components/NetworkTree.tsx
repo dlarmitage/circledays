@@ -4,7 +4,7 @@ import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } fro
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
-import { ArrowLeft, Search, ChevronRight, Users, X } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, Users, X, Check } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -20,6 +20,10 @@ interface NetworkTreeProps {
   onProfileClick: (profileId: string, isConnected: boolean) => void;
   onDrillIn: (profileId: string) => Promise<Profile[]>;
   onConnect: (profileId: string) => Promise<void>;
+  // Multi-select mode
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (profileId: string) => void;
 }
 
 export interface NetworkTreeHandle {
@@ -52,6 +56,9 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   onProfileClick,
   onDrillIn,
   onConnect,
+  selectMode = false,
+  selectedIds = new Set(),
+  onToggleSelect,
 }, ref) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[] | null>(null);
@@ -297,6 +304,9 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
                     profile={profile}
                     onTap={() => handleProfileTap(profile)}
                     onDrillIn={() => handleDrillIn(profile)}
+                    selectMode={selectMode && !currentFocus}
+                    isSelected={selectedIds.has(profile.id)}
+                    onToggleSelect={onToggleSelect}
                   />
                 </motion.div>
               ))}
@@ -312,18 +322,50 @@ interface ConnectionRowProps {
   profile: Profile;
   onTap: () => void;
   onDrillIn: () => void;
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (profileId: string) => void;
 }
 
-function ConnectionRow({ profile, onTap, onDrillIn }: ConnectionRowProps) {
+function ConnectionRow({ 
+  profile, 
+  onTap, 
+  onDrillIn,
+  selectMode = false,
+  isSelected = false,
+  onToggleSelect,
+}: ConnectionRowProps) {
+  const handleClick = () => {
+    if (selectMode && profile.isConnectedToUser && onToggleSelect) {
+      onToggleSelect(profile.id);
+    } else {
+      onTap();
+    }
+  };
+  
   return (
     <div
       className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
         !profile.isConnectedToUser ? 'opacity-60' : ''
-      }`}
+      } ${isSelected ? 'bg-teal-50' : ''}`}
     >
-      {/* Avatar - tap to view profile */}
+      {/* Checkbox in select mode */}
+      {selectMode && profile.isConnectedToUser && (
+        <button
+          onClick={() => onToggleSelect?.(profile.id)}
+          className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${
+            isSelected 
+              ? 'bg-teal-500 border-teal-500' 
+              : 'border-gray-300 hover:border-teal-500'
+          }`}
+        >
+          {isSelected && <Check className="w-4 h-4 text-white" />}
+        </button>
+      )}
+      
+      {/* Avatar - tap to view profile (or toggle select in select mode) */}
       <button
-        onClick={onTap}
+        onClick={handleClick}
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
         <div className={!profile.isConnectedToUser ? 'grayscale' : ''}>
@@ -347,8 +389,8 @@ function ConnectionRow({ profile, onTap, onDrillIn }: ConnectionRowProps) {
         </div>
       </button>
       
-      {/* Connection count + drill-in button */}
-      {profile.isConnectedToUser && profile.connectionCount > 0 && (
+      {/* Connection count + drill-in button (hidden in select mode) */}
+      {!selectMode && profile.isConnectedToUser && profile.connectionCount > 0 && (
         <button
           onClick={onDrillIn}
           className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"

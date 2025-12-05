@@ -278,3 +278,108 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
 
   return { html, text: `Hi ${userName},\n\nUpcoming celebrations:\n\n${text}\n\nView more at ${appUrl}/dashboard` };
 }
+
+export async function sendSuggestionEmail(
+  to: string,
+  recipientName: string,
+  senderName: string,
+  profileNames: string[],
+  appUrl: string
+) {
+  const count = profileNames.length;
+  const profileList = profileNames.slice(0, 5).join(', ') + (count > 5 ? ` and ${count - 5} more` : '');
+  
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; background: #ffffff; border-radius: 16px;">
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Logo -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 32px;">
+                    <h1 style="color: #0d9488; font-size: 28px; margin: 0; font-weight: 700;">CircleDays</h1>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Greeting -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 24px;">
+                    Hi ${recipientName},
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Message -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 16px;">
+                    <strong>${senderName}</strong> suggested ${count} ${count === 1 ? 'person' : 'people'} you might want to add to your connections:
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Profile list -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #f5f5f4; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                    <p style="color: #0d9488; font-size: 16px; font-weight: 600; margin: 0;">
+                      ${profileList}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 24px 0;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#0d9488" style="background-color: #0d9488; border-radius: 8px;">
+                          <a href="${appUrl}/dashboard" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">Review Suggestions</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #888888; font-size: 14px; padding-top: 16px; border-top: 1px solid #eeeeee;">
+                    You can accept all at once or review each one individually.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const text = `Hi ${recipientName},\n\n${senderName} suggested ${count} ${count === 1 ? 'person' : 'people'} you might want to add to your connections:\n\n${profileList}\n\nReview at ${appUrl}/dashboard`;
+
+  return sendEmail({
+    to,
+    subject: `${senderName} suggested ${count} connection${count === 1 ? '' : 's'} for you`,
+    html,
+    text,
+  });
+}

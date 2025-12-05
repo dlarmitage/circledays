@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { NetworkTree, NetworkTreeHandle } from '@/components/NetworkTree';
 import { ConnectionModal } from '@/components/ConnectionModal';
+import { SuggestModal } from '@/components/SuggestModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, CheckSquare, X, Send } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -16,6 +17,7 @@ interface Profile {
   profilePicture: string | null;
   connectionCount: number;
   isConnectedToUser: boolean;
+  linkedUserId: string | null;
 }
 
 interface MutualConnection {
@@ -43,6 +45,11 @@ export default function NetworkPage() {
   const [modalProfile, setModalProfile] = useState<ModalProfile | null>(null);
   const [modalMutualConnections, setModalMutualConnections] = useState<MutualConnection[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  
+  // Multi-select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [suggestModalOpen, setSuggestModalOpen] = useState(false);
   
   useEffect(() => {
     fetchNetwork();
@@ -109,6 +116,50 @@ export default function NetworkPage() {
     setModalMutualConnections([]);
   }, []);
   
+  // Multi-select handlers
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode(prev => {
+      if (prev) {
+        // Exiting select mode - clear selections
+        setSelectedIds(new Set());
+      }
+      return !prev;
+    });
+  }, []);
+  
+  const handleToggleSelect = useCallback((profileId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(profileId)) {
+        next.delete(profileId);
+      } else {
+        next.add(profileId);
+      }
+      return next;
+    });
+  }, []);
+  
+  const handleSuggest = useCallback(async (toUserId: string) => {
+    const profileIds = Array.from(selectedIds);
+    
+    const res = await fetch('/api/suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toUserId, profileIds }),
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to send suggestions');
+    }
+    
+    // Clear selection and exit select mode
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  }, [selectedIds]);
+  
+  const selectedProfiles = connections.filter(c => selectedIds.has(c.id));
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -131,15 +182,48 @@ export default function NetworkPage() {
   
   return (
     <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] flex flex-col bg-white md:rounded-2xl md:shadow-soft md:m-4 overflow-hidden">
-      {/* Header with Add Person button */}
+      {/* Header with Add Person button and Select mode */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h1 className="font-display text-lg font-bold text-gray-900">
-          Connections
+          {selectMode 
+            ? `${selectedIds.size} selected` 
+            : 'Connections'}
         </h1>
-        <Button size="sm" onClick={() => router.push('/add-person')}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectMode ? (
+            <>
+              <Button 
+                size="sm" 
+                variant="secondary"
+                onClick={toggleSelectMode}
+              >
+                <X className="w-4 h-4 mr-1" />
+                Cancel
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => setSuggestModalOpen(true)}
+                disabled={selectedIds.size === 0}
+              >
+                <Send className="w-4 h-4 mr-1" />
+                Suggest
+              </Button>
+            </>
+          ) : (
+            <>
+              {connections.length > 0 && (
+                <Button size="sm" variant="secondary" onClick={toggleSelectMode}>
+                  <CheckSquare className="w-4 h-4 mr-1" />
+                  Select
+                </Button>
+              )}
+              <Button size="sm" onClick={() => router.push('/add-person')}>
+                <Plus className="w-4 h-4 mr-1" />
+                Add
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       
       {/* Tree Navigation */}
@@ -165,6 +249,9 @@ export default function NetworkPage() {
           onProfileClick={handleProfileClick}
           onDrillIn={handleDrillIn}
           onConnect={handleConnect}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
         />
       )}
       
@@ -180,6 +267,15 @@ export default function NetworkPage() {
           />
         )}
       </AnimatePresence>
+      
+      {/* Suggest Modal */}
+      <SuggestModal
+        isOpen={suggestModalOpen}
+        onClose={() => setSuggestModalOpen(false)}
+        selectedProfiles={selectedProfiles}
+        connections={connections}
+        onSuggest={handleSuggest}
+      />
     </div>
   );
 }
