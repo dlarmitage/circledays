@@ -303,9 +303,13 @@ export default async function HomePage() {
               />
               <span className="font-display font-bold text-teal-600">CircleDays</span>
             </div>
-            <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} CircleDays. Made with ❤️ for the people who matter.
-            </p>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <Link href="/terms" className="hover:text-teal-600 transition-colors">
+                Terms & Privacy
+              </Link>
+              <span>·</span>
+              <span>© {new Date().getFullYear()} CircleDays</span>
+            </div>
           </div>
         </div>
       </footer>

@@ -297,6 +297,18 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+      
+      {/* Legal Links */}
+      <div className="text-center mt-8 mb-4">
+        <a
+          href="/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-gray-500 hover:text-teal-600 transition-colors"
+        >
+          Terms of Service & Privacy Policy
+        </a>
+      </div>
     </div>
   );
 }
