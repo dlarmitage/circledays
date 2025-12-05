@@ -5,9 +5,24 @@ import { sendSms, generateReminderSms } from '@/lib/sms';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, calculateAge, formatDate } from '@/lib/utils';
 
-// This endpoint is called by Vercel Cron once daily at 14:00 UTC
-// On Hobby plan, we send reminders to all users at once
-// Upgrade to Pro for hourly timezone-aware delivery
+// Helper to get current hour in a timezone
+function getCurrentHourInTimezone(timezone: string): number {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      hour12: false,
+    });
+    const hourStr = formatter.format(new Date());
+    return parseInt(hourStr, 10);
+  } catch {
+    // If timezone is invalid, return -1 (will be skipped)
+    return -1;
+  }
+}
+
+// This endpoint is called hourly by GitHub Actions
+// It sends reminders to users who are currently at 7 AM in their timezone
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
@@ -17,17 +32,28 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
+    const targetHour = 7; // 7 AM local time
     
-    // Get all users (on Pro plan, filter by timezone for 7am delivery)
+    // Get all users
     const allUsers = await db.select().from(users);
     
+    // Filter to users whose local time is currently 7 AM
+    const usersToNotify = allUsers.filter(user => {
+      const userHour = getCurrentHourInTimezone(user.timezone);
+      return userHour === targetHour;
+    });
+    
+    console.log(`[Reminders] ${now.toISOString()} - Found ${usersToNotify.length} users at ${targetHour}:00 local time`);
+    
     const results = {
+      totalUsers: allUsers.length,
+      usersAtTargetHour: usersToNotify.length,
       processed: 0,
       notified: 0,
       errors: 0,
     };
     
-    for (const user of allUsers) {
+    for (const user of usersToNotify) {
       try {
         results.processed++;
         
