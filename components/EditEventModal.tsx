@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { X, Calendar, Cake, Heart, Trash2, AlertTriangle, Repeat, CalendarCheck, Lock, Globe } from 'lucide-react';
+import { X, Calendar, Cake, Heart, Trash2, AlertTriangle, Repeat, CalendarCheck, Lock, Globe, HelpCircle } from 'lucide-react';
+import { UNKNOWN_YEAR, hasUnknownYear } from '@/lib/utils';
 
 interface Event {
   id: string;
@@ -36,6 +37,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
   const [date, setDate] = useState('');
   const [recurring, setRecurring] = useState(true);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [unknownYear, setUnknownYear] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -51,6 +53,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
       setDate(formattedDate);
       setRecurring(event.recurring ?? true);
       setIsPrivate(event.isPrivate ?? false);
+      setUnknownYear(hasUnknownYear(event.date));
       setError(null);
       setShowDeleteConfirm(false);
     }
@@ -73,13 +76,20 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
     setError(null);
     
     try {
+      // If unknown year is checked for birthday, replace year with sentinel
+      let eventDate = date;
+      if (unknownYear && eventType === 'birthday' && date) {
+        const [, month, day] = date.split('-');
+        eventDate = `${UNKNOWN_YEAR}-${month}-${day}`;
+      }
+      
       const res = await fetch(`/api/events/${event.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: eventType,
           customLabel: eventType === 'custom' ? customLabel : null,
-          date,
+          date: eventDate,
           recurring: eventType === 'custom' ? recurring : true,
           isPrivate,
         }),
@@ -271,13 +281,29 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
               )}
               
               {/* Date */}
-              <Input
-                label="Date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <Input
+                  label="Date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+                {eventType === 'birthday' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={unknownYear}
+                      onChange={(e) => setUnknownYear(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <span className="text-sm text-gray-600 flex items-center gap-1">
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      I don't know the birth year
+                    </span>
+                  </label>
+                )}
+              </div>
               
               {/* Privacy Toggle */}
               <div>

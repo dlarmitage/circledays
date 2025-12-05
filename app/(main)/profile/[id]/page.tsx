@@ -521,7 +521,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 {events.map(event => {
                   const Icon = getEventIcon(event.type);
                   const eventDaysUntil = daysUntil(event.date, event.recurring ?? true);
-                  const age = event.type === 'birthday' ? calculateAge(event.date) + 1 : null;
+                  const rawAge = event.type === 'birthday' ? calculateAge(event.date) : null;
+                  const age = rawAge !== null ? rawAge + 1 : null;
                   const isPastOneTime = !event.recurring && eventDaysUntil < 0;
                   
                   return (

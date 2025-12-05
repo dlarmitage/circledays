@@ -5,6 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Sentinel year for "unknown birth year" - old enough to be obviously not real
+export const UNKNOWN_YEAR = 1904;
+
+/**
+ * Check if a date has an unknown year (uses sentinel year 1904)
+ */
+export function hasUnknownYear(date: Date | string): boolean {
+  const d = typeof date === 'string' ? parseLocalDate(date) : date;
+  return d.getFullYear() === UNKNOWN_YEAR;
+}
+
 export function getInitials(name: string): string {
   const parts = name.split(' ').filter(part => part.length > 1); // Skip single-letter parts (middle initials)
   if (parts.length === 0) {
@@ -31,16 +42,36 @@ export function parseLocalDate(dateStr: string): Date {
 
 export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
   const d = typeof date === 'string' ? parseLocalDate(date) : date;
-  return d.toLocaleDateString('en-US', {
+  
+  // If year is unknown (1904), don't show the year
+  const isUnknownYear = d.getFullYear() === UNKNOWN_YEAR;
+  const defaultOptions: Intl.DateTimeFormatOptions = {
     month: 'short',
     day: 'numeric',
     ...options,
-  });
+  };
+  
+  // Remove year from options if unknown
+  if (isUnknownYear) {
+    delete defaultOptions.year;
+  }
+  
+  return d.toLocaleDateString('en-US', defaultOptions);
 }
 
-export function calculateAge(birthDate: Date | string): number {
-  const today = new Date();
+/**
+ * Calculate age from birth date
+ * Returns null if birth year is unknown (1904 sentinel)
+ */
+export function calculateAge(birthDate: Date | string): number | null {
   const birth = typeof birthDate === 'string' ? parseLocalDate(birthDate) : birthDate;
+  
+  // If year is unknown, we can't calculate age
+  if (birth.getFullYear() === UNKNOWN_YEAR) {
+    return null;
+  }
+  
+  const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const monthDiff = today.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {

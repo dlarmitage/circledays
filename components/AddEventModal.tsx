@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { X, Calendar, Cake, Heart, Repeat, CalendarCheck, Lock, Globe } from 'lucide-react';
+import { X, Calendar, Cake, Heart, Repeat, CalendarCheck, Lock, Globe, HelpCircle } from 'lucide-react';
+import { UNKNOWN_YEAR } from '@/lib/utils';
 
 interface AddEventModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
   const [date, setDate] = useState('');
   const [recurring, setRecurring] = useState(true);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [unknownYear, setUnknownYear] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -37,6 +39,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
       setDate('');
       setRecurring(true);
       setIsPrivate(false);
+      setUnknownYear(false);
       setError(null);
     }
   }, [isOpen]);
@@ -56,13 +59,20 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
     setError(null);
     
     try {
+      // If unknown year is checked for birthday, replace year with sentinel
+      let eventDate = date;
+      if (unknownYear && eventType === 'birthday' && date) {
+        const [, month, day] = date.split('-');
+        eventDate = `${UNKNOWN_YEAR}-${month}-${day}`;
+      }
+      
       const res = await fetch(`/api/profiles/${profileId}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: eventType,
           customLabel: eventType === 'custom' ? customLabel : undefined,
-          date,
+          date: eventDate,
           recurring: eventType === 'custom' ? recurring : true,
           isPrivate,
         }),
@@ -191,14 +201,32 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
           )}
           
           {/* Date */}
-          <Input
-            label="Date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-            hint={eventType === 'birthday' ? "Enter their birth date" : "When does this event occur?"}
-          />
+          <div className="space-y-2">
+            <Input
+              label="Date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+              hint={eventType === 'birthday' 
+                ? (unknownYear ? "Just pick any year - we'll only use month and day" : "Enter their birth date")
+                : "When does this event occur?"}
+            />
+            {eventType === 'birthday' && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={unknownYear}
+                  onChange={(e) => setUnknownYear(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="text-sm text-gray-600 flex items-center gap-1">
+                  <HelpCircle className="w-3.5 h-3.5" />
+                  I don't know the birth year
+                </span>
+              </label>
+            )}
+          </div>
           
           {/* Privacy Toggle */}
           <div>

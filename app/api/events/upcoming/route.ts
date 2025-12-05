@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
     const upcomingEvents = allEvents
       .map(({ event, profile }) => {
         const daysUntilEvent = daysUntil(event.date);
-        const age = event.type === 'birthday' ? calculateAge(event.date) + 1 : undefined;
+        const rawAge = event.type === 'birthday' ? calculateAge(event.date) : null;
+        const age = rawAge !== null ? rawAge + 1 : undefined;
         
         return {
           id: event.id,

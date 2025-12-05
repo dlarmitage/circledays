@@ -149,7 +149,9 @@ export async function GET(request: NextRequest) {
           eventType: event.type === 'custom' ? (event.customLabel || 'Event') : event.type,
           eventDate: formatDate(event.date, { month: 'long', day: 'numeric' }),
           daysUntil: daysUntil(event.date),
-          age: event.type === 'birthday' ? calculateAge(event.date) + 1 : undefined,
+          age: event.type === 'birthday' && calculateAge(event.date) !== null 
+            ? calculateAge(event.date)! + 1 
+            : undefined,
         }));
         
         const newEventIds = newEventsToNotify.map(e => e.event.id);

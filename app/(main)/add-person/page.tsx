@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { PhotoUpload } from '@/components/PhotoUpload';
-import { ArrowLeft, UserPlus, Cake, AlertTriangle, Check, Users, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, UserPlus, Cake, AlertTriangle, Check, Users, Link as LinkIcon, HelpCircle } from 'lucide-react';
+import { UNKNOWN_YEAR } from '@/lib/utils';
 
 interface PotentialDuplicate {
   id: string;
@@ -33,6 +34,7 @@ export default function AddPersonPage() {
     name: '',
     birthdate: '',
   });
+  const [unknownYear, setUnknownYear] = useState(false);
   
   // Debounced duplicate check
   useEffect(() => {
@@ -86,11 +88,19 @@ export default function AddPersonPage() {
     setError(null);
     
     try {
+      // If unknown year is checked, replace year with sentinel
+      let birthdate = formData.birthdate;
+      if (unknownYear && birthdate) {
+        const [, month, day] = birthdate.split('-');
+        birthdate = `${UNKNOWN_YEAR}-${month}-${day}`;
+      }
+      
       const res = await fetch('/api/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          birthdate,
           profilePicture: photoUrl,
         }),
       });
@@ -189,14 +199,28 @@ export default function AddPersonPage() {
             required
           />
           
-          <Input
-            label="Birthday"
-            type="date"
-            value={formData.birthdate}
-            onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
-            required
-            hint="We'll remind you when their birthday is coming up"
-          />
+          <div className="space-y-2">
+            <Input
+              label="Birthday"
+              type="date"
+              value={formData.birthdate}
+              onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
+              required
+              hint={unknownYear ? "Just pick any year - we'll only use the month and day" : "We'll remind you when their birthday is coming up"}
+            />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={unknownYear}
+                onChange={(e) => setUnknownYear(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm text-gray-600 flex items-center gap-1">
+                <HelpCircle className="w-3.5 h-3.5" />
+                I don't know the birth year
+              </span>
+            </label>
+          </div>
           
           {/* Potential Duplicates Warning */}
           {hasDuplicates && !confirmedNew && (

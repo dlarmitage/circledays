@@ -132,7 +132,8 @@ export function Calendar({ onEventClick }: CalendarProps) {
                 const eventDaysUntil = daysUntil(day.date, event.isRecurring);
                 // Only include future events or today
                 if (eventDaysUntil >= 0) {
-                  const age = event.type === 'birthday' ? calculateAge(event.originalDate) + 1 : undefined;
+                  const rawAge = event.type === 'birthday' ? calculateAge(event.originalDate) : null;
+                  const age = rawAge !== null ? rawAge + 1 : undefined;
                   allEvents.push({
                     ...event,
                     date: day.date,
