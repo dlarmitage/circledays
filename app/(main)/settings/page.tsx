@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
+import { EditEventModal } from '@/components/EditEventModal';
 import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS } from '@/lib/constants';
-import { User, Bell, LogOut } from 'lucide-react';
+import { formatDate, parseLocalDate } from '@/lib/utils';
+import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -30,6 +32,16 @@ interface ReminderPreferences {
   defaultLeadDays: number[];
 }
 
+interface Event {
+  id: string;
+  type: 'birthday' | 'anniversary' | 'custom';
+  customLabel: string | null;
+  date: string;
+  recurring: boolean;
+  isPrivate: boolean;
+  createdByUserId: string | null;
+}
+
 const REMINDER_OPTIONS = [
   { days: 0, label: 'Day of', emoji: '📅' },
   { days: 1, label: '1 day', emoji: '1️⃣' },
@@ -42,10 +54,15 @@ export default function SettingsPage() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
   const [reminderPrefs, setReminderPrefs] = useState<number[]>([0, 1, 7]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Edit event modal state
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -54,11 +71,21 @@ export default function SettingsPage() {
     notificationChannel: 'email' as 'email' | 'sms' | 'both',
   });
   
+  const fetchEvents = async (profileId: string) => {
+    try {
+      const res = await fetch(`/api/profiles/${profileId}`);
+      const data = await res.json();
+      setEvents(data.profile?.events || []);
+    } catch (err) {
+      console.error('Failed to fetch events:', err);
+    }
+  };
+  
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(res => res.json()),
       fetch('/api/preferences').then(res => res.json()),
-    ]).then(([authData, prefsData]) => {
+    ]).then(async ([authData, prefsData]) => {
       if (authData.user) {
         setUserData(authData.user);
         setProfileData(authData.profile);
@@ -68,6 +95,11 @@ export default function SettingsPage() {
           mobile: authData.user.mobile || '',
           notificationChannel: authData.user.notificationChannel,
         });
+        
+        // Fetch events for user's profile
+        if (authData.profile?.id) {
+          await fetchEvents(authData.profile.id);
+        }
       }
       if (prefsData.preferences) {
         setReminderPrefs(prefsData.preferences.defaultLeadDays);
@@ -138,6 +170,35 @@ export default function SettingsPage() {
   const handlePhotoChange = (url: string | null) => {
     if (profileData) {
       setProfileData({ ...profileData, profilePicture: url });
+    }
+  };
+  
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setEditModalOpen(true);
+  };
+  
+  const handleEventUpdated = () => {
+    setEditModalOpen(false);
+    setEditingEvent(null);
+    if (profileData?.id) {
+      fetchEvents(profileData.id);
+    }
+  };
+  
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'birthday': return <Cake className="w-4 h-4 text-coral-500" />;
+      case 'anniversary': return <Heart className="w-4 h-4 text-pink-500" />;
+      default: return <Star className="w-4 h-4 text-amber-500" />;
+    }
+  };
+  
+  const getEventLabel = (event: Event) => {
+    switch (event.type) {
+      case 'birthday': return 'Birthday';
+      case 'anniversary': return 'Anniversary';
+      default: return event.customLabel || 'Custom Event';
     }
   };
   
@@ -272,6 +333,73 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
       
+      {/* My Events Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-teal-600" />
+            My Events
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500 mb-4">
+            Events on your profile that others can see and get reminders for
+          </p>
+          
+          {events.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">
+              No events yet
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {events.map(event => {
+                const dateObj = parseLocalDate(event.date);
+                const isUnknownYear = dateObj.getFullYear() === 1904;
+                
+                return (
+                  <div
+                    key={event.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="p-2 rounded-full bg-white">
+                      {getEventIcon(event.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">
+                          {getEventLabel(event)}
+                        </p>
+                        {event.isPrivate && (
+                          <Lock className="w-3 h-3 text-gray-400" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(dateObj)}
+                        {!event.recurring && (
+                          <span className="ml-2 text-xs text-gray-400">(one-time)</span>
+                        )}
+                        {isUnknownYear && event.type === 'birthday' && (
+                          <span className="ml-2 text-xs text-amber-600">(year unknown)</span>
+                        )}
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleEditEvent(event)}
+                      className="p-2 hover:bg-white rounded-full transition-colors"
+                      title="Edit event"
+                    >
+                      <Pencil className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
       {/* Save Button */}
       <div className="flex items-center gap-4 mb-8">
         <Button onClick={handleSave} loading={saving}>
@@ -309,6 +437,20 @@ export default function SettingsPage() {
           Terms of Service & Privacy Policy
         </a>
       </div>
+      
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <EditEventModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setEditingEvent(null);
+          }}
+          event={editingEvent}
+          profileName={formData.name}
+          onEventUpdated={handleEventUpdated}
+        />
+      )}
     </div>
   );
 }
