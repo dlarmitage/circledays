@@ -19,6 +19,7 @@ interface UpcomingEvent {
   date: string;
   daysUntil: number;
   age?: number;
+  isPrivate?: boolean;
 }
 
 interface UserData {

@@ -9,6 +9,7 @@ const updateEventSchema = z.object({
   customLabel: z.string().nullable().optional(),
   date: z.string().optional(),
   recurring: z.boolean().optional(),
+  isPrivate: z.boolean().optional(),
 });
 
 // Helper to check if user is connected to a profile
@@ -61,12 +62,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Check permission: own profile, creator, connected, or admin
-    const isOwn = event.profile.linkedUserId === user.id;
-    const isCreator = event.profile.createdByUserId === user.id;
+    // Check permission: own profile, profile creator, connected, or admin
+    const isProfileOwner = event.profile.linkedUserId === user.id;
+    const isProfileCreator = event.profile.createdByUserId === user.id;
+    const isEventCreator = event.event.createdByUserId === user.id;
     const isConnected = await isUserConnectedToProfile(user.id, event.profile.id);
     
-    if (!isOwn && !isCreator && !isConnected && !user.isPlatformAdmin) {
+    // Private events can only be edited by the event creator
+    if (event.event.isPrivate && !isEventCreator && !user.isPlatformAdmin) {
+      return NextResponse.json({ error: 'Forbidden - private event' }, { status: 403 });
+    }
+    
+    if (!isProfileOwner && !isProfileCreator && !isConnected && !user.isPlatformAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -130,12 +137,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     
-    // Check permission: own profile, creator, connected, or admin
-    const isOwn = event.profile.linkedUserId === user.id;
-    const isCreator = event.profile.createdByUserId === user.id;
+    // Check permission: own profile, profile creator, connected, or admin
+    const isProfileOwner = event.profile.linkedUserId === user.id;
+    const isProfileCreator = event.profile.createdByUserId === user.id;
+    const isEventCreator = event.event.createdByUserId === user.id;
     const isConnected = await isUserConnectedToProfile(user.id, event.profile.id);
     
-    if (!isOwn && !isCreator && !isConnected && !user.isPlatformAdmin) {
+    // Private events can only be deleted by the event creator
+    if (event.event.isPrivate && !isEventCreator && !user.isPlatformAdmin) {
+      return NextResponse.json({ error: 'Forbidden - private event' }, { status: 403 });
+    }
+    
+    if (!isProfileOwner && !isProfileCreator && !isConnected && !user.isPlatformAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     

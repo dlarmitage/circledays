@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         if (connectedIds.length === 0) continue;
         
         // Get all events for connected profiles (excluding own)
-        const allEvents = await db
+        const allEventsRaw = await db
           .select({
             event: events,
             profile: profiles,
@@ -76,6 +76,11 @@ export async function GET(request: NextRequest) {
               sql`${profiles.id} != ${userProfile.id}`
             )
           );
+        
+        // Filter out private events unless current user created them
+        const allEvents = allEventsRaw.filter(({ event }) => 
+          !event.isPrivate || event.createdByUserId === user.id
+        );
         
         // Get user's reminder preferences
         const [prefs] = await db

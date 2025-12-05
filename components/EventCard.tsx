@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
-import { Cake, Heart, Calendar } from 'lucide-react';
+import { Cake, Heart, Calendar, Lock } from 'lucide-react';
 
 interface EventCardProps {
   id: string;
@@ -16,6 +16,7 @@ interface EventCardProps {
   date: string;
   daysUntil: number;
   age?: number;
+  isPrivate?: boolean;
   onClick?: () => void;
 }
 
@@ -27,6 +28,7 @@ export function EventCard({
   date,
   daysUntil,
   age,
+  isPrivate,
   onClick,
 }: EventCardProps) {
   const daysText = getDaysUntilText(daysUntil);
@@ -54,6 +56,9 @@ export function EventCard({
             <span className="text-sm text-gray-600">
               {eventLabel} · {formattedDate}
             </span>
+            {isPrivate && (
+              <Lock className="w-3 h-3 text-amber-500" />
+            )}
           </div>
           {age && type === 'birthday' && (
             <p className="text-sm text-gray-500 mt-0.5">

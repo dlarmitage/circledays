@@ -28,6 +28,7 @@ import {
   X,
   Phone,
   Check,
+  Lock,
   User,
 } from 'lucide-react';
 
@@ -37,6 +38,8 @@ interface Event {
   customLabel: string | null;
   date: string;
   recurring?: boolean;
+  isPrivate?: boolean;
+  createdByUserId?: string | null;
 }
 
 interface Connection {
@@ -532,8 +535,11 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                           <Icon className="w-5 h-5 text-teal-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-gray-900 flex items-center gap-1.5">
                             {event.type === 'custom' ? event.customLabel : event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+                            {event.isPrivate && (
+                              <Lock className="w-3 h-3 text-amber-500" />
+                            )}
                           </p>
                           <p className="text-sm text-gray-500">
                             {formatDate(event.date, { month: 'long', day: 'numeric', year: 'numeric' })}

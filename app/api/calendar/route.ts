@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const profileIdArray = Array.from(connectedProfileIds);
     
     // Get all events for connected profiles
-    const allEvents = profileIdArray.length > 0
+    const allEventsRaw = profileIdArray.length > 0
       ? await db
           .select({
             event: events,
@@ -57,6 +57,11 @@ export async function GET(request: NextRequest) {
             sql`${events.profileId} IN (${sql.join(profileIdArray.map(id => sql`${id}`), sql`, `)})`
           )
       : [];
+    
+    // Filter out private events unless current user created them
+    const allEvents = allEventsRaw.filter(({ event }) => 
+      !event.isPrivate || event.createdByUserId === user.id
+    );
     
     // Filter events that occur in the requested month
     // For recurring events, check if the month/day falls in the requested month
@@ -72,6 +77,7 @@ export async function GET(request: NextRequest) {
         profilePicture: string | null;
         isRecurring: boolean;
         originalDate: string;
+        isPrivate: boolean;
       }[];
     }[] = [];
     
@@ -115,6 +121,7 @@ export async function GET(request: NextRequest) {
           profilePicture: profile.profilePicture,
           isRecurring: event.recurring,
           originalDate: event.date,
+          isPrivate: event.isPrivate,
         });
       }
     });

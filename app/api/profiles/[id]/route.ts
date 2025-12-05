@@ -64,10 +64,16 @@ export async function GET(
     }
     
     // Get events for connected profile
-    const profileEvents = await db
+    // Filter out private events unless current user created them
+    const allProfileEvents = await db
       .select()
       .from(events)
       .where(eq(events.profileId, profile.id));
+    
+    // Filter: show event if it's not private OR if current user created it
+    const profileEvents = allProfileEvents.filter(event => 
+      !event.isPrivate || event.createdByUserId === user.id
+    );
     
     // Get user's notes for this profile
     const [userNote] = await db

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get all events for connected profiles (excluding own profile)
-    const allEvents = await db
+    const allEventsRaw = await db
       .select({
         event: events,
         profile: profiles,
@@ -59,6 +59,11 @@ export async function GET(request: NextRequest) {
           sql`${profiles.id} != ${userProfile.id}`
         )
       );
+    
+    // Filter out private events unless current user created them
+    const allEvents = allEventsRaw.filter(({ event }) => 
+      !event.isPrivate || event.createdByUserId === user.id
+    );
     
     // Calculate days until each event and filter
     const upcomingEvents = allEvents
@@ -76,6 +81,7 @@ export async function GET(request: NextRequest) {
           date: event.date,
           daysUntil: daysUntilEvent,
           age,
+          isPrivate: event.isPrivate,
         };
       })
       .filter(e => e.daysUntil >= 0 && e.daysUntil <= days)

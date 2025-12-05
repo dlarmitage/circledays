@@ -9,6 +9,7 @@ const createEventSchema = z.object({
   customLabel: z.string().optional(),
   date: z.string(), // ISO date string
   recurring: z.boolean().optional(), // default true, false for one-time events
+  isPrivate: z.boolean().optional(), // only creator can see/get reminders
 });
 
 export async function POST(
@@ -79,6 +80,8 @@ export async function POST(
         customLabel: data.type === 'custom' ? data.customLabel : null,
         date: data.date,
         recurring: isRecurring,
+        isPrivate: data.isPrivate ?? false,
+        createdByUserId: user.id,
       })
       .returning();
     

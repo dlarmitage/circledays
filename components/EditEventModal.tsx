@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { X, Calendar, Cake, Heart, Trash2, AlertTriangle, Repeat, CalendarCheck } from 'lucide-react';
+import { X, Calendar, Cake, Heart, Trash2, AlertTriangle, Repeat, CalendarCheck, Lock, Globe } from 'lucide-react';
 
 interface Event {
   id: string;
@@ -12,6 +12,8 @@ interface Event {
   customLabel: string | null;
   date: string;
   recurring?: boolean;
+  isPrivate?: boolean;
+  createdByUserId?: string | null;
 }
 
 interface EditEventModalProps {
@@ -33,6 +35,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
   const [customLabel, setCustomLabel] = useState('');
   const [date, setDate] = useState('');
   const [recurring, setRecurring] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -47,6 +50,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
       const formattedDate = event.date.split('T')[0];
       setDate(formattedDate);
       setRecurring(event.recurring ?? true);
+      setIsPrivate(event.isPrivate ?? false);
       setError(null);
       setShowDeleteConfirm(false);
     }
@@ -77,6 +81,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
           customLabel: eventType === 'custom' ? customLabel : null,
           date,
           recurring: eventType === 'custom' ? recurring : true,
+          isPrivate,
         }),
       });
       
@@ -273,6 +278,48 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
                 onChange={(e) => setDate(e.target.value)}
                 required
               />
+              
+              {/* Privacy Toggle */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Visibility
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivate(false)}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all ${
+                      !isPrivate
+                        ? 'bg-teal-50 border-2 border-teal-500'
+                        : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    <Globe className={`w-4 h-4 ${!isPrivate ? 'text-teal-600' : 'text-gray-500'}`} />
+                    <span className={`text-sm font-medium ${!isPrivate ? 'text-teal-900' : 'text-gray-700'}`}>
+                      Shared
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivate(true)}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all ${
+                      isPrivate
+                        ? 'bg-amber-50 border-2 border-amber-500'
+                        : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    <Lock className={`w-4 h-4 ${isPrivate ? 'text-amber-600' : 'text-gray-500'}`} />
+                    <span className={`text-sm font-medium ${isPrivate ? 'text-amber-900' : 'text-gray-700'}`}>
+                      Private
+                    </span>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {isPrivate 
+                    ? "Only you can see this event and get reminders" 
+                    : "All connections can see this event"}
+                </p>
+              </div>
               
               {error && (
                 <p className="text-sm text-coral-600">{error}</p>

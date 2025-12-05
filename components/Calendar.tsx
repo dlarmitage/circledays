@@ -15,6 +15,7 @@ interface CalendarEvent {
   profilePicture: string | null;
   isRecurring: boolean;
   originalDate: string;
+  isPrivate: boolean;
 }
 
 interface DayEvents {

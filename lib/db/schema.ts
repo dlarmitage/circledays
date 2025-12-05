@@ -67,6 +67,8 @@ export const events = pgTable('events', {
   customLabel: text('custom_label'),
   date: date('date').notNull(),
   recurring: boolean('recurring').notNull().default(true), // false for one-time events like graduation
+  isPrivate: boolean('is_private').notNull().default(false), // only creator can see/get reminders
+  createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
