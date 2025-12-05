@@ -77,7 +77,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`/api/profiles/${profileId}`);
       const data = await res.json();
-      setEvents(data.profile?.events || []);
+      setEvents(data.events || []);
     } catch (err) {
       console.error('Failed to fetch events:', err);
     }
