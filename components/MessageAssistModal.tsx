@@ -78,7 +78,7 @@ export function MessageAssistModal({
     setSavingNotes(true);
     try {
       await fetch(`/api/profiles/${profileId}/notes`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: notes }),
       });
