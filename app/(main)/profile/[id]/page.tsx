@@ -72,6 +72,7 @@ interface ProfileData {
     timezone: string;
     notificationChannel: 'email' | 'sms' | 'both';
   };
+  isPlatformAdmin?: boolean;
 }
 
 // Confirmation Modal Component
@@ -153,6 +154,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [disconnectingConnection, setDisconnectingConnection] = useState<{ profileId: string; name: string } | null>(null);
   
   // Account editing state (for own profile)
   const [editingEmail, setEditingEmail] = useState(false);
@@ -246,6 +248,33 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       if (res.ok) {
         setShowDisconnectModal(false);
         router.push('/dashboard');
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+  
+  // Admin function to disconnect any two profiles
+  const handleAdminDisconnect = async (otherProfileId: string, otherProfileName: string) => {
+    if (!data?.profile?.id || !data?.isPlatformAdmin) return;
+    
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/connections/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileIdA: data.profile.id,
+          profileIdB: otherProfileId,
+        }),
+      });
+      
+      if (res.ok) {
+        setDisconnectingConnection(null);
+        fetchProfileData(); // Refresh to show updated connections
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to disconnect');
       }
     } finally {
       setActionLoading(false);
@@ -659,20 +688,36 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {connections.slice(0, 9).map(connection => (
-                <button
+                <div
                   key={connection.id}
-                  onClick={() => router.push(`/profile/${connection.id}`)}
-                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
                 >
-                  <Avatar
-                    src={connection.profilePicture}
-                    name={connection.name}
-                    size="sm"
-                  />
-                  <span className="text-sm font-medium text-gray-900 truncate">
-                    {connection.name}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => router.push(`/profile/${connection.id}`)}
+                    className="flex items-center gap-2 flex-1 text-left min-w-0"
+                  >
+                    <Avatar
+                      src={connection.profilePicture}
+                      name={connection.name}
+                      size="sm"
+                    />
+                    <span className="text-sm font-medium text-gray-900 truncate">
+                      {connection.name}
+                    </span>
+                  </button>
+                  {data?.isPlatformAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDisconnectingConnection({ profileId: connection.id, name: connection.name });
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded text-red-600 transition-opacity"
+                      title="Disconnect (Admin)"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
             {connections.length > 9 && (
@@ -705,6 +750,19 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         confirmText="Delete"
         loading={actionLoading}
       />
+      
+      {/* Admin Disconnect Confirmation Modal */}
+      {disconnectingConnection && (
+        <ConfirmModal
+          isOpen={!!disconnectingConnection}
+          onClose={() => setDisconnectingConnection(null)}
+          onConfirm={() => handleAdminDisconnect(disconnectingConnection.profileId, disconnectingConnection.name)}
+          title="Disconnect (Admin)"
+          message={`Are you sure you want to disconnect ${profile.name} and ${disconnectingConnection.name}? This action cannot be undone.`}
+          confirmText="Disconnect"
+          loading={actionLoading}
+        />
+      )}
       
       {/* Invite Modal */}
       <InviteModal

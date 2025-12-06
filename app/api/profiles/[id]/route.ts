@@ -168,6 +168,7 @@ export async function GET(
       isCreator: profile.createdByUserId === user.id,
       userProfileId: userProfile.id,
       userData,
+      isPlatformAdmin: user.isPlatformAdmin, // Include admin status
     });
   } catch (error) {
     console.error('Get profile error:', error);
