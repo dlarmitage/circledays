@@ -139,47 +139,31 @@ export default function NetworkPage() {
     });
   }, []);
   
-  const handleSuggest = useCallback(async (toUserIds: string[], connectTogether: boolean) => {
+  const handleSuggest = useCallback(async (connectTogether: boolean) => {
     const profileIds = Array.from(selectedIds);
     
-    // If connectTogether is true, create connections between all selected profiles
-    if (connectTogether && profileIds.length > 1) {
-      const connectRes = await fetch('/api/connections/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileIds }),
-      });
-      if (!connectRes.ok) {
-        console.error('Failed to create inter-connections');
-      }
+    // Call the suggestions API which handles everything automatically
+    const res = await fetch('/api/suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        profileIds,
+        connectTogether,
+      }),
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to create suggestions');
     }
     
-    // If no recipients, we're done (just connecting profiles together)
-    if (toUserIds.length === 0) {
-      return;
-    }
+    const result = await res.json();
+    console.log('Suggestions result:', result);
     
-    // Send suggestions to each recipient
-    const results = await Promise.allSettled(
-      toUserIds.map(toUserId =>
-        fetch('/api/suggestions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ toUserId, profileIds }),
-        }).then(res => {
-          if (!res.ok) throw new Error('Failed');
-          return res.json();
-        })
-      )
-    );
+    // Refresh connections to show new auto-connections
+    await fetchNetwork();
     
-    // Check if any failed
-    const failures = results.filter(r => r.status === 'rejected');
-    if (failures.length === toUserIds.length) {
-      throw new Error('Failed to send suggestions');
-    }
-    
-    // Clear selection and exit select mode
+    // Clear selection
     setSelectedIds(new Set());
     setSelectMode(false);
   }, [selectedIds]);
@@ -299,7 +283,6 @@ export default function NetworkPage() {
         isOpen={suggestModalOpen}
         onClose={() => setSuggestModalOpen(false)}
         selectedProfiles={selectedProfiles}
-        connections={connections}
         onSuggest={handleSuggest}
       />
     </div>

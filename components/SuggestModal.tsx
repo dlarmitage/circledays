@@ -17,28 +17,18 @@ interface SuggestModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedProfiles: Profile[];
-  connections: Profile[];
-  onSuggest: (toUserIds: string[], connectTogether: boolean) => Promise<void>;
+  onSuggest: (connectTogether: boolean) => Promise<void>;
 }
 
 export function SuggestModal({ 
   isOpen, 
   onClose, 
   selectedProfiles, 
-  connections,
   onSuggest 
 }: SuggestModalProps) {
-  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [connectTogether, setConnectTogether] = useState(true);
-  
-  // Filter to only show connections who have accounts (can receive suggestions)
-  // Also exclude people who are being suggested (they shouldn't suggest to themselves)
-  const selectedProfileIds = new Set(selectedProfiles.map(p => p.id));
-  const eligibleRecipients = connections.filter(c => 
-    c.linkedUserId && !selectedProfileIds.has(c.id)
-  );
   
   // Check if all selected profiles are unclaimed (no linkedUserId)
   const allUnclaimed = selectedProfiles.length > 1 && 
@@ -47,46 +37,23 @@ export function SuggestModal({
   // Calculate number of connections that would be created
   const numInterConnections = selectedProfiles.length * (selectedProfiles.length - 1) / 2;
   
+  // Count profiles with and without accounts
+  const profilesWithAccounts = selectedProfiles.filter(p => p.linkedUserId);
+  const profilesWithoutAccounts = selectedProfiles.filter(p => !p.linkedUserId);
+  
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setSelectedRecipients(new Set());
       setSending(false);
       setSuccess(false);
       setConnectTogether(true); // Default to true
     }
   }, [isOpen]);
   
-  const toggleRecipient = (userId: string) => {
-    setSelectedRecipients(prev => {
-      const next = new Set(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
-        next.add(userId);
-      }
-      return next;
-    });
-  };
-  
-  const selectAll = () => {
-    const allUserIds = eligibleRecipients
-      .map(r => r.linkedUserId)
-      .filter((id): id is string => id !== null);
-    setSelectedRecipients(new Set(allUserIds));
-  };
-  
-  const deselectAll = () => {
-    setSelectedRecipients(new Set());
-  };
-  
   const handleSend = async () => {
-    // Allow sending with no recipients if we're just connecting profiles together
-    if (selectedRecipients.size === 0 && !(allUnclaimed && connectTogether)) return;
-    
     setSending(true);
     try {
-      await onSuggest(Array.from(selectedRecipients), allUnclaimed && connectTogether);
+      await onSuggest(allUnclaimed && connectTogether);
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -99,13 +66,6 @@ export function SuggestModal({
   };
   
   if (!isOpen) return null;
-  
-  const allSelected = eligibleRecipients.length > 0 && 
-    eligibleRecipients.every(r => r.linkedUserId && selectedRecipients.has(r.linkedUserId));
-  
-  const selectedRecipientNames = eligibleRecipients
-    .filter(r => r.linkedUserId && selectedRecipients.has(r.linkedUserId))
-    .map(r => r.name);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -130,21 +90,23 @@ export function SuggestModal({
                 <Check className="w-8 h-8 text-teal-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                {allUnclaimed && connectTogether && selectedRecipients.size === 0
-                  ? 'Connected!'
-                  : 'Suggestions Sent!'
-                }
+                Done!
               </h3>
               <p className="text-sm text-gray-600">
-                {allUnclaimed && connectTogether && (
+                {profilesWithAccounts.length > 0 && (
                   <span className="block mb-1">
-                    {selectedProfiles.length} people are now connected to each other.
+                    {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person' : 'people'} will be notified when they sign in.
                   </span>
                 )}
-                {selectedRecipients.size > 0 && (
-                  selectedRecipients.size === 1 
-                    ? `${selectedRecipientNames[0]} will be notified.`
-                    : `${selectedRecipients.size} people will be notified.`
+                {profilesWithoutAccounts.length > 0 && (
+                  <span className="block mb-1">
+                    {profilesWithoutAccounts.length} {profilesWithoutAccounts.length === 1 ? 'person' : 'people'} {profilesWithoutAccounts.length === 1 ? 'has' : 'have'} been connected automatically.
+                  </span>
+                )}
+                {allUnclaimed && connectTogether && (
+                  <span className="block">
+                    They're also connected to each other.
+                  </span>
                 )}
               </p>
             </div>
@@ -205,74 +167,32 @@ export function SuggestModal({
                 )}
               </div>
               
-              {/* Recipient selection */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Suggest to:
-                    {selectedRecipients.size > 0 && (
-                      <span className="ml-2 text-teal-600">
-                        ({selectedRecipients.size} selected)
-                      </span>
-                    )}
-                  </label>
-                  {eligibleRecipients.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={allSelected ? deselectAll : selectAll}
-                      className="text-xs text-teal-600 hover:text-teal-700 font-medium"
-                    >
-                      {allSelected ? 'Deselect All' : 'Select All'}
-                    </button>
-                  )}
-                </div>
-                
-                {eligibleRecipients.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No connections with accounts yet</p>
-                    <p className="text-xs mt-1">Invite someone to get started</p>
+              {/* Info about what will happen */}
+              <div className="bg-teal-50 rounded-xl p-4 space-y-2">
+                {profilesWithAccounts.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Users className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person has' : 'people have'} an account
+                      </p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        They'll receive a notification when they next sign in
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {eligibleRecipients.map(recipient => {
-                      const isSelected = recipient.linkedUserId && selectedRecipients.has(recipient.linkedUserId);
-                      return (
-                        <button
-                          key={recipient.id}
-                          type="button"
-                          onClick={() => recipient.linkedUserId && toggleRecipient(recipient.linkedUserId)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
-                            isSelected
-                              ? 'bg-teal-50 border-2 border-teal-500'
-                              : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                          }`}
-                        >
-                          {/* Checkbox */}
-                          <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                            isSelected 
-                              ? 'bg-teal-500 border-teal-500' 
-                              : 'border-gray-300'
-                          }`}>
-                            {isSelected && <Check className="w-4 h-4 text-white" />}
-                          </div>
-                          
-                          <Avatar 
-                            src={recipient.profilePicture} 
-                            name={recipient.name} 
-                            size="md" 
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">
-                              {recipient.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Has an account
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
+                )}
+                {profilesWithoutAccounts.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Link2 className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {profilesWithoutAccounts.length} {profilesWithoutAccounts.length === 1 ? 'person doesn\'t' : 'people don\'t'} have an account yet
+                      </p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        They'll be connected automatically
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -289,20 +209,11 @@ export function SuggestModal({
                 <Button
                   className="flex-1"
                   onClick={handleSend}
-                  disabled={(selectedRecipients.size === 0 && !(allUnclaimed && connectTogether)) || sending}
+                  disabled={sending}
                   loading={sending}
                 >
-                  {allUnclaimed && connectTogether && selectedRecipients.size === 0 ? (
-                    <>
-                      <Link2 className="w-4 h-4 mr-2" />
-                      Connect
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Send{selectedRecipients.size > 1 ? ` to ${selectedRecipients.size}` : ''}
-                    </>
-                  )}
+                  <Send className="w-4 h-4 mr-2" />
+                  Suggest
                 </Button>
               </div>
             </>

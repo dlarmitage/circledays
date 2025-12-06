@@ -6,38 +6,16 @@ import { z } from 'zod';
 import { sendSuggestionEmail } from '@/lib/email';
 
 const createSuggestionsSchema = z.object({
-  toUserId: z.string().uuid(),
   profileIds: z.array(z.string().uuid()).min(1),
+  connectTogether: z.boolean().optional().default(false), // For connecting unclaimed profiles to each other
 });
 
-// POST - Create batch suggestions
+// POST - Create suggestions and auto-connect unclaimed profiles
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
     const body = await request.json();
     const data = createSuggestionsSchema.parse(body);
-    
-    // Verify the recipient user exists and has an account
-    const [recipient] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, data.toUserId))
-      .limit(1);
-    
-    if (!recipient) {
-      return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
-    }
-    
-    // Get recipient's profile
-    const [recipientProfile] = await db
-      .select()
-      .from(profiles)
-      .where(eq(profiles.linkedUserId, recipient.id))
-      .limit(1);
-    
-    if (!recipientProfile) {
-      return NextResponse.json({ error: 'Recipient profile not found' }, { status: 404 });
-    }
     
     // Get sender's profile
     const [senderProfile] = await db
@@ -50,94 +28,163 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sender profile not found' }, { status: 400 });
     }
     
-    // Verify sender is connected to recipient
-    const [senderRecipientA, senderRecipientB] = [senderProfile.id, recipientProfile.id].sort();
-    const [connectionToRecipient] = await db
+    // Get all selected profiles
+    const selectedProfiles = await db
       .select()
-      .from(connections)
-      .where(
-        and(
-          eq(connections.profileAId, senderRecipientA),
-          eq(connections.profileBId, senderRecipientB)
-        )
-      )
-      .limit(1);
+      .from(profiles)
+      .where(inArray(profiles.id, data.profileIds));
     
-    if (!connectionToRecipient) {
-      return NextResponse.json({ error: 'You must be connected to this person' }, { status: 403 });
+    if (selectedProfiles.length !== data.profileIds.length) {
+      return NextResponse.json({ error: 'Some profiles not found' }, { status: 404 });
     }
     
-    // Get recipient's existing connections
-    const recipientConnections = await db
+    // Get sender's existing connections
+    const senderConnections = await db
       .select()
       .from(connections)
       .where(
         or(
-          eq(connections.profileAId, recipientProfile.id),
-          eq(connections.profileBId, recipientProfile.id)
+          eq(connections.profileAId, senderProfile.id),
+          eq(connections.profileBId, senderProfile.id)
         )
       );
     
-    const recipientConnectionIds = new Set<string>();
-    recipientConnections.forEach(conn => {
-      if (conn.profileAId === recipientProfile.id) {
-        recipientConnectionIds.add(conn.profileBId);
+    const senderConnectionIds = new Set<string>();
+    senderConnections.forEach(conn => {
+      if (conn.profileAId === senderProfile.id) {
+        senderConnectionIds.add(conn.profileBId);
       } else {
-        recipientConnectionIds.add(conn.profileAId);
+        senderConnectionIds.add(conn.profileAId);
       }
     });
     
-    // Filter out profiles recipient is already connected to
-    const eligibleProfileIds = data.profileIds.filter(id => 
-      !recipientConnectionIds.has(id) && id !== recipientProfile.id
-    );
+    let suggestedCount = 0;
+    let autoConnectedCount = 0;
+    let alreadyConnectedCount = 0;
+    const usersToNotify = new Map<string, { user: typeof users.$inferSelect; profileIds: string[] }>();
     
-    if (eligibleProfileIds.length === 0) {
-      return NextResponse.json({ 
-        error: 'All selected profiles are already connected to this person',
-        created: 0 
-      }, { status: 400 });
+    // Process each selected profile
+    for (const profile of selectedProfiles) {
+      // Skip if already connected
+      if (senderConnectionIds.has(profile.id)) {
+        alreadyConnectedCount++;
+        continue;
+      }
+      
+      if (profile.linkedUserId) {
+        // Profile has an account - create a suggestion
+        const toUserId = profile.linkedUserId;
+        
+        // Check if suggestion already exists
+        const [existingSuggestion] = await db
+          .select()
+          .from(connectionSuggestions)
+          .where(
+            and(
+              eq(connectionSuggestions.fromUserId, user.id),
+              eq(connectionSuggestions.toUserId, toUserId),
+              eq(connectionSuggestions.suggestedProfileId, profile.id),
+              eq(connectionSuggestions.status, 'pending')
+            )
+          )
+          .limit(1);
+        
+        if (!existingSuggestion) {
+          // Create suggestion
+          await db.insert(connectionSuggestions).values({
+            fromUserId: user.id,
+            toUserId: toUserId,
+            suggestedProfileId: profile.id,
+          });
+          
+          suggestedCount++;
+          
+          // Track for email notification
+          if (!usersToNotify.has(toUserId)) {
+            const [toUser] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, toUserId))
+              .limit(1);
+            
+            if (toUser) {
+              usersToNotify.set(toUserId, { user: toUser, profileIds: [] });
+            }
+          }
+          usersToNotify.get(toUserId)?.profileIds.push(profile.id);
+        }
+      } else {
+        // Profile doesn't have an account - auto-create connection
+        const [profileA, profileB] = [senderProfile.id, profile.id].sort();
+        
+        // Check if connection already exists (shouldn't, but just in case)
+        const [existingConnection] = await db
+          .select()
+          .from(connections)
+          .where(
+            and(
+              eq(connections.profileAId, profileA),
+              eq(connections.profileBId, profileB)
+            )
+          )
+          .limit(1);
+        
+        if (!existingConnection) {
+          await db.insert(connections).values({
+            profileAId: profileA,
+            profileBId: profileB,
+            createdByUserId: user.id,
+          });
+          autoConnectedCount++;
+          senderConnectionIds.add(profile.id); // Track for connectTogether logic
+        }
+      }
     }
     
-    // Check for existing pending suggestions
-    const existingSuggestions = await db
-      .select()
-      .from(connectionSuggestions)
-      .where(
-        and(
-          eq(connectionSuggestions.toUserId, recipient.id),
-          eq(connectionSuggestions.status, 'pending'),
-          inArray(connectionSuggestions.suggestedProfileId, eligibleProfileIds)
-        )
-      );
-    
-    const existingProfileIds = new Set(existingSuggestions.map(s => s.suggestedProfileId));
-    const newProfileIds = eligibleProfileIds.filter(id => !existingProfileIds.has(id));
-    
-    // Create new suggestions
-    if (newProfileIds.length > 0) {
-      await db.insert(connectionSuggestions).values(
-        newProfileIds.map(profileId => ({
-          fromUserId: user.id,
-          toUserId: recipient.id,
-          suggestedProfileId: profileId,
-        }))
-      );
+    // Handle "connect together" - connect unclaimed profiles to each other
+    if (data.connectTogether) {
+      const unclaimedProfiles = selectedProfiles.filter(p => !p.linkedUserId);
       
-      // Get profile names for email
-      const suggestedProfiles = await db
-        .select()
-        .from(profiles)
-        .where(inArray(profiles.id, newProfileIds));
+      for (let i = 0; i < unclaimedProfiles.length; i++) {
+        for (let j = i + 1; j < unclaimedProfiles.length; j++) {
+          const profileA = unclaimedProfiles[i];
+          const profileB = unclaimedProfiles[j];
+          const [idA, idB] = [profileA.id, profileB.id].sort();
+          
+          // Check if already connected
+          const [existingConnection] = await db
+            .select()
+            .from(connections)
+            .where(
+              and(
+                eq(connections.profileAId, idA),
+                eq(connections.profileBId, idB)
+              )
+            )
+            .limit(1);
+          
+          if (!existingConnection) {
+            await db.insert(connections).values({
+              profileAId: idA,
+              profileBId: idB,
+              createdByUserId: user.id,
+            });
+          }
+        }
+      }
+    }
+    
+    // Send email notifications to users who received suggestions
+    for (const [toUserId, { user: toUser, profileIds }] of usersToNotify.entries()) {
+      const suggestedProfiles = selectedProfiles.filter(p => profileIds.includes(p.id));
       
-      // Send email notification
       try {
         await sendSuggestionEmail(
-          recipient.email,
-          recipient.name,
+          toUser.email,
+          toUser.name,
           user.name,
           suggestedProfiles.map(p => p.name),
-          process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.app'
+          process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology'
         );
       } catch (emailError) {
         console.error('Failed to send suggestion email:', emailError);
@@ -146,9 +193,10 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json({
-      created: newProfileIds.length,
-      alreadySuggested: existingProfileIds.size,
-      alreadyConnected: data.profileIds.length - eligibleProfileIds.length,
+      suggested: suggestedCount,
+      autoConnected: autoConnectedCount,
+      alreadyConnected: alreadyConnectedCount,
+      total: data.profileIds.length,
     });
   } catch (error) {
     console.error('Create suggestions error:', error);
