@@ -68,6 +68,7 @@ export default function SettingsPage() {
   
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     timezone: '',
     mobile: '',
     notificationChannel: 'email' as 'email' | 'sms' | 'both',
@@ -93,6 +94,7 @@ export default function SettingsPage() {
         setProfileData(authData.profile);
         setFormData({
           name: authData.user.name,
+          email: authData.user.email,
           timezone: authData.user.timezone,
           mobile: authData.user.mobile || '',
           notificationChannel: authData.user.notificationChannel,
@@ -133,6 +135,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
+          email: formData.email,
           timezone: formData.timezone,
           mobile: formData.mobile || null,
           notificationChannel: formData.notificationChannel,
@@ -258,9 +261,10 @@ export default function SettingsPage() {
           
           <Input
             label="Email"
-            value={userData?.email || ''}
-            disabled
-            hint="Email cannot be changed"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            hint="Used for magic link sign-in and notifications"
           />
           
           <Select
