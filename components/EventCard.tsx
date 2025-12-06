@@ -3,8 +3,9 @@
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
-import { Cake, Heart, Calendar, Lock } from 'lucide-react';
+import { Cake, Heart, Calendar, Lock, Sparkles } from 'lucide-react';
 
 interface EventCardProps {
   id: string;
@@ -18,6 +19,7 @@ interface EventCardProps {
   age?: number;
   isPrivate?: boolean;
   onClick?: () => void;
+  onMessageAssist?: () => void;
 }
 
 export function EventCard({
@@ -30,6 +32,7 @@ export function EventCard({
   age,
   isPrivate,
   onClick,
+  onMessageAssist,
 }: EventCardProps) {
   const daysText = getDaysUntilText(daysUntil);
   const eventLabel = getEventTypeLabel(type, customLabel);
@@ -43,6 +46,8 @@ export function EventCard({
   };
   
   const formattedDate = formatDate(date);
+  
+  const showMessageAssist = (daysUntil === 0 || daysUntil === 1) && onMessageAssist;
   
   return (
     <Card hover onClick={onClick} className="animate-slide-up">
@@ -64,6 +69,20 @@ export function EventCard({
             <p className="text-sm text-gray-500 mt-0.5">
               Turning {age}
             </p>
+          )}
+          
+          {/* Message Assist button for today/tomorrow */}
+          {showMessageAssist && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onMessageAssist();
+              }}
+              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-100 hover:bg-violet-200 rounded-full transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Message Assist
+            </button>
           )}
         </div>
         

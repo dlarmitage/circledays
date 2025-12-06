@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { EventCard } from '@/components/EventCard';
 import { SuggestionsCard } from '@/components/SuggestionsCard';
+import { MessageAssistModal } from '@/components/MessageAssistModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
@@ -53,6 +54,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
   const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>([]);
+  
+  // Message Assist modal state
+  const [messageAssistEvent, setMessageAssistEvent] = useState<UpcomingEvent | null>(null);
   
   const fetchSuggestions = useCallback(async () => {
     try {
@@ -213,6 +217,7 @@ export default function DashboardPage() {
                       <EventCard
                         {...event}
                         onClick={() => router.push(`/profile/${event.profileId}`)}
+                        onMessageAssist={() => setMessageAssistEvent(event)}
                       />
                     </div>
                   ))}
@@ -222,6 +227,18 @@ export default function DashboardPage() {
           })}
         </div>
       )}
+      
+      {/* Message Assist Modal */}
+      <MessageAssistModal
+        isOpen={!!messageAssistEvent}
+        onClose={() => setMessageAssistEvent(null)}
+        profileId={messageAssistEvent?.profileId || ''}
+        profileName={messageAssistEvent?.profileName || ''}
+        profilePicture={messageAssistEvent?.profilePicture || null}
+        eventType={messageAssistEvent?.type === 'custom' 
+          ? (messageAssistEvent?.customLabel || 'event') 
+          : (messageAssistEvent?.type || 'birthday')}
+      />
     </div>
   );
 }
