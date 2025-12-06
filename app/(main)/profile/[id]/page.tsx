@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -143,7 +143,10 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [noteContent, setNoteContent] = useState('');
+  const [originalNoteContent, setOriginalNoteContent] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -167,25 +170,57 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       const res = await fetch(`/api/profiles/${id}`);
       const profileData = await res.json();
       setData(profileData);
-      setNoteContent(profileData.note?.content || '');
+      const initialNote = profileData.note?.content || '';
+      setNoteContent(initialNote);
+      setOriginalNoteContent(initialNote);
       setLoading(false);
     } catch {
       router.push('/dashboard');
     }
   };
   
-  const handleSaveNote = async () => {
+  const saveNote = useCallback(async (content: string) => {
     setSavingNote(true);
     try {
       await fetch(`/api/profiles/${id}/notes`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: noteContent }),
+        body: JSON.stringify({ content }),
       });
+      setOriginalNoteContent(content);
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
     } finally {
       setSavingNote(false);
     }
+  }, [id]);
+  
+  // Auto-save notes with debounce
+  const handleNoteChange = (value: string) => {
+    setNoteContent(value);
+    setNoteSaved(false);
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (1.5 seconds after typing stops)
+    if (value !== originalNoteContent) {
+      saveTimeoutRef.current = setTimeout(() => {
+        saveNote(value);
+      }, 1500);
+    }
   };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
   
   const handleConnect = async () => {
     const res = await fetch('/api/connections', {
@@ -585,22 +620,29 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           <CardContent>
             <textarea
               value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
+              onChange={(e) => handleNoteChange(e.target.value)}
               placeholder="Add private notes about this person..."
               className="w-full h-32 p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleSaveNote}
-              loading={savingNote}
-              className="mt-2"
-            >
-              Save Note
-            </Button>
-            <p className="text-xs text-gray-400 mt-2">
-              Only you can see these notes
-            </p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-gray-400">
+                Private • Auto-saved
+              </p>
+              {(savingNote || noteSaved || noteContent !== originalNoteContent) && (
+                <span className="text-xs text-gray-400">
+                  {savingNote ? (
+                    'Saving...'
+                  ) : noteSaved ? (
+                    <span className="text-teal-600 flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Saved
+                    </span>
+                  ) : (
+                    'Unsaved'
+                  )}
+                </span>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
