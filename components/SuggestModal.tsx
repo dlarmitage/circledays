@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { X, Send, Users, Check } from 'lucide-react';
+import { X, Send, Users, Check, Link2 } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -18,7 +18,7 @@ interface SuggestModalProps {
   onClose: () => void;
   selectedProfiles: Profile[];
   connections: Profile[];
-  onSuggest: (toUserIds: string[]) => Promise<void>;
+  onSuggest: (toUserIds: string[], connectTogether: boolean) => Promise<void>;
 }
 
 export function SuggestModal({ 
@@ -31,6 +31,7 @@ export function SuggestModal({
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [connectTogether, setConnectTogether] = useState(true);
   
   // Filter to only show connections who have accounts (can receive suggestions)
   // Also exclude people who are being suggested (they shouldn't suggest to themselves)
@@ -39,12 +40,20 @@ export function SuggestModal({
     c.linkedUserId && !selectedProfileIds.has(c.id)
   );
   
+  // Check if all selected profiles are unclaimed (no linkedUserId)
+  const allUnclaimed = selectedProfiles.length > 1 && 
+    selectedProfiles.every(p => !p.linkedUserId);
+  
+  // Calculate number of connections that would be created
+  const numInterConnections = selectedProfiles.length * (selectedProfiles.length - 1) / 2;
+  
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedRecipients(new Set());
       setSending(false);
       setSuccess(false);
+      setConnectTogether(true); // Default to true
     }
   }, [isOpen]);
   
@@ -72,11 +81,12 @@ export function SuggestModal({
   };
   
   const handleSend = async () => {
-    if (selectedRecipients.size === 0) return;
+    // Allow sending with no recipients if we're just connecting profiles together
+    if (selectedRecipients.size === 0 && !(allUnclaimed && connectTogether)) return;
     
     setSending(true);
     try {
-      await onSuggest(Array.from(selectedRecipients));
+      await onSuggest(Array.from(selectedRecipients), allUnclaimed && connectTogether);
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -119,12 +129,23 @@ export function SuggestModal({
               <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8 text-teal-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Suggestions Sent!</h3>
-              <p className="text-sm text-gray-600">
-                {selectedRecipients.size === 1 
-                  ? `${selectedRecipientNames[0]} will be notified.`
-                  : `${selectedRecipients.size} people will be notified.`
+              <h3 className="font-semibold text-gray-900 mb-2">
+                {allUnclaimed && connectTogether && selectedRecipients.size === 0
+                  ? 'Connected!'
+                  : 'Suggestions Sent!'
                 }
+              </h3>
+              <p className="text-sm text-gray-600">
+                {allUnclaimed && connectTogether && (
+                  <span className="block mb-1">
+                    {selectedProfiles.length} people are now connected to each other.
+                  </span>
+                )}
+                {selectedRecipients.size > 0 && (
+                  selectedRecipients.size === 1 
+                    ? `${selectedRecipientNames[0]} will be notified.`
+                    : `${selectedRecipients.size} people will be notified.`
+                )}
               </p>
             </div>
           ) : (
@@ -152,6 +173,36 @@ export function SuggestModal({
                     </span>
                   )}
                 </div>
+                
+                {/* Connect together toggle - only for unclaimed profiles */}
+                {allUnclaimed && (
+                  <button
+                    type="button"
+                    onClick={() => setConnectTogether(!connectTogether)}
+                    className={`mt-3 w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${
+                      connectTogether 
+                        ? 'bg-teal-50 border border-teal-200' 
+                        : 'bg-white border border-gray-200'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                      connectTogether 
+                        ? 'bg-teal-500' 
+                        : 'border-2 border-gray-300'
+                    }`}>
+                      {connectTogether && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                        <Link2 className="w-4 h-4 text-teal-600" />
+                        Connect these {selectedProfiles.length} people to each other
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Creates {numInterConnections} connections between them
+                      </p>
+                    </div>
+                  </button>
+                )}
               </div>
               
               {/* Recipient selection */}
@@ -238,11 +289,20 @@ export function SuggestModal({
                 <Button
                   className="flex-1"
                   onClick={handleSend}
-                  disabled={selectedRecipients.size === 0 || sending}
+                  disabled={(selectedRecipients.size === 0 && !(allUnclaimed && connectTogether)) || sending}
                   loading={sending}
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  Send{selectedRecipients.size > 1 ? ` to ${selectedRecipients.size}` : ''}
+                  {allUnclaimed && connectTogether && selectedRecipients.size === 0 ? (
+                    <>
+                      <Link2 className="w-4 h-4 mr-2" />
+                      Connect
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send{selectedRecipients.size > 1 ? ` to ${selectedRecipients.size}` : ''}
+                    </>
+                  )}
                 </Button>
               </div>
             </>

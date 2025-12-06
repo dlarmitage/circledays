@@ -139,8 +139,25 @@ export default function NetworkPage() {
     });
   }, []);
   
-  const handleSuggest = useCallback(async (toUserIds: string[]) => {
+  const handleSuggest = useCallback(async (toUserIds: string[], connectTogether: boolean) => {
     const profileIds = Array.from(selectedIds);
+    
+    // If connectTogether is true, create connections between all selected profiles
+    if (connectTogether && profileIds.length > 1) {
+      const connectRes = await fetch('/api/connections/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileIds }),
+      });
+      if (!connectRes.ok) {
+        console.error('Failed to create inter-connections');
+      }
+    }
+    
+    // If no recipients, we're done (just connecting profiles together)
+    if (toUserIds.length === 0) {
+      return;
+    }
     
     // Send suggestions to each recipient
     const results = await Promise.allSettled(
