@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { X, Sparkles, Copy, Check, RefreshCw, MessageSquare } from 'lucide-react';
+import { X, Sparkles, Copy, Check, RefreshCw, Save } from 'lucide-react';
 
 interface MessageAssistModalProps {
   isOpen: boolean;
@@ -32,27 +32,65 @@ export function MessageAssistModal({
   profilePicture,
   eventType,
 }: MessageAssistModalProps) {
-  const [existingNote, setExistingNote] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+  const [originalNotes, setOriginalNotes] = useState<string>('');
   const [additionalContext, setAdditionalContext] = useState('');
   const [tone, setTone] = useState<Tone>('warm');
   const [message, setMessage] = useState('');
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [step, setStep] = useState<'context' | 'message'>('context');
   
-  // Reset state when modal opens
+  const notesChanged = notes !== originalNotes;
+  
+  // Fetch existing notes when modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && profileId) {
       setAdditionalContext('');
       setMessage('');
       setFeedback('');
       setCopied(false);
+      setNotesSaved(false);
       setStep('context');
       setLoading(false);
-      // Fetch existing note will happen on generate
+      
+      // Fetch existing notes
+      setLoadingNotes(true);
+      fetch(`/api/profiles/${profileId}/notes`)
+        .then(res => res.json())
+        .then(data => {
+          const noteContent = data.note?.content || '';
+          setNotes(noteContent);
+          setOriginalNotes(noteContent);
+        })
+        .catch(err => console.error('Failed to fetch notes:', err))
+        .finally(() => setLoadingNotes(false));
     }
-  }, [isOpen]);
+  }, [isOpen, profileId]);
+  
+  const saveNotes = async () => {
+    if (!notesChanged) return;
+    
+    setSavingNotes(true);
+    try {
+      await fetch(`/api/profiles/${profileId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: notes }),
+      });
+      setOriginalNotes(notes);
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save notes:', err);
+    } finally {
+      setSavingNotes(false);
+    }
+  };
   
   const generateMessage = async (isRegenerate = false) => {
     setLoading(true);
@@ -66,6 +104,7 @@ export function MessageAssistModal({
           profileId,
           profileName,
           eventType,
+          notes: notes || undefined,
           additionalContext: additionalContext || undefined,
           tone,
           feedback: isRegenerate ? feedback : undefined,
@@ -78,10 +117,6 @@ export function MessageAssistModal({
       if (data.message) {
         setMessage(data.message);
         setStep('message');
-      }
-      
-      if (data.note && !existingNote) {
-        setExistingNote(data.note);
       }
     } catch (err) {
       console.error('Failed to generate message:', err);
@@ -137,28 +172,64 @@ export function MessageAssistModal({
           
           {step === 'context' ? (
             <>
-              {/* Existing notes (read-only display) */}
-              {existingNote && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Private notes (editable) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     Your Notes About {firstName}
                   </label>
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-gray-700">
-                    {existingNote}
-                  </div>
+                  {notesChanged && (
+                    <button
+                      onClick={saveNotes}
+                      disabled={savingNotes}
+                      className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+                    >
+                      {savingNotes ? (
+                        'Saving...'
+                      ) : notesSaved ? (
+                        <>
+                          <Check className="w-3 h-3" />
+                          Saved!
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3" />
+                          Save Notes
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
-              )}
+                {loadingNotes ? (
+                  <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-400 text-center">
+                    Loading notes...
+                  </div>
+                ) : (
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={`Add notes about ${firstName} to personalize messages.\ne.g., "Loves hiking", "Has two kids", "Works at Google"`}
+                    rows={3}
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none ${
+                      notesChanged ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
+                    }`}
+                  />
+                )}
+                <p className="text-xs text-gray-400 mt-1">
+                  These notes are private and saved for future use
+                </p>
+              </div>
               
               {/* Additional context for this message */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Add Context <span className="text-gray-400 font-normal">(optional)</span>
+                  Context for This Message <span className="text-gray-400 font-normal">(optional, not saved)</span>
                 </label>
                 <textarea
                   value={additionalContext}
                   onChange={(e) => setAdditionalContext(e.target.value)}
-                  placeholder={`Anything specific for this message?\ne.g., "We're meeting for dinner next week" or "They just got promoted"`}
-                  rows={3}
+                  placeholder={`Anything specific for this message?\ne.g., "We're meeting for dinner tonight" or "Mention their new puppy"`}
+                  rows={2}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none"
                 />
               </div>

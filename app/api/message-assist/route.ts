@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { db, notes, profiles } from '@/lib/db';
-import { eq, and } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
@@ -9,6 +7,7 @@ const generateMessageSchema = z.object({
   profileId: z.string().uuid(),
   profileName: z.string(),
   eventType: z.string(), // 'birthday', 'anniversary', or custom label
+  notes: z.string().optional(), // User's private notes (passed from modal)
   additionalContext: z.string().optional(), // User-provided context for this message
   tone: z.enum(['warm', 'casual', 'formal', 'playful']).default('warm'),
   feedback: z.string().optional(), // Regeneration feedback
@@ -17,28 +16,15 @@ const generateMessageSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    await requireAuth();
     const body = await request.json();
     const data = generateMessageSchema.parse(body);
-    
-    // Fetch existing private notes for this person
-    const [existingNote] = await db
-      .select()
-      .from(notes)
-      .where(
-        and(
-          eq(notes.profileId, data.profileId),
-          eq(notes.userId, user.id)
-        )
-      )
-      .limit(1);
     
     const apiKey = process.env.ANTHROPIC_API_KEY;
     
     if (!apiKey) {
       return NextResponse.json({
         message: generateFallbackMessage(data.profileName, data.eventType, data.tone),
-        note: existingNote?.content || null,
       });
     }
     
@@ -58,8 +44,8 @@ The tone should be ${toneDescriptions[data.tone]}.
 
 Keep the message concise - suitable for a text message or short email (2-4 sentences max).`;
 
-    if (existingNote?.content) {
-      prompt += `\n\nHere are some personal notes about ${data.profileName} that might help personalize the message:\n${existingNote.content}`;
+    if (data.notes) {
+      prompt += `\n\nHere are some personal notes about ${data.profileName} that might help personalize the message:\n${data.notes}`;
     }
     
     if (data.additionalContext) {
@@ -82,10 +68,7 @@ Keep the message concise - suitable for a text message or short email (2-4 sente
       ? response.content[0].text.trim()
       : generateFallbackMessage(data.profileName, data.eventType, data.tone);
     
-    return NextResponse.json({
-      message,
-      note: existingNote?.content || null,
-    });
+    return NextResponse.json({ message });
   } catch (error) {
     console.error('Message assist error:', error);
     
