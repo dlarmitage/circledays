@@ -42,7 +42,12 @@ export async function POST(request: NextRequest) {
 
 The tone should be ${toneDescriptions[data.tone]}.
 
-Keep the message concise - suitable for a text message or short email (2-4 sentences max).`;
+Keep the message concise - suitable for a text message or short email (2-4 sentences max).
+
+IMPORTANT STYLE RULES:
+- Do NOT use em-dashes (—) - they sound robotic and AI-generated
+- You may use 1-2 emojis if appropriate, but sparingly
+- Write like a real human would text or email a friend`;
 
     if (data.notes) {
       prompt += `\n\nHere are some personal notes about ${data.profileName} that might help personalize the message:\n${data.notes}`;
