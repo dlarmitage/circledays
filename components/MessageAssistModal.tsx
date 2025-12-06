@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { X, Sparkles, Copy, Check, RefreshCw, Save } from 'lucide-react';
+import { X, Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
 
 interface MessageAssistModalProps {
   isOpen: boolean;
@@ -72,7 +72,7 @@ export function MessageAssistModal({
     }
   }, [isOpen, profileId]);
   
-  const saveNotes = async () => {
+  const saveNotes = async (showConfirmation = true) => {
     if (!notesChanged) return;
     
     setSavingNotes(true);
@@ -83,13 +83,23 @@ export function MessageAssistModal({
         body: JSON.stringify({ content: notes }),
       });
       setOriginalNotes(notes);
-      setNotesSaved(true);
-      setTimeout(() => setNotesSaved(false), 2000);
+      if (showConfirmation) {
+        setNotesSaved(true);
+        setTimeout(() => setNotesSaved(false), 2000);
+      }
     } catch (err) {
       console.error('Failed to save notes:', err);
     } finally {
       setSavingNotes(false);
     }
+  };
+  
+  // Auto-save notes when closing
+  const handleClose = async () => {
+    if (notesChanged) {
+      await saveNotes(false); // Save silently
+    }
+    onClose();
   };
   
   const generateMessage = async (isRegenerate = false) => {
@@ -153,7 +163,7 @@ export function MessageAssistModal({
             Message Assist
           </CardTitle>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-white/20 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
@@ -178,26 +188,19 @@ export function MessageAssistModal({
                   <label className="block text-sm font-medium text-gray-700">
                     Your Notes About {firstName}
                   </label>
-                  {notesChanged && (
-                    <button
-                      onClick={saveNotes}
-                      disabled={savingNotes}
-                      className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
-                    >
+                  {(notesChanged || notesSaved || savingNotes) && (
+                    <span className="text-xs text-gray-400">
                       {savingNotes ? (
                         'Saving...'
                       ) : notesSaved ? (
-                        <>
+                        <span className="text-teal-600 flex items-center gap-1">
                           <Check className="w-3 h-3" />
-                          Saved!
-                        </>
+                          Saved
+                        </span>
                       ) : (
-                        <>
-                          <Save className="w-3 h-3" />
-                          Save Notes
-                        </>
+                        'Unsaved'
                       )}
-                    </button>
+                    </span>
                   )}
                 </div>
                 {loadingNotes ? (
@@ -216,7 +219,7 @@ export function MessageAssistModal({
                   />
                 )}
                 <p className="text-xs text-gray-400 mt-1">
-                  These notes are private and saved for future use
+                  Private notes • Auto-saved when you close
                 </p>
               </div>
               
