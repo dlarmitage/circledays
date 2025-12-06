@@ -22,6 +22,7 @@ export async function GET() {
       user: {
         id: user.id,
         email: user.email,
+        pendingEmail: user.pendingEmail,
         name: user.name,
         timezone: user.timezone,
         mobile: user.mobile,

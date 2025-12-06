@@ -154,6 +154,68 @@ If you didn't request this email, you can safely ignore it.
   return { html, text };
 }
 
+export function generateEmailConfirmationEmail(name: string, confirmationLink: string, newEmail: string) {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 32px; text-align: center;">
+              <h1 style="margin: 0 0 24px; font-size: 28px; font-weight: 700; color: #0d9488;">Confirm Your New Email</h1>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #333333;">
+                Hi ${name},
+              </p>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #333333;">
+                You requested to change your email address to <strong>${newEmail}</strong>. Click the button below to confirm this change.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${confirmationLink}" style="display: inline-block; padding: 14px 32px; background-color: #0d9488; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Confirm Email Change</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #666666;">
+                If you didn't request this change, you can safely ignore this email. Your current email will remain unchanged.
+              </p>
+              <p style="margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: #999999;">
+                This link will expire in 24 hours.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const text = `
+Confirm Your New Email
+
+Hi ${name},
+
+You requested to change your email address to ${newEmail}. Click the link below to confirm this change:
+
+${confirmationLink}
+
+If you didn't request this change, you can safely ignore this email. Your current email will remain unchanged.
+
+This link will expire in 24 hours.
+  `.trim();
+
+  return { html, text };
+}
+
 interface EventReminder {
   profileName: string;
   profilePhoto?: string | null;

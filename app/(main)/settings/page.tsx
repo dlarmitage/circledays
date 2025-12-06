@@ -17,6 +17,7 @@ import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus } f
 interface UserData {
   id: string;
   email: string;
+  pendingEmail: string | null;
   name: string;
   timezone: string;
   mobile: string | null;
@@ -85,6 +86,16 @@ export default function SettingsPage() {
   };
   
   useEffect(() => {
+    // Check for email confirmation success
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('emailConfirmed') === 'true') {
+        setMessage({ type: 'success', text: 'Email confirmed successfully!' });
+        // Remove query param from URL
+        window.history.replaceState({}, '', '/settings');
+      }
+    }
+    
     Promise.all([
       fetch('/api/auth/me').then(res => res.json()),
       fetch('/api/preferences').then(res => res.json()),
@@ -94,7 +105,7 @@ export default function SettingsPage() {
         setProfileData(authData.profile);
         setFormData({
           name: authData.user.name,
-          email: authData.user.email,
+          email: authData.user.pendingEmail || authData.user.email,
           timezone: authData.user.timezone,
           mobile: authData.user.mobile || '',
           notificationChannel: authData.user.notificationChannel,
@@ -143,7 +154,24 @@ export default function SettingsPage() {
       });
       
       if (!userRes.ok) {
-        throw new Error('Failed to save user settings');
+        const errorData = await userRes.json();
+        throw new Error(errorData.error || 'Failed to save user settings');
+      }
+      
+      const userResult = await userRes.json();
+      
+      // If email was changed, show confirmation message
+      if (userResult.user?.pendingEmail) {
+        setMessage({ 
+          type: 'success', 
+          text: `Confirmation email sent to ${userResult.user.pendingEmail}. Please check your inbox to confirm the change.` 
+        });
+        // Refresh user data to show pending email
+        const authRes = await fetch('/api/auth/me');
+        const authData = await authRes.json();
+        if (authData.user) {
+          setUserData(authData.user);
+        }
       }
       
       // Save reminder preferences
@@ -259,12 +287,21 @@ export default function SettingsPage() {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
           
+          {userData?.pendingEmail && (
+            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <p className="text-sm text-amber-800">
+                <strong>Email change pending:</strong> A confirmation email has been sent to <strong>{userData.pendingEmail}</strong>. 
+                Please check your inbox and click the confirmation link to complete the change.
+              </p>
+            </div>
+          )}
+          
           <Input
             label="Email"
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            hint="Used for magic link sign-in and notifications"
+            hint={userData?.pendingEmail ? `Current: ${userData.email} • Pending: ${userData.pendingEmail}` : "Used for magic link sign-in and notifications"}
           />
           
           <Select

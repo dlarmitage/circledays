@@ -22,6 +22,8 @@ export const suggestionStatusEnum = pgEnum('suggestion_status', ['pending', 'acc
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
+  pendingEmail: text('pending_email'), // New email awaiting confirmation
+  emailConfirmationToken: text('email_confirmation_token'), // Token for email confirmation
   name: text('name').notNull(),
   timezone: text('timezone').notNull().default('America/New_York'),
   mobile: text('mobile'),

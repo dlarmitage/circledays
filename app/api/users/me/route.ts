@@ -3,6 +3,8 @@ import { db, users, profiles } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { randomBytes } from 'crypto';
+import { sendEmail, generateEmailConfirmationEmail } from '@/lib/email';
 
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -18,10 +20,52 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const data = updateUserSchema.parse(body);
     
+    const updateData: any = {};
+    
+    // Handle email change - set as pending
+    if (data.email && data.email.toLowerCase() !== user.email.toLowerCase()) {
+      // Check if email is already taken
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, data.email.toLowerCase()))
+        .limit(1);
+      
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'Email already in use' },
+          { status: 400 }
+        );
+      }
+      
+      // Generate confirmation token
+      const token = randomBytes(32).toString('hex');
+      updateData.pendingEmail = data.email.toLowerCase();
+      updateData.emailConfirmationToken = token;
+      
+      // Send confirmation email
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology';
+      const confirmationLink = `${appUrl}/api/users/confirm-email?token=${token}`;
+      const { html, text } = generateEmailConfirmationEmail(user.name, confirmationLink, data.email.toLowerCase());
+      
+      await sendEmail({
+        to: data.email.toLowerCase(),
+        subject: 'Confirm your new email address',
+        html,
+        text,
+      });
+    } else {
+      // For other fields, update directly
+      if (data.name) updateData.name = data.name;
+      if (data.timezone) updateData.timezone = data.timezone;
+      if (data.mobile !== undefined) updateData.mobile = data.mobile;
+      if (data.notificationChannel) updateData.notificationChannel = data.notificationChannel;
+    }
+    
     // Update user
     const [updatedUser] = await db
       .update(users)
-      .set(data)
+      .set(updateData)
       .where(eq(users.id, user.id))
       .returning();
     

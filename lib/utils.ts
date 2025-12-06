@@ -81,30 +81,19 @@ export function calculateAge(birthDate: Date | string): number | null {
 }
 
 /**
- * Calculate the age someone is turning on their next birthday (or today if it's their birthday)
+ * Calculate the age someone is turning on their next birthday
  * Returns null if birth year is unknown
+ * 
+ * This always returns the age they will turn on their next birthday:
+ * - If birthday is today or has passed: they'll turn currentAge + 1 next year
+ * - If birthday is upcoming: they'll turn currentAge + 1 this year
  */
 export function turningAge(birthDate: Date | string): number | null {
   const currentAge = calculateAge(birthDate);
   if (currentAge === null) return null;
   
-  const birth = typeof birthDate === 'string' ? parseLocalDate(birthDate) : birthDate;
-  const today = new Date();
-  
-  // Check if birthday is today
-  const isBirthdayToday = birth.getMonth() === today.getMonth() && birth.getDate() === today.getDate();
-  
-  // Check if birthday already passed this year
-  const birthdayThisYear = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
-  const hasBirthdayPassed = today > birthdayThisYear;
-  
-  if (isBirthdayToday || hasBirthdayPassed) {
-    // They've already turned their current age
-    return currentAge;
-  } else {
-    // Birthday is still upcoming, they'll turn currentAge + 1
-    return currentAge + 1;
-  }
+  // Always return the age they'll turn on their next birthday
+  return currentAge + 1;
 }
 
 export function daysUntil(date: Date | string, recurring: boolean = true): number {
