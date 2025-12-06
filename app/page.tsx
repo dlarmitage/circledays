@@ -11,11 +11,16 @@ import {
   MessageSquare,
   UserPlus,
   Share2,
-  Cake,
-  Heart,
-  Star,
   ChevronRight,
   Check,
+  Sparkles,
+  Clock,
+  Lock,
+  StickyNote,
+  Globe,
+  Heart,
+  Zap,
+  HelpCircle,
 } from 'lucide-react';
 
 export default async function HomePage() {
@@ -49,21 +54,21 @@ export default async function HomePage() {
       <main className="container mx-auto px-4 pt-12 md:pt-20 pb-16">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Smartphone className="w-4 h-4" />
-            Install as an app on any device
+            <Heart className="w-4 h-4" />
+            Relationships, not reminders
           </div>
           
           <h1 className="font-display text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Never miss a{' '}
+            The{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-coral-500">
-              special day
+              people-first
             </span>
-            {' '}again
+            {' '}way to remember
           </h1>
           
           <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            The simple, beautiful way to remember birthdays, anniversaries, and special moments 
-            for everyone in your life. Build your circle, get timely reminders, and strengthen your relationships.
+            More than reminders—CircleDays helps you nurture relationships with private notes, 
+            AI-powered messages, and a shared network that grows with your family and friends.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -76,118 +81,226 @@ export default async function HomePage() {
           </div>
           
           <p className="text-sm text-gray-500 mt-4">
-            No credit card required • Free forever for personal use
+            No credit card required • Free forever
           </p>
         </div>
         
-        {/* Event Types Preview */}
-        <div className="flex justify-center gap-4 mb-20 flex-wrap">
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-soft">
-            <span className="text-xl">🎂</span>
-            <span className="text-sm font-medium text-gray-700">Birthdays</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-soft">
-            <span className="text-xl">❤️</span>
-            <span className="text-sm font-medium text-gray-700">Anniversaries</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-soft">
-            <span className="text-xl">🎆</span>
-            <span className="text-sm font-medium text-gray-700">Custom Events</span>
+        {/* Problem/Solution */}
+        <div className="max-w-4xl mx-auto mb-24 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 md:p-12 text-white">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-8">
+            Why calendar apps fail at birthdays
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-coral-400 font-semibold mb-4 flex items-center gap-2">
+                <span className="text-xl">😩</span> The calendar problem
+              </h3>
+              <ul className="space-y-3 text-gray-300 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-coral-400 mt-0.5">✗</span>
+                  Your birthday list is unique to you—can't share it meaningfully
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-coral-400 mt-0.5">✗</span>
+                  Multiple calendars for family, friends, work—chaos
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-coral-400 mt-0.5">✗</span>
+                  No context—just a name and a date
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-coral-400 mt-0.5">✗</span>
+                  Reminder pops up, you scramble to write something
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-teal-400 font-semibold mb-4 flex items-center gap-2">
+                <span className="text-xl">✨</span> The CircleDays way
+              </h3>
+              <ul className="space-y-3 text-gray-300 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">✓</span>
+                  Everyone has their own view, but dates are shared once
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">✓</span>
+                  One circle that connects naturally through relationships
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">✓</span>
+                  Private notes help you remember what matters
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400 mt-0.5">✓</span>
+                  AI Message Assist crafts thoughtful messages for you
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        {/* Main Features */}
+        {/* Key Differentiators */}
         <div className="max-w-5xl mx-auto mb-24">
           <h2 className="font-display text-2xl md:text-3xl font-bold text-center text-gray-900 mb-4">
-            Everything you need to stay connected
+            Features that actually matter
           </h2>
           <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-            Simple tools that work together to help you remember what matters most
+            Built for how relationships really work
           </p>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Calendar */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Message Assist - Hero Feature */}
+            <div className="md:col-span-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-8 shadow-lg text-white">
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                    <Sparkles className="w-4 h-4" />
+                    AI-Powered
+                  </div>
+                  <h3 className="font-display text-2xl font-bold mb-3">
+                    Message Assist
+                  </h3>
+                  <p className="text-purple-100 mb-4">
+                    When a birthday arrives, don't stare at a blank screen. Message Assist reads your private 
+                    notes and crafts a personalized, heartfelt message you can copy and send. Choose the tone, 
+                    refine as needed—the perfect message in seconds.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-xs">Uses your notes</span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-xs">Multiple tones</span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-xs">One-click copy</span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 bg-white/10 rounded-2xl flex items-center justify-center">
+                  <Sparkles className="w-12 h-12 md:w-16 md:h-16 text-white/80" />
+                </div>
+              </div>
+            </div>
+            
+            {/* Private Notes */}
             <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center mb-4">
-                <Calendar className="w-6 h-6 text-pink-600" />
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
+                <StickyNote className="w-6 h-6 text-amber-600" />
               </div>
               <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Visual Calendar
+                Private Notes
               </h3>
-              <p className="text-sm text-gray-600">
-                See all your events at a glance with photos and emoji indicators. 
-                Tap any day to see who's celebrating.
+              <p className="text-sm text-gray-600 mb-3">
+                Remember the little things: their favorite restaurant, that book they loved, 
+                inside jokes. Your notes are encrypted and only visible to you—building a 
+                treasure trove of context over the years.
+              </p>
+              <p className="text-xs text-gray-400 flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Auto-saves as you type
               </p>
             </div>
             
-            {/* Connections */}
+            {/* Smart Network */}
             <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-teal-600" />
               </div>
               <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Your Connections
+                Shared Yet Personal
               </h3>
-              <p className="text-sm text-gray-600">
-                Browse your connections and discover friends-of-friends. 
-                See mutual connections and grow your circle organically.
+              <p className="text-sm text-gray-600 mb-3">
+                When you add Grandma, she only gets entered once. Invite family members and 
+                they'll see her too—with their own private notes and reminder preferences. 
+                No more duplicate data across a dozen calendars.
               </p>
+              <p className="text-xs text-gray-400">Discover friends-of-friends organically</p>
             </div>
             
-            {/* Reminders */}
-            <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-coral-50 flex items-center justify-center mb-4">
-                <Bell className="w-6 h-6 text-coral-600" />
-              </div>
-              <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Smart Reminders
-              </h3>
-              <p className="text-sm text-gray-600">
-                Get notified via email or SMS. Choose to be reminded 
-                on the day, 1 day before, a week ahead—you decide.
-              </p>
-            </div>
-            
-            {/* Profiles */}
-            <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mb-4">
-                <UserPlus className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Rich Profiles
-              </h3>
-              <p className="text-sm text-gray-600">
-                Add photos, multiple events, and private notes for each person. 
-                Track birthdays, anniversaries, and any custom date.
-              </p>
-            </div>
-            
-            {/* Invites */}
-            <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
-                <Share2 className="w-6 h-6 text-amber-600" />
-              </div>
-              <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Invite & Share
-              </h3>
-              <p className="text-sm text-gray-600">
-                Invite friends to claim their profile and manage their own dates. 
-                Share connections to help everyone stay in touch.
-              </p>
-            </div>
-            
-            {/* PWA */}
+            {/* Timezone-Aware */}
             <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
-                <Smartphone className="w-6 h-6 text-blue-600" />
+                <Globe className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
-                Works Everywhere
+                Timezone-Smart Reminders
               </h3>
-              <p className="text-sm text-gray-600">
-                Install on your phone, tablet, or desktop. 
-                Works offline and feels like a native app.
+              <p className="text-sm text-gray-600 mb-3">
+                Reminders arrive at 7 AM in <em>your</em> timezone—not 3 AM because the 
+                server is somewhere else. Whether you're in Tokyo or Toronto, you wake up 
+                to the reminder right when you need it.
               </p>
+              <p className="text-xs text-gray-400">Email or SMS, your choice</p>
+            </div>
+            
+            {/* Help Assistant */}
+            <div className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center mb-4">
+                <HelpCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-display text-lg font-semibold text-gray-900 mb-2">
+                Built-in Help Assistant
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Stuck? Tap the help button and chat with an AI that knows CircleDays inside 
+                and out. Ask anything—how to invite someone, where to find your calendar, 
+                how connections work. Instant answers.
+              </p>
+              <p className="text-xs text-gray-400">Always available, always helpful</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Visual Calendar Section */}
+        <div className="max-w-4xl mx-auto mb-24">
+          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-soft">
+            <div className="flex flex-col md:flex-row md:items-center gap-8">
+              <div className="flex-1">
+                <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center mb-4">
+                  <Calendar className="w-6 h-6 text-pink-600" />
+                </div>
+                <h2 className="font-display text-2xl font-bold text-gray-900 mb-4">
+                  A calendar that shows faces, not just text
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  See who's celebrating at a glance with mini avatars and emoji indicators. 
+                  Switch between calendar and list views. Tap any event to see the full profile 
+                  and—if it's today—launch Message Assist.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                    <span className="text-lg">🎂</span>
+                    <span className="text-sm text-gray-600">Birthdays</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                    <span className="text-lg">❤️</span>
+                    <span className="text-sm text-gray-600">Anniversaries</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                    <span className="text-lg">🎆</span>
+                    <span className="text-sm text-gray-600">Custom events</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-shrink-0 grid grid-cols-7 gap-1 bg-gray-100 p-3 rounded-2xl w-full md:w-64">
+                {['S','M','T','W','T','F','S'].map((d, i) => (
+                  <div key={i} className="text-center text-xs font-medium text-gray-400 py-1">{d}</div>
+                ))}
+                {Array.from({length: 35}, (_, i) => {
+                  const day = i - 3;
+                  const isToday = day === 15;
+                  const hasEvent = [8, 15, 22, 28].includes(day);
+                  return (
+                    <div 
+                      key={i} 
+                      className={`aspect-square flex items-center justify-center text-xs rounded-lg
+                        ${day < 1 || day > 31 ? 'text-gray-300' : 'text-gray-600'}
+                        ${isToday ? 'bg-teal-500 text-white font-bold' : ''}
+                        ${hasEvent && !isToday ? 'bg-pink-100' : ''}
+                      `}
+                    >
+                      {day >= 1 && day <= 31 ? day : ''}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -195,7 +308,7 @@ export default async function HomePage() {
         {/* How It Works */}
         <div className="max-w-4xl mx-auto mb-24">
           <h2 className="font-display text-2xl md:text-3xl font-bold text-center text-gray-900 mb-12">
-            Get started in 3 simple steps
+            Up and running in minutes
           </h2>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -203,9 +316,9 @@ export default async function HomePage() {
               <div className="w-12 h-12 rounded-full bg-teal-500 text-white flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 1
               </div>
-              <h3 className="font-display font-semibold text-gray-900 mb-2">Sign up free</h3>
+              <h3 className="font-display font-semibold text-gray-900 mb-2">Sign in with email</h3>
               <p className="text-sm text-gray-600">
-                Just enter your email. No password needed—we use secure magic links.
+                No passwords to remember. We send a secure magic link—click and you're in.
               </p>
             </div>
             
@@ -215,7 +328,7 @@ export default async function HomePage() {
               </div>
               <h3 className="font-display font-semibold text-gray-900 mb-2">Add your people</h3>
               <p className="text-sm text-gray-600">
-                Create profiles with photos and dates. Add as many events as you like.
+                Name, birthday, photo. Add notes and events. Invite them to claim their profile.
               </p>
             </div>
             
@@ -223,9 +336,9 @@ export default async function HomePage() {
               <div className="w-12 h-12 rounded-full bg-teal-500 text-white flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 3
               </div>
-              <h3 className="font-display font-semibold text-gray-900 mb-2">Never forget again</h3>
+              <h3 className="font-display font-semibold text-gray-900 mb-2">Relax</h3>
               <p className="text-sm text-gray-600">
-                Get timely reminders and see upcoming events on your calendar.
+                Get reminded when it matters. Use Message Assist for the perfect note.
               </p>
             </div>
           </div>
@@ -234,10 +347,10 @@ export default async function HomePage() {
         {/* Notification Options */}
         <div className="max-w-3xl mx-auto mb-24 bg-white rounded-3xl p-8 md:p-12 shadow-soft">
           <h2 className="font-display text-2xl md:text-3xl font-bold text-center text-gray-900 mb-4">
-            Get reminded your way
+            Reminders on your terms
           </h2>
           <p className="text-center text-gray-600 mb-8">
-            Choose how and when you want to be notified
+            Pick your channel and timing—then forget about it
           </p>
           
           <div className="grid sm:grid-cols-2 gap-6">
@@ -247,7 +360,7 @@ export default async function HomePage() {
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900">Email</h4>
-                <p className="text-sm text-gray-600">Beautiful reminder emails with event details</p>
+                <p className="text-sm text-gray-600">Beautiful emails with all the details you need</p>
               </div>
             </div>
             
@@ -257,13 +370,13 @@ export default async function HomePage() {
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900">SMS</h4>
-                <p className="text-sm text-gray-600">Quick text reminders straight to your phone</p>
+                <p className="text-sm text-gray-600">Quick texts that get right to the point</p>
               </div>
             </div>
           </div>
           
           <div className="mt-8 pt-8 border-t border-gray-100">
-            <p className="text-sm text-gray-500 text-center mb-4">Customize your reminder timing:</p>
+            <p className="text-sm text-gray-500 text-center mb-4">Choose when to be reminded:</p>
             <div className="flex flex-wrap justify-center gap-2">
               {['Day of', '1 day before', '3 days', '1 week', '2 weeks'].map((timing) => (
                 <span key={timing} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-full text-sm font-medium">
@@ -274,13 +387,33 @@ export default async function HomePage() {
           </div>
         </div>
 
+        {/* Install as App */}
+        <div className="max-w-3xl mx-auto mb-24 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 shadow-lg mb-6">
+            <Smartphone className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+            Install it like an app
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+            CircleDays is a Progressive Web App. Add it to your home screen on any device—
+            iPhone, Android, tablet, desktop. It works offline and feels completely native.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-500">
+            <span className="flex items-center gap-1"><Check className="w-4 h-4 text-teal-500" /> No app store needed</span>
+            <span className="flex items-center gap-1"><Check className="w-4 h-4 text-teal-500" /> Works offline</span>
+            <span className="flex items-center gap-1"><Check className="w-4 h-4 text-teal-500" /> Always up to date</span>
+          </div>
+        </div>
+
         {/* Final CTA */}
         <div className="text-center mb-16">
           <h2 className="font-display text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            Ready to remember what matters?
+            Start remembering what matters
           </h2>
           <p className="text-gray-600 mb-8 max-w-lg mx-auto">
-            Join CircleDays today and never miss another birthday, anniversary, or special moment.
+            Your relationships deserve more than a calendar entry. 
+            Join CircleDays and make every special day count.
           </p>
           <Link href="/login">
             <Button size="lg" className="text-base px-8">
