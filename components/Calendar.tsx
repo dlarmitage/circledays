@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Gift, Heart, Star, Cake, CalendarDays, List } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
-import { calculateAge, daysUntil } from '@/lib/utils';
+import { turningAge, daysUntil } from '@/lib/utils';
 
 interface CalendarEvent {
   id: string;
@@ -132,8 +132,7 @@ export function Calendar({ onEventClick }: CalendarProps) {
                 const eventDaysUntil = daysUntil(day.date, event.isRecurring);
                 // Only include future events or today
                 if (eventDaysUntil >= 0) {
-                  const rawAge = event.type === 'birthday' ? calculateAge(event.originalDate) : null;
-                  const age = rawAge !== null ? rawAge + 1 : undefined;
+                  const age = event.type === 'birthday' ? turningAge(event.originalDate) ?? undefined : undefined;
                   allEvents.push({
                     ...event,
                     date: day.date,

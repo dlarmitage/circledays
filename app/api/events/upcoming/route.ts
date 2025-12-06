@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, connections, events } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq, or, and, sql } from 'drizzle-orm';
-import { daysUntil, calculateAge } from '@/lib/utils';
+import { daysUntil, turningAge } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,8 +69,7 @@ export async function GET(request: NextRequest) {
     const upcomingEvents = allEvents
       .map(({ event, profile }) => {
         const daysUntilEvent = daysUntil(event.date);
-        const rawAge = event.type === 'birthday' ? calculateAge(event.date) : null;
-        const age = rawAge !== null ? rawAge + 1 : undefined;
+        const age = event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined;
         
         return {
           id: event.id,

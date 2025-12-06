@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { InviteModal } from '@/components/InviteModal';
 import { AddEventModal } from '@/components/AddEventModal';
 import { EditEventModal } from '@/components/EditEventModal';
-import { formatDate, calculateAge, getDaysUntilText, daysUntil } from '@/lib/utils';
+import { formatDate, turningAge, getDaysUntilText, daysUntil } from '@/lib/utils';
 import {
   ArrowLeft,
   Cake,
@@ -521,8 +521,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 {events.map(event => {
                   const Icon = getEventIcon(event.type);
                   const eventDaysUntil = daysUntil(event.date, event.recurring ?? true);
-                  const rawAge = event.type === 'birthday' ? calculateAge(event.date) : null;
-                  const age = rawAge !== null ? rawAge + 1 : null;
+                  const age = event.type === 'birthday' ? turningAge(event.date) : null;
                   const isPastOneTime = !event.recurring && eventDaysUntil < 0;
                   
                   return (

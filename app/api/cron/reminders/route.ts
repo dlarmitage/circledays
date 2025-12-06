@@ -3,7 +3,7 @@ import { db, users, profiles, connections, events, reminderPreferences, reminder
 import { sendEmail, generateReminderEmail } from '@/lib/email';
 import { sendSms, generateReminderSms } from '@/lib/sms';
 import { eq, or, and, sql } from 'drizzle-orm';
-import { daysUntil, calculateAge, formatDate } from '@/lib/utils';
+import { daysUntil, turningAge, formatDate } from '@/lib/utils';
 
 // Helper to get current hour in a timezone
 function getCurrentHourInTimezone(timezone: string): number {
@@ -202,9 +202,7 @@ export async function GET(request: NextRequest) {
           eventType: event.type === 'custom' ? (event.customLabel || 'Event') : event.type,
           eventDate: formatDate(event.date, { month: 'long', day: 'numeric' }),
           daysUntil: daysUntil(event.date),
-          age: event.type === 'birthday' && calculateAge(event.date) !== null 
-            ? calculateAge(event.date)! + 1 
-            : undefined,
+          age: event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined,
         }));
         
         const newEventIds = newEventsToNotify.map(e => e.event.id);
