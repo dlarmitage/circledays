@@ -155,6 +155,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [disconnectingConnection, setDisconnectingConnection] = useState<{ profileId: string; name: string } | null>(null);
+  const [showAllConnections, setShowAllConnections] = useState(false);
   
   // Account editing state (for own profile)
   const [editingEmail, setEditingEmail] = useState(false);
@@ -687,7 +688,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {connections.slice(0, 9).map(connection => (
+              {(showAllConnections ? connections : connections.slice(0, 9)).map(connection => (
                 <div
                   key={connection.id}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
@@ -721,9 +722,15 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
               ))}
             </div>
             {connections.length > 9 && (
-              <p className="text-sm text-gray-500 mt-3">
-                +{connections.length - 9} more connections
-              </p>
+              <button
+                onClick={() => setShowAllConnections(!showAllConnections)}
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium mt-3 transition-colors"
+              >
+                {showAllConnections 
+                  ? `Show less (hide ${connections.length - 9})`
+                  : `+${connections.length - 9} more connections`
+                }
+              </button>
             )}
           </CardContent>
         </Card>
