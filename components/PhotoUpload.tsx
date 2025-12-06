@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ImageCropper } from '@/components/ImageCropper';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, Clipboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PhotoUploadProps {
@@ -29,19 +29,41 @@ export function PhotoUpload({
   const [error, setError] = useState<string | null>(null);
   const [cropperImage, setCropperImage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle paste from clipboard
+  const handlePaste = async (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
     
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          processImageFile(file);
+        }
+        return;
+      }
+    }
+  };
+  
+  // Listen for paste events when component is mounted
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => handlePaste(e);
+    document.addEventListener('paste', handler);
+    return () => document.removeEventListener('paste', handler);
+  }, []);
+  
+  const processImageFile = (file: File) => {
     // Validate on client side
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!validTypes.includes(file.type)) {
-      setError('Please use JPEG, PNG, or WebP images');
+      setError('Please use JPEG, PNG, WebP, or GIF images');
       return;
     }
     
-    if (file.size > 10 * 1024 * 1024) { // Allow larger files since we'll crop
+    if (file.size > 10 * 1024 * 1024) {
       setError('Image must be less than 10MB');
       return;
     }
@@ -54,6 +76,13 @@ export function PhotoUpload({
       setCropperImage(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+  
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    processImageFile(file);
     
     // Reset input
     if (inputRef.current) {
@@ -156,6 +185,11 @@ export function PhotoUpload({
         >
           {photo ? 'Change Photo' : 'Add Photo'}
         </Button>
+        
+        <p className="text-xs text-gray-400 flex items-center gap-1">
+          <Clipboard className="w-3 h-3" />
+          or paste from clipboard
+        </p>
         
         {error && (
           <p className="text-xs text-coral-600">{error}</p>

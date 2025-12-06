@@ -241,7 +241,7 @@ export default async function HomePage() {
           
           <div className="bg-white rounded-3xl p-4 md:p-8 shadow-soft">
             <img 
-              src="/calendar-preview.png" 
+              src="/calendar_preview.png" 
               alt="CircleDays calendar showing birthdays with photos and emoji indicators" 
               className="w-full rounded-2xl"
             />
