@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { Plus, Users, CheckSquare, X, Send } from 'lucide-react';
+import { areNamesSimilar } from '@/lib/utils';
 
 interface Profile {
   id: string;
@@ -194,17 +195,17 @@ export default function NetworkPage() {
       const searchRes = await fetch(`/api/profiles/search?q=${encodeURIComponent(profileName)}`);
       const searchData = await searchRes.json();
       
-      // Find other profiles with same name
+      // Find other profiles with similar names (handles married names, different formats)
       const profile = searchData.results?.find((r: any) => r.id === profileId);
       if (!profile) return;
       
       const similarProfiles = searchData.results?.filter((r: any) => 
         r.id !== profileId && 
-        r.name.toLowerCase().trim() === profile.name.toLowerCase().trim()
+        areNamesSimilar(r.name, profile.name)
       ) || [];
       
       if (similarProfiles.length === 0) {
-        alert('No other profiles with the same name found in search results.');
+        alert('No other profiles with similar names found in search results.');
         return;
       }
       

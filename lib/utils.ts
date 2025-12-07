@@ -30,6 +30,66 @@ export function getInitials(name: string): string {
 }
 
 /**
+ * Check if two names are likely the same person
+ * Handles cases like:
+ * - "Swartzendruber, Heidi" vs "hine, Heidi swartzendruber" (married name)
+ * - "John Smith" vs "Smith, John" (different formats)
+ * - "Mary Jane Watson" vs "Mary Watson" (middle name differences)
+ */
+export function areNamesSimilar(name1: string, name2: string): boolean {
+  // Normalize: lowercase, remove extra spaces, handle commas
+  const normalize = (name: string): string[] => {
+    return name
+      .toLowerCase()
+      .replace(/,/g, ' ') // Replace commas with spaces
+      .split(/\s+/) // Split on whitespace
+      .filter(part => part.length > 0) // Remove empty parts
+      .filter(part => part.length > 1 || part.match(/[a-z]/i)); // Keep single letters only if they're actual initials
+  };
+
+  const parts1 = normalize(name1);
+  const parts2 = normalize(name2);
+
+  // If exact match after normalization, definitely similar
+  if (parts1.join(' ') === parts2.join(' ')) {
+    return true;
+  }
+
+  // Extract key components
+  const getKeyParts = (parts: string[]) => {
+    if (parts.length === 0) return { first: '', last: '', all: [] };
+    if (parts.length === 1) return { first: parts[0], last: parts[0], all: parts };
+    // First name is typically the first part, last name is the last part
+    // But handle "Last, First" format by checking if first part ends with comma-like pattern
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    return { first, last, all: parts };
+  };
+
+  const key1 = getKeyParts(parts1);
+  const key2 = getKeyParts(parts2);
+
+  // Check if first names match (allowing for variations)
+  const firstNameMatch = key1.first === key2.first || 
+    (key1.first.length > 2 && key2.first.length > 2 && 
+     (key1.first.startsWith(key2.first) || key2.first.startsWith(key1.first)));
+
+  // Check if last names match (allowing for multiple last names like married names)
+  const lastNameMatch = key1.last === key2.last ||
+    key1.all.includes(key2.last) ||
+    key2.all.includes(key1.last);
+
+  // Check if they share at least 2 significant words (for cases like "Heidi Swartzendruber" vs "Heidi Hine Swartzendruber")
+  const sharedWords = parts1.filter(p => p.length > 2 && parts2.includes(p));
+  const hasMultipleSharedWords = sharedWords.length >= 2;
+
+  // Similar if:
+  // 1. First name matches AND last name matches, OR
+  // 2. They share at least 2 significant words (handles married names)
+  return (firstNameMatch && lastNameMatch) || hasMultipleSharedWords;
+}
+
+/**
  * Parse a date string (YYYY-MM-DD) as a local date, not UTC
  * This prevents timezone shifting issues
  */

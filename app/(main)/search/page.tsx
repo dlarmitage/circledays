@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { MergeProfilesModal } from '@/components/MergeProfilesModal';
 import { Search, Users, Merge } from 'lucide-react';
 import { debounce } from '@/lib/debounce';
+import { areNamesSimilar } from '@/lib/utils';
 
 interface SearchResult {
   id: string;
@@ -70,10 +71,10 @@ export default function SearchPage() {
     const profile = results.find(r => r.id === profileId);
     if (!profile) return;
     
-    // Find other profiles with similar names
+    // Find other profiles with similar names (handles married names, different formats)
     const similarProfiles = results.filter(r => 
       r.id !== profileId && 
-      r.name.toLowerCase().trim() === profile.name.toLowerCase().trim()
+      areNamesSimilar(r.name, profile.name)
     );
     
     if (similarProfiles.length === 0) {
@@ -188,10 +189,10 @@ export default function SearchPage() {
       ) : results.length > 0 ? (
         <div className="space-y-3">
           {results.map((result, index) => {
-            // Check if there are other results with the same name (for merge)
+            // Check if there are other results with similar names (for merge)
             const duplicateCount = results.filter(r => 
               r.id !== result.id && 
-              r.name.toLowerCase().trim() === result.name.toLowerCase().trim()
+              areNamesSimilar(r.name, result.name)
             ).length;
             
             return (

@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Search, ChevronRight, Users, X, Check, Merge } from 'lucide-react';
+import { areNamesSimilar } from '@/lib/utils';
 
 interface Profile {
   id: string;
@@ -300,11 +301,11 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               transition={{ duration: 0.2 }}
             >
               {sortedProfiles.map((profile, index) => {
-                // Check for duplicates in search mode
+                // Check for duplicates in search mode using smart name matching
                 const duplicateCount = isSearchMode && sortedProfiles
                   ? sortedProfiles.filter(p => 
                       p.id !== profile.id && 
-                      p.name.toLowerCase().trim() === profile.name.toLowerCase().trim()
+                      areNamesSimilar(p.name, profile.name)
                     ).length
                   : 0;
                 
