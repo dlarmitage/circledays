@@ -3,6 +3,7 @@ import { db, profiles, events, notes, connections, connectionSuggestions, invite
 import { requireAuth } from '@/lib/auth';
 import { eq, or, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { UNKNOWN_YEAR, parseLocalDate } from '@/lib/utils';
 
 const mergeSchema = z.object({
   keepProfileId: z.string().uuid(), // Profile to keep
@@ -80,18 +81,64 @@ export async function POST(request: NextRequest) {
         .from(events)
         .where(eq(events.profileId, data.keepProfileId));
       
-      const keepEventKeys = new Set(
-        keepEvents.map(e => `${e.type}-${e.date}-${e.customLabel || ''}`)
-      );
+      // For birthdays, we need to check month/day match (ignoring year)
+      // For other events, check exact date match
+      const isDuplicate = (mergeEvent: typeof mergeEvents[0], keepEvent: typeof keepEvents[0]): boolean => {
+        // Must be same type
+        if (mergeEvent.type !== keepEvent.type) return false;
+        
+        // Custom events must have same label
+        if (mergeEvent.type === 'custom' && mergeEvent.customLabel !== keepEvent.customLabel) {
+          return false;
+        }
+        
+        // For birthdays, check if month/day matches (ignore year)
+        if (mergeEvent.type === 'birthday') {
+          const mergeDate = parseLocalDate(mergeEvent.date);
+          const keepDate = parseLocalDate(keepEvent.date);
+          return mergeDate.getMonth() === keepDate.getMonth() && 
+                 mergeDate.getDate() === keepDate.getDate();
+        }
+        
+        // For other events, exact date match
+        return mergeEvent.date === keepEvent.date;
+      };
       
-      // Move non-duplicate events
-      for (const event of mergeEvents) {
-        const eventKey = `${event.type}-${event.date}-${event.customLabel || ''}`;
-        if (!keepEventKeys.has(eventKey)) {
+      // Move non-duplicate events, or handle duplicates intelligently
+      for (const mergeEvent of mergeEvents) {
+        const duplicate = keepEvents.find(ke => isDuplicate(mergeEvent, ke));
+        
+        if (!duplicate) {
+          // No duplicate, move the event
           await db
             .update(events)
             .set({ profileId: data.keepProfileId })
-            .where(eq(events.id, event.id));
+            .where(eq(events.id, mergeEvent.id));
+        } else {
+          // Duplicate found - for birthdays, prefer the one with a known year
+          if (mergeEvent.type === 'birthday') {
+            const mergeDate = parseLocalDate(mergeEvent.date);
+            const duplicateDate = parseLocalDate(duplicate.date);
+            const mergeYear = mergeDate.getFullYear();
+            const duplicateYear = duplicateDate.getFullYear();
+            
+            // If merge event has known year and duplicate has unknown year, replace it
+            if (mergeYear !== UNKNOWN_YEAR && duplicateYear === UNKNOWN_YEAR) {
+              // Update the duplicate event with the known year
+              await db
+                .update(events)
+                .set({ date: mergeEvent.date })
+                .where(eq(events.id, duplicate.id));
+              // Delete the merge event
+              await db.delete(events).where(eq(events.id, mergeEvent.id));
+            } else {
+              // Otherwise, just delete the merge event (keep the existing one)
+              await db.delete(events).where(eq(events.id, mergeEvent.id));
+            }
+          } else {
+            // For non-birthday duplicates, just delete the merge event
+            await db.delete(events).where(eq(events.id, mergeEvent.id));
+          }
         }
       }
     }
