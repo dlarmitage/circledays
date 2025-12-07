@@ -67,17 +67,24 @@ The dashboard shows your **upcoming events** for the next 30 or 90 days, grouped
 - Today
 - Tomorrow
 - This Week
-- This Month
+- Next Four Weeks (events 8-30 days away)
 - Later
 
 If someone has suggested connections for you, a **Suggested Connections card** appears at the top where you can accept or decline them.
+
+**Message Assist**: For events happening today or tomorrow, you'll see a "Message Assist" button. This opens a modal where you can:
+- View and edit your private notes about the person
+- Generate an AI-powered message based on the event type, person's name, and your notes
+- Refine the message tone (friendly, casual, formal, warm)
+- Copy the message to your clipboard
+Notes are automatically saved when you close the modal.
 
 ### Connections (Network View)
 The Connections page shows your social graph as a **hierarchical tree**:
 
 **Your Connections View**:
 - Lists all people you're directly connected to
-- Sorted alphabetically by last name
+- Sorted alphabetically by last name, then first name
 - Shows their profile picture (or initials)
 - Shows the count of their connections (tap to drill in)
 
@@ -99,12 +106,18 @@ The Connections page shows your social graph as a **hierarchical tree**:
 
 ### Adding a Person
 Tap "+ Add" to create a new profile:
-1. Enter their name
+1. Enter their name (automatically capitalized - first letter of each word)
 2. Enter their birthday (can check "I don't know the birth year")
-3. Optionally add a photo (with crop/center tool)
+3. Optionally add a photo:
+   - Upload from file
+   - **Paste from clipboard** (Ctrl/Cmd+V) - great for quick photo additions
+   - Crop and center tool available
 4. Save
 
-The system checks for **duplicates** - if someone with a similar name and birthday exists, you'll be asked if it's the same person.
+The system checks for **duplicates** using smart name matching:
+- Detects similar names even with different formats (e.g., "John Smith" vs "Smith, John")
+- Handles married names (e.g., "Heidi Swartzendruber" vs "Heidi Hine Swartzendruber")
+- If a duplicate is found, you'll be asked if it's the same person
 
 ### Profile Page
 When viewing a profile:
@@ -151,10 +164,17 @@ If someone already has an account, you can suggest people they might want to con
 2. Tap "Select"
 3. Check the profiles you want to suggest
 4. Tap "Suggest"
-5. Select one or more recipients (only people with accounts shown)
+5. If all selected profiles are unclaimed (no account), you can toggle "Connect these people to each other" - this will automatically connect them when any one of them joins
 6. Send
 
-Recipients will see the suggestions on their dashboard and can Accept All or accept/decline individually.
+**How it works**:
+- For profiles with accounts: Creates a suggestion notification they'll see on their dashboard
+- For unclaimed profiles: Automatically creates a connection (they'll be connected when they join)
+- If you enable "Connect together", unclaimed profiles will also be connected to each other
+
+Recipients with accounts will see the suggestions on their dashboard and can Accept All or accept/decline individually.
+
+**Note**: If you've suggested connections and then send an invite, the suggestions are preserved - they won't be overwritten.
 
 ### Calendar
 The Calendar page shows events in two views:
@@ -169,7 +189,7 @@ The Calendar page shows events in two views:
 
 **List View**:
 - Shows all events for the next 12 months
-- Grouped by timeframe (This Month, Next Month, etc.)
+- Grouped by timeframe (This Week, Next Four Weeks, Next 3 Months, Later This Year)
 - Quick way to see everything coming up
 
 ### Settings
@@ -189,6 +209,13 @@ The Settings page lets you manage:
 - See and edit events on your own profile
 - Add your birthday if it's missing
 - Fix birth year if someone created your profile without it
+- Add new events (birthdays, anniversaries, custom events)
+- Control privacy settings for your events
+
+**Email Settings**:
+- Update your email address
+- When you change your email, you'll receive a confirmation email to the new address
+- Your email won't change until you confirm it
 
 **Sign Out**: Log out of your account
 
@@ -228,6 +255,7 @@ The Settings page lets you manage:
 - Only you can edit your own profile (name, photo) once you've claimed it
 - If someone created your profile before you had an account, they can edit it until you claim it
 - Once claimed, only the profile owner can make changes
+- **Platform admins** can edit any profile (for maintenance and corrections)
 
 ---
 
@@ -276,7 +304,10 @@ Yes, connecting to an unclaimed profile is instant. If the profile is claimed (t
 4. **Use private events for personal milestones**: First date, day you met someone, etc.
 5. **Check "unknown year" if unsure**: Better to track the date without age than not track at all
 6. **Add photos**: They help you quickly identify people in lists and the calendar
+   - You can paste photos directly from your clipboard (Ctrl/Cmd+V)
 7. **Use the calendar List view**: Great for planning ahead for the whole year
+8. **Use Message Assist**: For events today/tomorrow, let AI help you craft a thoughtful message
+9. **Auto-save notes**: Your notes are automatically saved as you type (no need to click save)
 
 ---
 
@@ -287,6 +318,38 @@ Yes, connecting to an unclaimed profile is instant. If the profile is claimed (t
 - Data is stored securely in the cloud
 - Photos are stored in Vercel Blob storage
 - The app works on desktop and mobile
+
+---
+
+---
+
+## Admin Features (Platform Administrators Only)
+
+**IMPORTANT**: These features are only available to platform administrators. Regular users cannot access or use these features.
+
+### Admin Profile Management
+- **Edit Any Profile**: Admins can edit any profile's name and photo, not just their own
+- **Disconnect Any Connection**: Admins can disconnect any two profiles from each other (useful for fixing incorrect connections)
+- **Show All Profiles**: On the Connections page, admins see a "Show All" button that displays all profiles in the system, not just their connections
+- **Merge Duplicate Profiles**: Admins can merge duplicate profiles, consolidating:
+  - Events (with smart duplicate detection for birthdays - matches by month/day, prefers known years)
+  - Connections
+  - Notes
+  - Profile data (name, photo)
+- **Cleanup Duplicate Birthdays**: Admins can use the cleanup endpoint to remove duplicate birthday events from a profile
+
+### Admin Merge Process
+1. Search for profiles on Connections or Search page
+2. If duplicates are detected (similar names), a "Merge" button appears
+3. Click Merge to open the merge modal
+4. Choose which profile to keep
+5. Select what to merge: name, photo, events, connections, notes
+6. The merge consolidates all data and deletes the duplicate profile
+
+### Admin Disconnect
+- On any profile's connections list, admins see a disconnect button (red minus icon) on hover
+- Clicking it allows disconnecting that profile from the person being viewed
+- Useful for fixing incorrect connections made during invites
 
 ---
 
