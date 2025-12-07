@@ -6,7 +6,9 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
-import { Search, Users } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { MergeProfilesModal } from '@/components/MergeProfilesModal';
+import { Search, Users, Merge } from 'lucide-react';
 import { debounce } from '@/lib/debounce';
 
 interface SearchResult {
@@ -23,6 +25,9 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [selectedProfiles, setSelectedProfiles] = useState<{ profileA: any; profileB: any } | null>(null);
   
   const search = useCallback(
     debounce(async (q: string) => {
@@ -50,6 +55,99 @@ export default function SearchPage() {
   useEffect(() => {
     search(query);
   }, [query, search]);
+  
+  // Check if user is admin
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        setIsAdmin(data.user?.isPlatformAdmin || false);
+      });
+  }, []);
+  
+  const handleMergeClick = async (profileId: string) => {
+    // Find the other profile with same name
+    const profile = results.find(r => r.id === profileId);
+    if (!profile) return;
+    
+    // Find other profiles with similar names
+    const similarProfiles = results.filter(r => 
+      r.id !== profileId && 
+      r.name.toLowerCase().trim() === profile.name.toLowerCase().trim()
+    );
+    
+    if (similarProfiles.length === 0) {
+      alert('No other profiles with the same name found. Select two profiles to merge.');
+      return;
+    }
+    
+    // For now, merge with the first similar one
+    // In the future, could show a picker
+    const profileA = profile;
+    const profileB = similarProfiles[0];
+    
+    // Fetch full profile data
+    try {
+      const [resA, resB] = await Promise.all([
+        fetch(`/api/profiles/${profileA.id}`),
+        fetch(`/api/profiles/${profileB.id}`),
+      ]);
+      
+      const dataA = await resA.json();
+      const dataB = await resB.json();
+      
+      setSelectedProfiles({
+        profileA: {
+          id: profileA.id,
+          name: profileA.name,
+          profilePicture: profileA.profilePicture,
+          linkedUserId: dataA.profile?.linkedUserId || null,
+          eventCount: dataA.events?.length || 0,
+          connectionCount: dataA.connections?.length || 0,
+        },
+        profileB: {
+          id: profileB.id,
+          name: profileB.name,
+          profilePicture: profileB.profilePicture,
+          linkedUserId: dataB.profile?.linkedUserId || null,
+          eventCount: dataB.events?.length || 0,
+          connectionCount: dataB.connections?.length || 0,
+        },
+      });
+      setMergeModalOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch profile data:', error);
+      alert('Failed to load profile data');
+    }
+  };
+  
+  const handleMerge = async (keepProfileId: string, mergeOptions: any) => {
+    if (!selectedProfiles) return;
+    
+    const mergeProfileId = keepProfileId === selectedProfiles.profileA.id 
+      ? selectedProfiles.profileB.id 
+      : selectedProfiles.profileA.id;
+    
+    const res = await fetch('/api/profiles/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keepProfileId,
+        mergeProfileId,
+        mergeOptions,
+      }),
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to merge');
+    }
+    
+    // Refresh search results
+    search(query);
+    setMergeModalOpen(false);
+    setSelectedProfiles(null);
+  };
   
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
@@ -89,23 +187,61 @@ export default function SearchPage() {
         />
       ) : results.length > 0 ? (
         <div className="space-y-3">
-          {results.map((result, index) => (
-            <div
-              key={result.id}
-              className={`stagger-${Math.min(index + 1, 5)}`}
-              style={{ animationFillMode: 'backwards' }}
-            >
-              <ProfileCard
-                {...result}
-                onClick={() => router.push(`/profile/${result.id}`)}
-              />
-            </div>
-          ))}
+          {results.map((result, index) => {
+            // Check if there are other results with the same name (for merge)
+            const duplicateCount = results.filter(r => 
+              r.id !== result.id && 
+              r.name.toLowerCase().trim() === result.name.toLowerCase().trim()
+            ).length;
+            
+            return (
+              <div
+                key={result.id}
+                className={`stagger-${Math.min(index + 1, 5)}`}
+                style={{ animationFillMode: 'backwards' }}
+              >
+                <div className="relative">
+                  <ProfileCard
+                    {...result}
+                    onClick={() => router.push(`/profile/${result.id}`)}
+                  />
+                  {isAdmin && duplicateCount > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute top-2 right-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMergeClick(result.id);
+                      }}
+                    >
+                      <Merge className="w-4 h-4 mr-1" />
+                      Merge
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12 text-gray-500">
           <p>Start typing to search for people</p>
         </div>
+      )}
+      
+      {/* Merge Modal */}
+      {selectedProfiles && (
+        <MergeProfilesModal
+          isOpen={mergeModalOpen}
+          onClose={() => {
+            setMergeModalOpen(false);
+            setSelectedProfiles(null);
+          }}
+          profileA={selectedProfiles.profileA}
+          profileB={selectedProfiles.profileB}
+          onMerge={handleMerge}
+        />
       )}
     </div>
   );
