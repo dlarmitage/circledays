@@ -33,6 +33,7 @@ interface NetworkTreeProps {
 
 export interface NetworkTreeHandle {
   refreshCurrentView: () => Promise<void>;
+  clearSearch: () => void;
 }
 
 // Sort by last name, fallback to first name
@@ -135,9 +136,13 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
     }
   }, [currentFocus, onDrillIn, isSearchMode, searchQuery]);
   
-  // Expose refresh function to parent
+  // Expose refresh function and clearSearch to parent
   useImperativeHandle(ref, () => ({
     refreshCurrentView,
+    clearSearch: () => {
+      setSearchQuery('');
+      setSearchResults(null);
+    },
   }));
   
   const handleDrillIn = async (profile: Profile) => {

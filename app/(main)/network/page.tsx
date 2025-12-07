@@ -264,6 +264,9 @@ export default function NetworkPage() {
     await fetchNetwork();
     setMergeModalOpen(false);
     setMergeProfiles(null);
+    
+    // Clear search and return to main connections view
+    networkTreeRef.current?.clearSearch();
   };
   
   if (loading) {
