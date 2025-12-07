@@ -111,7 +111,7 @@ export default function DashboardPage() {
     if (event.daysUntil === 0) group = 'Today';
     else if (event.daysUntil === 1) group = 'Tomorrow';
     else if (event.daysUntil <= 7) group = 'This Week';
-    else if (event.daysUntil <= 30) group = 'This Month';
+    else if (event.daysUntil <= 30) group = 'Next Four Weeks';
     else group = 'Later';
     
     if (!acc[group]) acc[group] = [];
@@ -119,7 +119,7 @@ export default function DashboardPage() {
     return acc;
   }, {} as Record<string, UpcomingEvent[]>);
   
-  const groupOrder = ['Today', 'Tomorrow', 'This Week', 'This Month', 'Later'];
+  const groupOrder = ['Today', 'Tomorrow', 'This Week', 'Next Four Weeks', 'Later'];
   
   if (loading) {
     return (

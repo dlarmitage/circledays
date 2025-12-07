@@ -259,7 +259,7 @@ export function Calendar({ onEventClick }: CalendarProps) {
       if (event.daysUntilEvent === 0) group = 'Today';
       else if (event.daysUntilEvent === 1) group = 'Tomorrow';
       else if (event.daysUntilEvent <= 7) group = 'This Week';
-      else if (event.daysUntilEvent <= 30) group = 'This Month';
+      else if (event.daysUntilEvent <= 30) group = 'Next Four Weeks';
       else if (event.daysUntilEvent <= 90) group = 'Next 3 Months';
       else group = 'Later This Year';
       
@@ -270,7 +270,7 @@ export function Calendar({ onEventClick }: CalendarProps) {
     return groups;
   };
   
-  const groupOrder = ['Today', 'Tomorrow', 'This Week', 'This Month', 'Next 3 Months', 'Later This Year'];
+  const groupOrder = ['Today', 'Tomorrow', 'This Week', 'Next Four Weeks', 'Next 3 Months', 'Later This Year'];
   const groupedListEvents = groupListEvents(listEvents);
   
   return (
