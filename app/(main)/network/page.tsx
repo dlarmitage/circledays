@@ -58,6 +58,9 @@ export default function NetworkPage() {
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [mergeProfiles, setMergeProfiles] = useState<{ profileA: any; profileB: any } | null>(null);
   
+  // Admin "Show All" state
+  const [showAll, setShowAll] = useState(false);
+  
   useEffect(() => {
     fetchNetwork();
     
@@ -79,6 +82,35 @@ export default function NetworkPage() {
       console.error('Failed to fetch network:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const fetchAllProfiles = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/profiles/all');
+      if (!res.ok) {
+        throw new Error('Failed to fetch all profiles');
+      }
+      const data = await res.json();
+      setUserProfile(data.userProfile);
+      setConnections(data.connections);
+    } catch (error) {
+      console.error('Failed to fetch all profiles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleShowAllToggle = () => {
+    if (showAll) {
+      // Switch back to connections
+      setShowAll(false);
+      fetchNetwork();
+    } else {
+      // Switch to all profiles
+      setShowAll(true);
+      fetchAllProfiles();
     }
   };
   
@@ -296,7 +328,9 @@ export default function NetworkPage() {
         <h1 className="font-display text-lg font-bold text-gray-900">
           {selectMode 
             ? `${selectedIds.size} selected` 
-            : 'Connections'}
+            : showAll 
+              ? 'All Profiles' 
+              : 'Connections'}
         </h1>
         <div className="flex items-center gap-2">
           {selectMode ? (
@@ -320,6 +354,15 @@ export default function NetworkPage() {
             </>
           ) : (
             <>
+              {isAdmin && (
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={handleShowAllToggle}
+                >
+                  {showAll ? 'Show Connections' : 'Show All'}
+                </Button>
+              )}
               {connections.length > 0 && (
                 <Button size="sm" variant="secondary" onClick={toggleSelectMode}>
                   <CheckSquare className="w-4 h-4 mr-1" />
