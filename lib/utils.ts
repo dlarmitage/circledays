@@ -30,6 +30,26 @@ export function getInitials(name: string): string {
 }
 
 /**
+ * Capitalize the first letter of each word in a name
+ * Handles names like "john smith" -> "John Smith"
+ * Preserves existing capitalization for names like "McDonald" or "O'Brien"
+ * but capitalizes the first letter of each word
+ */
+export function capitalizeName(name: string): string {
+  if (!name || name.trim().length === 0) return name;
+  
+  return name
+    .trim()
+    .split(/\s+/) // Split on whitespace
+    .map(word => {
+      if (word.length === 0) return word;
+      // Capitalize first letter, lowercase the rest
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
+/**
  * Check if two names are likely the same person
  * Handles cases like:
  * - "Swartzendruber, Heidi" vs "hine, Heidi swartzendruber" (married name)

@@ -3,6 +3,7 @@ import { db, users, profiles, reminderPreferences, events, invites } from '@/lib
 import { createSession } from '@/lib/auth';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
+import { capitalizeName } from '@/lib/utils';
 
 const createUserSchema = z.object({
   email: z.string().email(),
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       .insert(users)
       .values({
         email: data.email.toLowerCase(),
-        name: data.name,
+        name: capitalizeName(data.name),
         timezone: data.timezone,
         mobile: data.mobile || null,
         notificationChannel: data.notificationChannel,
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
           .update(profiles)
           .set({
             linkedUserId: newUser.id,
-            name: data.name, // Update name to match user's input
+            name: capitalizeName(data.name), // Update name to match user's input
           })
           .where(eq(profiles.id, data.claimProfileId))
           .returning();
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       const [newProfile] = await db
         .insert(profiles)
         .values({
-          name: data.name,
+          name: capitalizeName(data.name),
           createdByUserId: newUser.id,
           linkedUserId: newUser.id,
         })

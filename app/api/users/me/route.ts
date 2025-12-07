@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { sendEmail, generateEmailConfirmationEmail } from '@/lib/email';
+import { capitalizeName } from '@/lib/utils';
 
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -56,7 +57,7 @@ export async function PATCH(request: NextRequest) {
       });
     } else {
       // For other fields, update directly
-      if (data.name) updateData.name = data.name;
+      if (data.name) updateData.name = capitalizeName(data.name);
       if (data.timezone) updateData.timezone = data.timezone;
       if (data.mobile !== undefined) updateData.mobile = data.mobile;
       if (data.notificationChannel) updateData.notificationChannel = data.notificationChannel;
@@ -73,7 +74,7 @@ export async function PATCH(request: NextRequest) {
     if (data.name) {
       await db
         .update(profiles)
-        .set({ name: data.name })
+        .set({ name: capitalizeName(data.name) })
         .where(eq(profiles.linkedUserId, user.id));
     }
     

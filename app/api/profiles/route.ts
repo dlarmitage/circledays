@@ -3,6 +3,7 @@ import { db, profiles, connections, events } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { capitalizeName } from '@/lib/utils';
 
 // Get user's direct connections (1-hop profiles)
 export async function GET() {
@@ -90,11 +91,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create profile
+    // Create profile with capitalized name
     const [newProfile] = await db
       .insert(profiles)
       .values({
-        name: data.name,
+        name: capitalizeName(data.name),
         profilePicture: data.profilePicture || null,
         createdByUserId: user.id,
       })

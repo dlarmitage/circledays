@@ -406,8 +406,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           )}
           
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
-            {/* Can edit if: own profile, OR creator of unlinked profile */}
-            {isOwnProfile || (isCreator && !profile.linkedUserId) ? (
+            {/* Can edit if: own profile, OR creator of unlinked profile, OR admin */}
+            {(isOwnProfile || (isCreator && !profile.linkedUserId) || data.isPlatformAdmin) ? (
               <Button 
                 variant="secondary" 
                 size="sm"

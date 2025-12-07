@@ -3,6 +3,7 @@ import { db, profiles, events, notes, connections, users } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq, or, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { capitalizeName } from '@/lib/utils';
 
 // Get profile by ID (respects visibility rules)
 export async function GET(
@@ -210,7 +211,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
     
-    // Check permission: own profile OR creator of unlinked profile
+    // Check permission: own profile OR creator of unlinked profile OR admin
     const isOwn = profile.linkedUserId === user.id;
     const isCreatorOfUnlinked = profile.createdByUserId === user.id && !profile.linkedUserId;
     
@@ -218,10 +219,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
+    // Capitalize name if provided
+    const updateData = { ...data };
+    if (updateData.name) {
+      updateData.name = capitalizeName(updateData.name);
+    }
+    
     // Update profile
     const [updatedProfile] = await db
       .update(profiles)
-      .set(data)
+      .set(updateData)
       .where(eq(profiles.id, id))
       .returning();
     

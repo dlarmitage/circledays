@@ -28,6 +28,7 @@ interface ProfileData {
   events: Event[];
   isOwnProfile: boolean;
   isCreator: boolean;
+  isPlatformAdmin?: boolean;
   userData?: {
     email: string;
     mobile: string | null;
@@ -74,8 +75,8 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
         return;
       }
       
-      // Check permission: can edit if own profile, OR creator of unlinked profile
-      const canEdit = data.isOwnProfile || (data.isCreator && !data.profile.linkedUserId);
+      // Check permission: can edit if own profile, OR creator of unlinked profile, OR admin
+      const canEdit = data.isOwnProfile || (data.isCreator && !data.profile.linkedUserId) || data.isPlatformAdmin;
       if (!canEdit) {
         router.push(`/profile/${id}`);
         return;
