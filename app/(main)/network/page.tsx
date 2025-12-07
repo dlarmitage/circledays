@@ -6,6 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import { NetworkTree, NetworkTreeHandle } from '@/components/NetworkTree';
 import { ConnectionModal } from '@/components/ConnectionModal';
 import { SuggestModal } from '@/components/SuggestModal';
+import { MergeProfilesModal } from '@/components/MergeProfilesModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
@@ -51,8 +52,20 @@ export default function NetworkPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [suggestModalOpen, setSuggestModalOpen] = useState(false);
   
+  // Admin merge state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [mergeProfiles, setMergeProfiles] = useState<{ profileA: any; profileB: any } | null>(null);
+  
   useEffect(() => {
     fetchNetwork();
+    
+    // Check if user is admin
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        setIsAdmin(data.user?.isPlatformAdmin || false);
+      });
   }, []);
   
   const fetchNetwork = async () => {
@@ -170,6 +183,88 @@ export default function NetworkPage() {
   
   const selectedProfiles = connections.filter(c => selectedIds.has(c.id));
   
+  const handleMergeClick = useCallback(async (profileId: string) => {
+    // Get the current search query from NetworkTree - for now, we'll search for the profile name
+    try {
+      const profileRes = await fetch(`/api/profiles/${profileId}`);
+      const profileData = await profileRes.json();
+      const profileName = profileData.profile.name;
+      
+      // Search for duplicates
+      const searchRes = await fetch(`/api/profiles/search?q=${encodeURIComponent(profileName)}`);
+      const searchData = await searchRes.json();
+      
+      // Find other profiles with same name
+      const profile = searchData.results?.find((r: any) => r.id === profileId);
+      if (!profile) return;
+      
+      const similarProfiles = searchData.results?.filter((r: any) => 
+        r.id !== profileId && 
+        r.name.toLowerCase().trim() === profile.name.toLowerCase().trim()
+      ) || [];
+      
+      if (similarProfiles.length === 0) {
+        alert('No other profiles with the same name found in search results.');
+        return;
+      }
+      
+      const profileB = similarProfiles[0];
+      const resB = await fetch(`/api/profiles/${profileB.id}`);
+      const dataB = await resB.json();
+      
+      setMergeProfiles({
+        profileA: {
+          id: profileData.profile.id,
+          name: profileData.profile.name,
+          profilePicture: profileData.profile.profilePicture,
+          linkedUserId: profileData.profile.linkedUserId || null,
+          eventCount: profileData.events?.length || 0,
+          connectionCount: profileData.connections?.length || 0,
+        },
+        profileB: {
+          id: profileB.id,
+          name: profileB.name,
+          profilePicture: profileB.profilePicture,
+          linkedUserId: dataB.profile?.linkedUserId || null,
+          eventCount: dataB.events?.length || 0,
+          connectionCount: dataB.connections?.length || 0,
+        },
+      });
+      setMergeModalOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch profile data:', error);
+      alert('Failed to load profile data');
+    }
+  }, []);
+  
+  const handleMerge = async (keepProfileId: string, mergeOptions: any) => {
+    if (!mergeProfiles) return;
+    
+    const mergeProfileId = keepProfileId === mergeProfiles.profileA.id 
+      ? mergeProfiles.profileB.id 
+      : mergeProfiles.profileA.id;
+    
+    const res = await fetch('/api/profiles/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keepProfileId,
+        mergeProfileId,
+        mergeOptions,
+      }),
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to merge');
+    }
+    
+    // Refresh network
+    await fetchNetwork();
+    setMergeModalOpen(false);
+    setMergeProfiles(null);
+  };
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -262,6 +357,8 @@ export default function NetworkPage() {
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
+          isAdmin={isAdmin}
+          onMergeClick={handleMergeClick}
         />
       )}
       
@@ -285,6 +382,20 @@ export default function NetworkPage() {
         selectedProfiles={selectedProfiles}
         onSuggest={handleSuggest}
       />
+      
+      {/* Merge Modal */}
+      {mergeProfiles && (
+        <MergeProfilesModal
+          isOpen={mergeModalOpen}
+          onClose={() => {
+            setMergeModalOpen(false);
+            setMergeProfiles(null);
+          }}
+          profileA={mergeProfiles.profileA}
+          profileB={mergeProfiles.profileB}
+          onMerge={handleMerge}
+        />
+      )}
     </div>
   );
 }

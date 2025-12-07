@@ -4,7 +4,8 @@ import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } fro
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
-import { ArrowLeft, Search, ChevronRight, Users, X, Check } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { ArrowLeft, Search, ChevronRight, Users, X, Check, Merge } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -24,6 +25,9 @@ interface NetworkTreeProps {
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (profileId: string) => void;
+  // Admin merge
+  isAdmin?: boolean;
+  onMergeClick?: (profileId: string) => void;
 }
 
 export interface NetworkTreeHandle {
@@ -59,6 +63,8 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   selectMode = false,
   selectedIds = new Set(),
   onToggleSelect,
+  isAdmin = false,
+  onMergeClick,
 }, ref) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[] | null>(null);
@@ -293,23 +299,35 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {sortedProfiles.map((profile, index) => (
-                <motion.div
-                  key={profile.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(index * 0.02, 0.5), duration: 0.2 }}
-                >
-                  <ConnectionRow
-                    profile={profile}
-                    onTap={() => handleProfileTap(profile)}
-                    onDrillIn={() => handleDrillIn(profile)}
-                    selectMode={selectMode && !currentFocus}
-                    isSelected={selectedIds.has(profile.id)}
-                    onToggleSelect={onToggleSelect}
-                  />
-                </motion.div>
-              ))}
+              {sortedProfiles.map((profile, index) => {
+                // Check for duplicates in search mode
+                const duplicateCount = isSearchMode && sortedProfiles
+                  ? sortedProfiles.filter(p => 
+                      p.id !== profile.id && 
+                      p.name.toLowerCase().trim() === profile.name.toLowerCase().trim()
+                    ).length
+                  : 0;
+                
+                return (
+                  <motion.div
+                    key={profile.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(index * 0.02, 0.5), duration: 0.2 }}
+                  >
+                    <ConnectionRow
+                      profile={profile}
+                      onTap={() => handleProfileTap(profile)}
+                      onDrillIn={() => handleDrillIn(profile)}
+                      selectMode={selectMode && !currentFocus}
+                      isSelected={selectedIds.has(profile.id)}
+                      onToggleSelect={onToggleSelect}
+                      showMerge={isAdmin && isSearchMode && duplicateCount > 0}
+                      onMerge={onMergeClick}
+                    />
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </AnimatePresence>
         )}
@@ -325,6 +343,8 @@ interface ConnectionRowProps {
   selectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (profileId: string) => void;
+  showMerge?: boolean;
+  onMerge?: (profileId: string) => void;
 }
 
 function ConnectionRow({ 
@@ -334,6 +354,8 @@ function ConnectionRow({
   selectMode = false,
   isSelected = false,
   onToggleSelect,
+  showMerge = false,
+  onMerge,
 }: ConnectionRowProps) {
   const handleClick = () => {
     if (selectMode && profile.isConnectedToUser && onToggleSelect) {
@@ -388,6 +410,22 @@ function ConnectionRow({
           )}
         </div>
       </button>
+      
+      {/* Merge button (admin only, in search mode with duplicates) */}
+      {showMerge && onMerge && (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onMerge(profile.id);
+          }}
+        >
+          <Merge className="w-4 h-4 mr-1" />
+          Merge
+        </Button>
+      )}
       
       {/* Connection count + drill-in button (hidden in select mode) */}
       {!selectMode && profile.isConnectedToUser && profile.connectionCount > 0 && (

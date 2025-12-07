@@ -200,7 +200,7 @@ export default function SearchPage() {
                 className={`stagger-${Math.min(index + 1, 5)}`}
                 style={{ animationFillMode: 'backwards' }}
               >
-                <div className="relative">
+                <div className="relative group">
                   <ProfileCard
                     {...result}
                     onClick={() => router.push(`/profile/${result.id}`)}
@@ -209,9 +209,10 @@ export default function SearchPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="absolute top-2 right-2"
+                      className="absolute top-2 right-2 z-10 shadow-md"
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         handleMergeClick(result.id);
                       }}
                     >
