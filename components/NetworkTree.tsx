@@ -36,14 +36,28 @@ export interface NetworkTreeHandle {
   clearSearch: () => void;
 }
 
-// Sort by last name, fallback to first name
+// Sort by last name, then first name
 function sortByLastName(profiles: Profile[]): Profile[] {
   return [...profiles].sort((a, b) => {
-    const getLastName = (name: string) => {
+    const getNameParts = (name: string) => {
       const parts = name.split(' ').filter(p => p.length > 1);
-      return parts.length > 1 ? parts[parts.length - 1] : parts[0] || name;
+      if (parts.length === 0) return { first: name, last: name };
+      if (parts.length === 1) return { first: parts[0], last: parts[0] };
+      return {
+        first: parts.slice(0, -1).join(' '), // All but last part
+        last: parts[parts.length - 1], // Last part
+      };
     };
-    return getLastName(a.name).localeCompare(getLastName(b.name));
+    
+    const aParts = getNameParts(a.name);
+    const bParts = getNameParts(b.name);
+    
+    // First compare by last name
+    const lastCompare = aParts.last.localeCompare(bParts.last);
+    if (lastCompare !== 0) return lastCompare;
+    
+    // If last names are equal, compare by first name
+    return aParts.first.localeCompare(bParts.first);
   });
 }
 

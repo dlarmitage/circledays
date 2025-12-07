@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, invites, profiles, users, connections, reminderPreferences } from '@/lib/db';
+import { db, invites, profiles, users, connections, reminderPreferences, connectionSuggestions } from '@/lib/db';
 import { createSession } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 const acceptInviteSchema = z.object({
@@ -83,6 +83,8 @@ export async function POST(
     });
     
     // Create seed connections
+    // Note: This does NOT affect existing connection suggestions - suggestions remain independent
+    // and will still be shown to the user even if connections are created here
     if (invite.seedConnectionIds && invite.seedConnectionIds.length > 0) {
       // Get user's profile (the one they're claiming)
       const [userProfile] = await db
@@ -101,6 +103,20 @@ export async function POST(
             profileBId: profileB,
             createdByUserId: invite.invitedByUserId,
           });
+          
+          // If a connection was created and there are pending suggestions for this profile,
+          // mark those suggestions as accepted (since the connection now exists)
+          // This prevents duplicate suggestions for already-connected profiles
+          await db
+            .update(connectionSuggestions)
+            .set({ status: 'accepted' })
+            .where(
+              and(
+                eq(connectionSuggestions.toUserId, newUser.id),
+                eq(connectionSuggestions.suggestedProfileId, seedProfileId),
+                eq(connectionSuggestions.status, 'pending')
+              )
+            );
         } catch (e) {
           // Ignore duplicate connection errors
         }
