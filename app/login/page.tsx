@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+
+const LAST_EMAIL_KEY = 'circledays_last_email';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -22,6 +24,14 @@ function LoginContent() {
     error === 'failed' ? 'Something went wrong. Please try again.' :
     null
   );
+  
+  // Load last used email from localStorage on mount
+  useEffect(() => {
+    const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
+    if (lastEmail) {
+      setEmail(lastEmail);
+    }
+  }, []);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +51,8 @@ function LoginContent() {
         throw new Error(data.error || 'Failed to send magic link');
       }
       
+      // Remember this email for next time
+      localStorage.setItem(LAST_EMAIL_KEY, email);
       setSent(true);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to send magic link');
