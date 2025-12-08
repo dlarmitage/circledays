@@ -93,24 +93,13 @@ export function SuggestModal({
               </h3>
               <p className="text-sm text-gray-600">
                 {connectTogether ? (
-                  <>
-                    <span className="block mb-1">
-                      All {selectedProfiles.length} people are now connected to each other.
-                    </span>
-                    {profilesWithAccounts.length > 0 && profilesWithoutAccounts.length > 0 && (
-                      <span className="block">
-                        {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person' : 'people'} will be notified about {profilesWithoutAccounts.length} new {profilesWithoutAccounts.length === 1 ? 'connection' : 'connections'}.
-                      </span>
-                    )}
-                  </>
+                  <span className="block">
+                    All {selectedProfiles.length} people are now connected to each other.
+                  </span>
                 ) : (
-                  <>
-                    {profilesWithoutAccounts.length > 0 && (
-                      <span className="block mb-1">
-                        {profilesWithoutAccounts.length} {profilesWithoutAccounts.length === 1 ? 'person' : 'people'} connected to you.
-                      </span>
-                    )}
-                  </>
+                  <span className="block">
+                    {selectedProfiles.length} {selectedProfiles.length === 1 ? 'person' : 'people'} connected to you.
+                  </span>
                 )}
               </p>
             </div>
@@ -173,45 +162,29 @@ export function SuggestModal({
               
               {/* Info about what will happen */}
               <div className="bg-teal-50 rounded-xl p-4 space-y-2">
-                {connectTogether ? (
-                  <>
-                    <div className="flex items-start gap-2">
-                      <Link2 className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          Everyone gets connected
-                        </p>
-                        <p className="text-xs text-gray-600 mt-0.5">
-                          All {selectedProfiles.length} people will be connected to each other and to you
-                        </p>
-                      </div>
-                    </div>
-                    {profilesWithAccounts.length > 0 && (
-                      <div className="flex items-start gap-2">
-                        <Users className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person has' : 'people have'} an account
-                          </p>
-                          <p className="text-xs text-gray-600 mt-0.5">
-                            They'll be notified about their new connections next time they login
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
+                <div className="flex items-start gap-2">
+                  <Link2 className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {connectTogether ? 'Everyone gets connected' : 'Connect to you'}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      {connectTogether 
+                        ? `All ${selectedProfiles.length} people will be connected to each other and to you`
+                        : `${selectedProfiles.length} ${selectedProfiles.length === 1 ? 'person' : 'people'} will be connected to you`
+                      }
+                    </p>
+                  </div>
+                </div>
+                {profilesWithAccounts.length > 0 && (
                   <div className="flex items-start gap-2">
-                    <Link2 className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                    <Users className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        Connect to you only
+                        {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person has' : 'people have'} an account
                       </p>
                       <p className="text-xs text-gray-600 mt-0.5">
-                        {profilesWithoutAccounts.length > 0 
-                          ? `${profilesWithoutAccounts.length} ${profilesWithoutAccounts.length === 1 ? 'person' : 'people'} will be connected to you`
-                          : 'Selected profiles will not be modified'
-                        }
+                        They'll see their new connections next time they login
                       </p>
                     </div>
                   </div>

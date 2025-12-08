@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { EventCard } from '@/components/EventCard';
-import { SuggestionsCard } from '@/components/SuggestionsCard';
 import { NewConnectionsCard } from '@/components/NewConnectionsCard';
 import { MessageAssistModal } from '@/components/MessageAssistModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { STRINGS } from '@/lib/constants';
-import { Plus, Cake, Calendar } from 'lucide-react';
+import { Plus, Cake } from 'lucide-react';
+
+const DISMISSED_CONNECTIONS_KEY = 'circledays_dismissed_connections';
 
 interface UpcomingEvent {
   id: string;
@@ -43,41 +44,27 @@ interface NewConnection {
   createdByUserId: string | null;
 }
 
-interface SuggestionGroup {
-  fromUser: {
-    id: string;
-    name: string;
-  };
-  suggestions: {
-    id: string;
-    profile: {
-      id: string;
-      name: string;
-      profilePicture: string | null;
-    };
-    createdAt: string;
-  }[];
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
-  const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>([]);
   const [newConnections, setNewConnections] = useState<NewConnection[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   
   // Message Assist modal state
   const [messageAssistEvent, setMessageAssistEvent] = useState<UpcomingEvent | null>(null);
   
-  const fetchSuggestions = useCallback(async () => {
-    try {
-      const res = await fetch('/api/suggestions');
-      const data = await res.json();
-      setSuggestionGroups(data.suggestions || []);
-    } catch (err) {
-      console.error('Failed to fetch suggestions:', err);
+  // Load dismissed connections from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(DISMISSED_CONNECTIONS_KEY);
+    if (saved) {
+      try {
+        setDismissedIds(new Set(JSON.parse(saved)));
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
     }
   }, []);
   
@@ -85,46 +72,20 @@ export default function DashboardPage() {
     Promise.all([
       fetch('/api/auth/me').then(res => res.json()),
       fetch(`/api/events/upcoming?days=${days}`).then(res => res.json()),
-      fetch('/api/suggestions').then(res => res.json()),
       fetch('/api/connections?includeNew=true').then(res => res.json()),
-    ]).then(([userRes, eventsRes, suggestionsRes, connectionsRes]) => {
+    ]).then(([userRes, eventsRes, connectionsRes]) => {
       setUserData(userRes);
       setEvents(eventsRes.events || []);
-      setSuggestionGroups(suggestionsRes.suggestions || []);
       setNewConnections(connectionsRes.newConnections || []);
       setLoading(false);
     });
   }, [days]);
   
-  const handleAcceptSuggestion = async (suggestionId: string) => {
-    const res = await fetch(`/api/suggestions/${suggestionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'accept' }),
-    });
-    if (!res.ok) throw new Error('Failed to accept suggestion');
-  };
-  
-  const handleDeclineSuggestion = async (suggestionId: string) => {
-    const res = await fetch(`/api/suggestions/${suggestionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'decline' }),
-    });
-    if (!res.ok) throw new Error('Failed to decline suggestion');
-  };
-  
-  const handleAcceptAllSuggestions = async () => {
-    const res = await fetch('/api/suggestions/accept-all', {
-      method: 'POST',
-    });
-    if (!res.ok) throw new Error('Failed to accept all suggestions');
-  };
-  
-  // Handle dismissing a new connection notification (no-op for individual, just dismiss UI)
+  // Handle dismissing a new connection notification
   const handleDismissConnection = (connectionId: string) => {
-    // Individual dismiss just removes from the list visually
-    setNewConnections(prev => prev.filter(c => c.connectionId !== connectionId));
+    const newDismissed = new Set([...dismissedIds, connectionId]);
+    setDismissedIds(newDismissed);
+    localStorage.setItem(DISMISSED_CONNECTIONS_KEY, JSON.stringify([...newDismissed]));
   };
   
   // Handle disconnecting from someone who connected with you
@@ -133,17 +94,22 @@ export default function DashboardPage() {
       method: 'DELETE',
     });
     if (res.ok) {
+      // Also dismiss so it doesn't reappear
+      handleDismissConnection(connectionId);
       setNewConnections(prev => prev.filter(c => c.connectionId !== connectionId));
     }
   };
   
-  // Dismiss all new connection notifications (just clears the UI, connections remain)
+  // Dismiss all new connection notifications
   const handleDismissAllConnections = () => {
-    setNewConnections([]);
+    const allIds = newConnections.map(c => c.connectionId);
+    const newDismissed = new Set([...dismissedIds, ...allIds]);
+    setDismissedIds(newDismissed);
+    localStorage.setItem(DISMISSED_CONNECTIONS_KEY, JSON.stringify([...newDismissed]));
   };
   
-  // No need to filter - newConnections state is the source of truth
-  const visibleNewConnections = newConnections;
+  // Filter out already dismissed connections
+  const visibleNewConnections = newConnections.filter(c => !dismissedIds.has(c.connectionId));
   
   const groupedEvents = events.reduce((acc, event) => {
     let group: string;
@@ -193,18 +159,6 @@ export default function DashboardPage() {
         onDisconnect={handleDisconnect}
         onDismissAll={handleDismissAllConnections}
       />
-      
-      {/* Suggestions Card */}
-      <SuggestionsCard
-        groups={suggestionGroups}
-        onAccept={handleAcceptSuggestion}
-        onDecline={handleDeclineSuggestion}
-        onAcceptAll={handleAcceptAllSuggestions}
-        onRefresh={fetchSuggestions}
-      />
-      
-      {/* Spacer when suggestions are visible */}
-      {suggestionGroups.length > 0 && <div className="mb-6" />}
       
       {/* Time filter */}
       <div className="flex gap-2 mb-6">
