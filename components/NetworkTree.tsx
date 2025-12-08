@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, Search, ChevronRight, Users, X, Check, Merge } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, Users, X, Check, Merge, Pencil } from 'lucide-react';
 import { areNamesSimilar } from '@/lib/utils';
 
 interface Profile {
@@ -82,6 +83,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   isAdmin = false,
   onMergeClick,
 }, ref) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -272,7 +274,8 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => router.push(`/profile/${userProfile.id}/edit`)}
             >
               <Avatar
                 src={userProfile.profilePicture}
@@ -280,13 +283,14 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
                 size="sm"
               />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 truncate">
+                <p className="font-semibold text-gray-900 truncate group-hover:text-teal-600 transition-colors">
                   Your Connections
                 </p>
                 <p className="text-xs text-gray-500">
                   {connections.length} connections
                 </p>
               </div>
+              <Pencil className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
           )}
         </AnimatePresence>
