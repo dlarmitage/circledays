@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { UserPlus, X, Check, UserMinus } from 'lucide-react';
+import { UserPlus, UserMinus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface NewConnection {
@@ -55,15 +54,15 @@ export function NewConnectionsCard({
           </CardTitle>
           <button
             onClick={onDismissAll}
-            className="text-xs text-teal-600 hover:text-teal-800 transition-colors"
+            className="text-xs text-teal-600 hover:text-teal-800 transition-colors font-medium"
           >
-            Dismiss all
+            Got it
           </button>
         </div>
         <p className="text-sm text-teal-600 mt-1">
           {connections.length === 1 
-            ? 'Someone connected with you!' 
-            : `${connections.length} people connected with you!`}
+            ? 'Someone connected with you! You can now see their events.' 
+            : `${connections.length} people connected with you! You can now see their events.`}
         </p>
       </CardHeader>
       
@@ -93,44 +92,32 @@ export function NewConnectionsCard({
                       {conn.profile.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {new Date(conn.createdAt).toLocaleDateString()}
+                      Connected {new Date(conn.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </Link>
                 
-                <div className="flex items-center gap-2 ml-2">
-                  {/* Keep connection (dismiss notification) */}
-                  <button
-                    onClick={() => onDismiss(conn.connectionId)}
-                    className="p-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
-                    title="Keep connection"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  
-                  {/* Disconnect option */}
-                  <button
-                    onClick={() => handleDisconnect(conn.connectionId)}
-                    disabled={disconnecting === conn.connectionId}
-                    className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
-                    title="Disconnect"
-                  >
-                    {disconnecting === conn.connectionId ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      >
-                        <X className="w-4 h-4" />
-                      </motion.div>
-                    ) : (
-                      <UserMinus className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                {/* Only show disconnect option - connections are already active */}
+                <button
+                  onClick={() => handleDisconnect(conn.connectionId)}
+                  disabled={disconnecting === conn.connectionId}
+                  className="p-2 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-50 ml-2"
+                  title="Disconnect"
+                >
+                  {disconnecting === conn.connectionId ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserMinus className="w-4 h-4" />
+                  )}
+                </button>
               </motion.div>
             ))}
           </div>
         </AnimatePresence>
+        
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          Tap a name to view their profile, or disconnect if you prefer not to be connected.
+        </p>
       </CardContent>
     </Card>
   );

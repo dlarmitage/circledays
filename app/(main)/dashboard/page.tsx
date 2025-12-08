@@ -67,7 +67,6 @@ export default function DashboardPage() {
   const [days, setDays] = useState(30);
   const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>([]);
   const [newConnections, setNewConnections] = useState<NewConnection[]>([]);
-  const [dismissedConnections, setDismissedConnections] = useState<Set<string>>(new Set());
   
   // Message Assist modal state
   const [messageAssistEvent, setMessageAssistEvent] = useState<UpcomingEvent | null>(null);
@@ -122,9 +121,10 @@ export default function DashboardPage() {
     if (!res.ok) throw new Error('Failed to accept all suggestions');
   };
   
-  // Handle dismissing a new connection notification (keep the connection)
+  // Handle dismissing a new connection notification (no-op for individual, just dismiss UI)
   const handleDismissConnection = (connectionId: string) => {
-    setDismissedConnections(prev => new Set([...prev, connectionId]));
+    // Individual dismiss just removes from the list visually
+    setNewConnections(prev => prev.filter(c => c.connectionId !== connectionId));
   };
   
   // Handle disconnecting from someone who connected with you
@@ -137,13 +137,13 @@ export default function DashboardPage() {
     }
   };
   
-  // Dismiss all new connection notifications
+  // Dismiss all new connection notifications (just clears the UI, connections remain)
   const handleDismissAllConnections = () => {
-    setDismissedConnections(prev => new Set([...prev, ...newConnections.map(c => c.connectionId)]));
+    setNewConnections([]);
   };
   
-  // Filter out dismissed connections
-  const visibleNewConnections = newConnections.filter(c => !dismissedConnections.has(c.connectionId));
+  // No need to filter - newConnections state is the source of truth
+  const visibleNewConnections = newConnections;
   
   const groupedEvents = events.reduce((acc, event) => {
     let group: string;
