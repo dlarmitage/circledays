@@ -8,9 +8,11 @@ import { ConnectionModal } from '@/components/ConnectionModal';
 import { SuggestModal } from '@/components/SuggestModal';
 import { MergeProfilesModal } from '@/components/MergeProfilesModal';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
-import { Plus, Users, CheckSquare, X, Send } from 'lucide-react';
+import { Avatar } from '@/components/ui/Avatar';
+import { Plus, Users, CheckSquare, X, Send, UserMinus } from 'lucide-react';
 import { areNamesSimilar } from '@/lib/utils';
 
 interface Profile {
@@ -60,6 +62,10 @@ export default function NetworkPage() {
   
   // Admin "Show All" state
   const [showAll, setShowAll] = useState(false);
+  
+  // Bulk disconnect state
+  const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   
   useEffect(() => {
     fetchNetwork();
@@ -216,6 +222,38 @@ export default function NetworkPage() {
   
   const selectedProfiles = connections.filter(c => selectedIds.has(c.id));
   
+  // Bulk disconnect handler
+  const handleBulkDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      // Get the connection IDs for selected profiles
+      const res = await fetch('/api/connections');
+      const data = await res.json();
+      
+      // Find connections that match our selected profile IDs
+      const connectionsToDelete = data.connections.filter((conn: any) => 
+        selectedIds.has(conn.profile.id)
+      );
+      
+      // Delete each connection
+      for (const conn of connectionsToDelete) {
+        await fetch(`/api/connections/${conn.connectionId}`, {
+          method: 'DELETE',
+        });
+      }
+      
+      // Refresh network and exit select mode
+      await fetchNetwork();
+      setSelectedIds(new Set());
+      setSelectMode(false);
+      setDisconnectConfirmOpen(false);
+    } catch (error) {
+      console.error('Failed to disconnect:', error);
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+  
   const handleMergeClick = useCallback(async (profileId: string) => {
     // Get the current search query from NetworkTree - for now, we'll search for the profile name
     try {
@@ -345,6 +383,16 @@ export default function NetworkPage() {
               </Button>
               <Button 
                 size="sm" 
+                variant="secondary"
+                onClick={() => setDisconnectConfirmOpen(true)}
+                disabled={selectedIds.size === 0}
+                className="text-red-600 hover:bg-red-50"
+              >
+                <UserMinus className="w-4 h-4 mr-1" />
+                Disconnect
+              </Button>
+              <Button 
+                size="sm" 
                 onClick={() => setSuggestModalOpen(true)}
                 disabled={selectedIds.size === 0}
               >
@@ -442,6 +490,64 @@ export default function NetworkPage() {
           profileB={mergeProfiles.profileB}
           onMerge={handleMerge}
         />
+      )}
+      
+      {/* Disconnect Confirmation Modal */}
+      {disconnectConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <UserMinus className="w-5 h-5 text-red-600" />
+                </div>
+                <h2 className="font-display text-lg font-bold text-gray-900">
+                  Disconnect {selectedIds.size} {selectedIds.size === 1 ? 'person' : 'people'}?
+                </h2>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                You will no longer see their events or get reminders about them. 
+                This only affects your connection to them.
+              </p>
+              
+              {/* Show selected profiles */}
+              <div className="bg-gray-50 rounded-lg p-3 mb-6 max-h-40 overflow-y-auto">
+                <div className="space-y-2">
+                  {selectedProfiles.slice(0, 10).map(profile => (
+                    <div key={profile.id} className="flex items-center gap-2">
+                      <Avatar src={profile.profilePicture} name={profile.name} size="sm" />
+                      <span className="text-sm text-gray-700">{profile.name}</span>
+                    </div>
+                  ))}
+                  {selectedProfiles.length > 10 && (
+                    <p className="text-xs text-gray-500">
+                      +{selectedProfiles.length - 10} more
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => setDisconnectConfirmOpen(false)}
+                  disabled={disconnecting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  onClick={handleBulkDisconnect}
+                  loading={disconnecting}
+                >
+                  Disconnect
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
