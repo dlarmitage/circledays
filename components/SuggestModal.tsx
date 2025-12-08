@@ -186,7 +186,7 @@ export function SuggestModal({
                         </p>
                       </div>
                     </div>
-                    {profilesWithAccounts.length > 0 && profilesWithoutAccounts.length > 0 && (
+                    {profilesWithAccounts.length > 0 && (
                       <div className="flex items-start gap-2">
                         <Users className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
                         <div>
@@ -194,7 +194,7 @@ export function SuggestModal({
                             {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person has' : 'people have'} an account
                           </p>
                           <p className="text-xs text-gray-600 mt-0.5">
-                            They'll get suggestions to connect to the other {profilesWithoutAccounts.length}
+                            They'll be notified about their new connections next time they login
                           </p>
                         </div>
                       </div>
