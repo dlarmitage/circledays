@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, profiles, connections, connectionRequests } from '@/lib/db';
+import { db, profiles, connections } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import { eq, or, and, sql } from 'drizzle-orm';
+import { eq, or, and, sql, desc, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 // Get user's connections
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth();
+    const { searchParams } = new URL(request.url);
+    const includeNew = searchParams.get('includeNew') === 'true';
     
     // Get user's profile
     const [userProfile] = await db
@@ -17,7 +19,7 @@ export async function GET() {
       .limit(1);
     
     if (!userProfile) {
-      return NextResponse.json({ connections: [] });
+      return NextResponse.json({ connections: [], newConnections: [] });
     }
     
     // Get all connections with profile data
@@ -41,11 +43,38 @@ export async function GET() {
         )
       );
     
+    let newConnections: typeof userConnections = [];
+    
+    // If requested, find connections made by others (not by this user or during onboarding)
+    if (includeNew) {
+      // New connections are those where:
+      // 1. createdByUserId is NOT this user
+      // 2. Created after their last login (or within last 30 days for simplicity)
+      // 3. Not already "seen" (we'll use a simple time-based approach)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      newConnections = userConnections.filter(({ connection }) => {
+        // Connection was created by someone else (not this user)
+        const createdByOther = connection.createdByUserId !== user.id;
+        // Connection is recent (within 30 days)
+        const isRecent = connection.createdAt && new Date(connection.createdAt) > thirtyDaysAgo;
+        return createdByOther && isRecent;
+      });
+    }
+    
     return NextResponse.json({
       connections: userConnections.map(({ connection, profile }) => ({
         connectionId: connection.id,
         profile,
         createdAt: connection.createdAt,
+        createdByUserId: connection.createdByUserId,
+      })),
+      newConnections: newConnections.map(({ connection, profile }) => ({
+        connectionId: connection.id,
+        profile,
+        createdAt: connection.createdAt,
+        createdByUserId: connection.createdByUserId,
       })),
     });
   } catch (error) {
@@ -66,7 +95,8 @@ const createConnectionSchema = z.object({
   profileId: z.string().uuid(),
 });
 
-// Create a connection (instant if ≤2 hops, request if >2 hops)
+// Create a connection - always instant, no approval needed
+// Since email/mobile are hidden, there's no privacy risk in connections
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
@@ -112,83 +142,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Already connected' }, { status: 400 });
     }
     
-    // Calculate hop distance (simplified: check if ≤2 hops)
-    const directConnectionIds = await db
-      .select({
-        connectedId: sql<string>`
-          CASE 
-            WHEN ${connections.profileAId} = ${userProfile.id} THEN ${connections.profileBId}
-            ELSE ${connections.profileAId}
-          END
-        `.as('connected_id'),
+    // Create instant connection - no approval flow needed
+    const [newConnection] = await db
+      .insert(connections)
+      .values({
+        profileAId: profileA,
+        profileBId: profileB,
+        createdByUserId: user.id,
       })
-      .from(connections)
-      .where(
-        or(
-          eq(connections.profileAId, userProfile.id),
-          eq(connections.profileBId, userProfile.id)
-        )
-      );
+      .returning();
     
-    const directIds = new Set(directConnectionIds.map(c => c.connectedId));
-    
-    // Check if target is within 2 hops
-    let withinTwoHops = directIds.has(targetProfile.id);
-    
-    if (!withinTwoHops) {
-      // Check 2-hop: does target share a connection with any of user's connections?
-      for (const id of directIds) {
-        const [sharedConnection] = await db
-          .select()
-          .from(connections)
-          .where(
-            or(
-              and(eq(connections.profileAId, id), eq(connections.profileBId, targetProfile.id)),
-              and(eq(connections.profileBId, id), eq(connections.profileAId, targetProfile.id))
-            )
-          )
-          .limit(1);
-        
-        if (sharedConnection) {
-          withinTwoHops = true;
-          break;
-        }
-      }
-    }
-    
-    if (withinTwoHops) {
-      // Instant connection
-      const [newConnection] = await db
-        .insert(connections)
-        .values({
-          profileAId: profileA,
-          profileBId: profileB,
-          createdByUserId: user.id,
-        })
-        .returning();
-      
-      return NextResponse.json({
-        connection: newConnection,
-        type: 'instant',
-      });
-    } else {
-      // Create connection request
-      const [request] = await db
-        .insert(connectionRequests)
-        .values({
-          fromProfileId: userProfile.id,
-          toProfileId: targetProfile.id,
-          status: 'pending',
-        })
-        .returning();
-      
-      // TODO: Send notification to target if they have a linked user
-      
-      return NextResponse.json({
-        request,
-        type: 'request',
-      });
-    }
+    return NextResponse.json({
+      connection: newConnection,
+      type: 'instant',
+    });
   } catch (error) {
     console.error('Create connection error:', error);
     

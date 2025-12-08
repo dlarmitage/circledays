@@ -72,6 +72,10 @@ The dashboard shows your **upcoming events** for the next 30 or 90 days, grouped
 
 If someone has suggested connections for you, a **Suggested Connections card** appears at the top where you can accept or decline them.
 
+**New Connections**: If someone connected with you, you'll see a notification showing who connected. You can:
+- Keep the connection (green checkmark)
+- Disconnect if you prefer not to be connected (red minus icon)
+
 **Message Assist**: For events happening today or tomorrow, you'll see a "Message Assist" button. This opens a modal where you can:
 - View and edit your private notes about the person
 - Generate an AI-powered message based on the event type, person's name, and your notes
@@ -292,7 +296,11 @@ Settings → My Events → "+ Add" or "Add Your Birthday"
 It means the event is Private - only you can see it and get reminders for it.
 
 ### "Can I connect to someone without them knowing?"
-Yes, connecting to an unclaimed profile is instant. If the profile is claimed (they have an account), they might notice you in their connections, but there's no explicit notification.
+Connections are always instant - there's no approval process. When someone logs in, they'll see a "New Connections" notification on their dashboard showing who connected with them. They can:
+- Keep the connection (dismiss the notification)
+- Disconnect if they prefer not to be connected
+
+Since email and phone numbers are completely hidden, there's no privacy risk in being connected to someone.
 
 ---
 

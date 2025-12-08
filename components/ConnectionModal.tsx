@@ -153,9 +153,7 @@ export function ConnectionModal({
               >
                 ✓
               </motion.div>
-              <span className="font-medium">
-                {profile.isClaimed ? 'Request sent!' : 'Connected!'}
-              </span>
+              <span className="font-medium">Connected!</span>
             </div>
           ) : (
             <Button
@@ -168,10 +166,10 @@ export function ConnectionModal({
             </Button>
           )}
           
-          {/* Info text for claimed profiles */}
+          {/* Info text */}
           {profile.isClaimed && !connected && (
             <p className="text-xs text-gray-400 text-center mt-3">
-              {profile.name.split(' ')[0]} will receive a connection request
+              {profile.name.split(' ')[0]} will see you in their connections
             </p>
           )}
         </Card>

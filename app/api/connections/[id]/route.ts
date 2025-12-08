@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, connections } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import { eq, or, and } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 
-// Delete (break) a connection
+// Delete a connection - user can disconnect from anyone they're connected to
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth();
-    const { id } = await params;
+    const { id: connectionId } = await params;
     
     // Get user's profile
     const [userProfile] = await db
@@ -23,26 +23,30 @@ export async function DELETE(
       return NextResponse.json({ error: 'User profile not found' }, { status: 400 });
     }
     
-    // Get connection
+    // Get the connection
     const [connection] = await db
       .select()
       .from(connections)
-      .where(eq(connections.id, id))
+      .where(eq(connections.id, connectionId))
       .limit(1);
     
     if (!connection) {
       return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
     }
     
-    // Check if user is part of this connection
-    const isParty = connection.profileAId === userProfile.id || connection.profileBId === userProfile.id;
+    // Verify user is part of this connection
+    const isUserInConnection = 
+      connection.profileAId === userProfile.id || 
+      connection.profileBId === userProfile.id;
     
-    if (!isParty && !user.isPlatformAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!isUserInConnection && !user.isPlatformAdmin) {
+      return NextResponse.json({ error: 'Not authorized to delete this connection' }, { status: 403 });
     }
     
-    // Delete connection
-    await db.delete(connections).where(eq(connections.id, id));
+    // Delete the connection
+    await db
+      .delete(connections)
+      .where(eq(connections.id, connectionId));
     
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -58,5 +62,3 @@ export async function DELETE(
     );
   }
 }
-
-
