@@ -216,7 +216,7 @@ export default function DashboardPage() {
               : 'bg-white text-gray-600 hover:bg-gray-50'
           }`}
         >
-          30 days
+          Next 4 weeks
         </button>
         <button
           onClick={() => setDays(90)}
@@ -226,7 +226,7 @@ export default function DashboardPage() {
               : 'bg-white text-gray-600 hover:bg-gray-50'
           }`}
         >
-          90 days
+          Next 3 months
         </button>
       </div>
       

@@ -7,10 +7,12 @@ import { sendSuggestionEmail } from '@/lib/email';
 
 const createSuggestionsSchema = z.object({
   profileIds: z.array(z.string().uuid()).min(1),
-  connectTogether: z.boolean().optional().default(false), // For connecting unclaimed profiles to each other
+  connectTogether: z.boolean().optional().default(false), // For connecting selected profiles to each other
 });
 
-// POST - Create suggestions and auto-connect unclaimed profiles
+// POST - Connect selected profiles together
+// - Unclaimed profiles get connected directly
+// - Claimed profiles (users with accounts) receive suggestions to connect to unclaimed profiles
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
@@ -38,152 +40,143 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Some profiles not found' }, { status: 404 });
     }
     
-    // Get sender's existing connections
-    const senderConnections = await db
-      .select()
-      .from(connections)
-      .where(
-        or(
-          eq(connections.profileAId, senderProfile.id),
-          eq(connections.profileBId, senderProfile.id)
-        )
-      );
-    
-    const senderConnectionIds = new Set<string>();
-    senderConnections.forEach(conn => {
-      if (conn.profileAId === senderProfile.id) {
-        senderConnectionIds.add(conn.profileBId);
-      } else {
-        senderConnectionIds.add(conn.profileAId);
-      }
-    });
-    
     let suggestedCount = 0;
     let autoConnectedCount = 0;
-    let alreadyConnectedCount = 0;
-    const usersToNotify = new Map<string, { user: typeof users.$inferSelect; profileIds: string[] }>();
+    const usersToNotify = new Map<string, { user: typeof users.$inferSelect; suggestedProfiles: typeof selectedProfiles }>();
     
-    // Process each selected profile
-    for (const profile of selectedProfiles) {
-      // Skip if already connected
-      if (senderConnectionIds.has(profile.id)) {
-        alreadyConnectedCount++;
-        continue;
+    // Helper to check if connection exists
+    const connectionExists = async (idA: string, idB: string): Promise<boolean> => {
+      const [sorted1, sorted2] = [idA, idB].sort();
+      const [existing] = await db
+        .select()
+        .from(connections)
+        .where(
+          and(
+            eq(connections.profileAId, sorted1),
+            eq(connections.profileBId, sorted2)
+          )
+        )
+        .limit(1);
+      return !!existing;
+    };
+    
+    // Helper to create connection
+    const createConnection = async (idA: string, idB: string): Promise<boolean> => {
+      const [sorted1, sorted2] = [idA, idB].sort();
+      if (await connectionExists(idA, idB)) return false;
+      
+      await db.insert(connections).values({
+        profileAId: sorted1,
+        profileBId: sorted2,
+        createdByUserId: user.id,
+      });
+      return true;
+    };
+    
+    // Helper to create suggestion
+    const createSuggestion = async (toUserId: string, suggestedProfileId: string): Promise<boolean> => {
+      // Check if suggestion already exists
+      const [existingSuggestion] = await db
+        .select()
+        .from(connectionSuggestions)
+        .where(
+          and(
+            eq(connectionSuggestions.toUserId, toUserId),
+            eq(connectionSuggestions.suggestedProfileId, suggestedProfileId),
+            eq(connectionSuggestions.status, 'pending')
+          )
+        )
+        .limit(1);
+      
+      if (existingSuggestion) return false;
+      
+      // Check if already connected
+      const [targetProfile] = await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.linkedUserId, toUserId))
+        .limit(1);
+      
+      if (targetProfile && await connectionExists(targetProfile.id, suggestedProfileId)) {
+        return false;
       }
       
-      if (profile.linkedUserId) {
-        // Profile has an account - create a suggestion
-        const toUserId = profile.linkedUserId;
-        
-        // Check if suggestion already exists
-        const [existingSuggestion] = await db
-          .select()
-          .from(connectionSuggestions)
-          .where(
-            and(
-              eq(connectionSuggestions.fromUserId, user.id),
-              eq(connectionSuggestions.toUserId, toUserId),
-              eq(connectionSuggestions.suggestedProfileId, profile.id),
-              eq(connectionSuggestions.status, 'pending')
-            )
-          )
-          .limit(1);
-        
-        if (!existingSuggestion) {
-          // Create suggestion
-          await db.insert(connectionSuggestions).values({
-            fromUserId: user.id,
-            toUserId: toUserId,
-            suggestedProfileId: profile.id,
-          });
-          
-          suggestedCount++;
-          
-          // Track for email notification
-          if (!usersToNotify.has(toUserId)) {
-            const [toUser] = await db
-              .select()
-              .from(users)
-              .where(eq(users.id, toUserId))
-              .limit(1);
-            
-            if (toUser) {
-              usersToNotify.set(toUserId, { user: toUser, profileIds: [] });
-            }
-          }
-          usersToNotify.get(toUserId)?.profileIds.push(profile.id);
-        }
-      } else {
-        // Profile doesn't have an account - auto-create connection
-        const [profileA, profileB] = [senderProfile.id, profile.id].sort();
-        
-        // Check if connection already exists (shouldn't, but just in case)
-        const [existingConnection] = await db
-          .select()
-          .from(connections)
-          .where(
-            and(
-              eq(connections.profileAId, profileA),
-              eq(connections.profileBId, profileB)
-            )
-          )
-          .limit(1);
-        
-        if (!existingConnection) {
-          await db.insert(connections).values({
-            profileAId: profileA,
-            profileBId: profileB,
-            createdByUserId: user.id,
-          });
-          autoConnectedCount++;
-          senderConnectionIds.add(profile.id); // Track for connectTogether logic
-        }
+      await db.insert(connectionSuggestions).values({
+        fromUserId: user.id,
+        toUserId: toUserId,
+        suggestedProfileId: suggestedProfileId,
+      });
+      return true;
+    };
+    
+    // Separate claimed and unclaimed profiles
+    const claimedProfiles = selectedProfiles.filter(p => p.linkedUserId && p.linkedUserId !== user.id);
+    const unclaimedProfiles = selectedProfiles.filter(p => !p.linkedUserId);
+    
+    // Step 1: Connect all UNCLAIMED profiles to the SENDER
+    for (const profile of unclaimedProfiles) {
+      if (await createConnection(senderProfile.id, profile.id)) {
+        autoConnectedCount++;
       }
     }
     
-    // Handle "connect together" - connect unclaimed profiles to each other
+    // Step 2: If connectTogether, connect all profiles with each other
     if (data.connectTogether) {
-      const unclaimedProfiles = selectedProfiles.filter(p => !p.linkedUserId);
-      
+      // Connect unclaimed profiles to each other
       for (let i = 0; i < unclaimedProfiles.length; i++) {
         for (let j = i + 1; j < unclaimedProfiles.length; j++) {
-          const profileA = unclaimedProfiles[i];
-          const profileB = unclaimedProfiles[j];
-          const [idA, idB] = [profileA.id, profileB.id].sort();
-          
-          // Check if already connected
-          const [existingConnection] = await db
-            .select()
-            .from(connections)
-            .where(
-              and(
-                eq(connections.profileAId, idA),
-                eq(connections.profileBId, idB)
-              )
-            )
-            .limit(1);
-          
-          if (!existingConnection) {
-            await db.insert(connections).values({
-              profileAId: idA,
-              profileBId: idB,
-              createdByUserId: user.id,
-            });
+          await createConnection(unclaimedProfiles[i].id, unclaimedProfiles[j].id);
+        }
+      }
+      
+      // For each claimed profile (user with account), suggest unclaimed profiles to them
+      for (const claimedProfile of claimedProfiles) {
+        const toUserId = claimedProfile.linkedUserId!;
+        
+        for (const unclaimedProfile of unclaimedProfiles) {
+          if (await createSuggestion(toUserId, unclaimedProfile.id)) {
+            suggestedCount++;
+            
+            // Track for email notification
+            if (!usersToNotify.has(toUserId)) {
+              const [toUser] = await db
+                .select()
+                .from(users)
+                .where(eq(users.id, toUserId))
+                .limit(1);
+              
+              if (toUser) {
+                usersToNotify.set(toUserId, { user: toUser, suggestedProfiles: [] });
+              }
+            }
+            usersToNotify.get(toUserId)?.suggestedProfiles.push(unclaimedProfile);
           }
+        }
+        
+        // Also connect claimed profiles to the sender (if not already)
+        if (await createConnection(senderProfile.id, claimedProfile.id)) {
+          autoConnectedCount++;
+        }
+      }
+      
+      // Connect claimed profiles to each other (create direct connections since they're both in the group)
+      for (let i = 0; i < claimedProfiles.length; i++) {
+        for (let j = i + 1; j < claimedProfiles.length; j++) {
+          await createConnection(claimedProfiles[i].id, claimedProfiles[j].id);
         }
       }
     }
     
     // Send email notifications to users who received suggestions
-    for (const [toUserId, { user: toUser, profileIds }] of usersToNotify.entries()) {
-      const suggestedProfiles = selectedProfiles.filter(p => profileIds.includes(p.id));
+    for (const [toUserId, { user: toUser, suggestedProfiles: suggested }] of usersToNotify.entries()) {
+      if (suggested.length === 0) continue;
       
       try {
         await sendSuggestionEmail(
           toUser.email,
           toUser.name,
           user.name,
-          suggestedProfiles.map(p => p.name),
+          suggested.map(p => p.name),
           process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology'
         );
       } catch (emailError) {
@@ -195,7 +188,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       suggested: suggestedCount,
       autoConnected: autoConnectedCount,
-      alreadyConnected: alreadyConnectedCount,
       total: data.profileIds.length,
     });
   } catch (error) {

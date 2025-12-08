@@ -30,16 +30,15 @@ export function SuggestModal({
   const [success, setSuccess] = useState(false);
   const [connectTogether, setConnectTogether] = useState(true);
   
-  // Check if all selected profiles are unclaimed (no linkedUserId)
-  const allUnclaimed = selectedProfiles.length > 1 && 
-    selectedProfiles.every(p => !p.linkedUserId);
-  
   // Calculate number of connections that would be created
   const numInterConnections = selectedProfiles.length * (selectedProfiles.length - 1) / 2;
   
   // Count profiles with and without accounts
   const profilesWithAccounts = selectedProfiles.filter(p => p.linkedUserId);
   const profilesWithoutAccounts = selectedProfiles.filter(p => !p.linkedUserId);
+  
+  // Show connect together option if more than 1 profile selected
+  const showConnectTogether = selectedProfiles.length > 1;
   
   // Reset state when modal opens
   useEffect(() => {
@@ -53,7 +52,7 @@ export function SuggestModal({
   const handleSend = async () => {
     setSending(true);
     try {
-      await onSuggest(allUnclaimed && connectTogether);
+      await onSuggest(connectTogether);
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -93,20 +92,25 @@ export function SuggestModal({
                 Done!
               </h3>
               <p className="text-sm text-gray-600">
-                {profilesWithAccounts.length > 0 && (
-                  <span className="block mb-1">
-                    {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person' : 'people'} will be notified when they sign in.
-                  </span>
-                )}
-                {profilesWithoutAccounts.length > 0 && (
-                  <span className="block mb-1">
-                    {profilesWithoutAccounts.length} {profilesWithoutAccounts.length === 1 ? 'person' : 'people'} {profilesWithoutAccounts.length === 1 ? 'has' : 'have'} been connected automatically.
-                  </span>
-                )}
-                {allUnclaimed && connectTogether && (
-                  <span className="block">
-                    They're also connected to each other.
-                  </span>
+                {connectTogether ? (
+                  <>
+                    <span className="block mb-1">
+                      All {selectedProfiles.length} people are now connected to each other.
+                    </span>
+                    {profilesWithAccounts.length > 0 && profilesWithoutAccounts.length > 0 && (
+                      <span className="block">
+                        {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person' : 'people'} will be notified about {profilesWithoutAccounts.length} new {profilesWithoutAccounts.length === 1 ? 'connection' : 'connections'}.
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {profilesWithoutAccounts.length > 0 && (
+                      <span className="block mb-1">
+                        {profilesWithoutAccounts.length} {profilesWithoutAccounts.length === 1 ? 'person' : 'people'} connected to you.
+                      </span>
+                    )}
+                  </>
                 )}
               </p>
             </div>
@@ -136,8 +140,8 @@ export function SuggestModal({
                   )}
                 </div>
                 
-                {/* Connect together toggle - only for unclaimed profiles */}
-                {allUnclaimed && (
+                {/* Connect together toggle */}
+                {showConnectTogether && (
                   <button
                     type="button"
                     onClick={() => setConnectTogether(!connectTogether)}
@@ -160,7 +164,7 @@ export function SuggestModal({
                         Connect these {selectedProfiles.length} people to each other
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Creates {numInterConnections} connections between them
+                        Creates up to {numInterConnections} connections between them
                       </p>
                     </div>
                   </button>
@@ -169,28 +173,45 @@ export function SuggestModal({
               
               {/* Info about what will happen */}
               <div className="bg-teal-50 rounded-xl p-4 space-y-2">
-                {profilesWithAccounts.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <Users className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person has' : 'people have'} an account
-                      </p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        They'll receive a notification when they next sign in
-                      </p>
+                {connectTogether ? (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Link2 className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Everyone gets connected
+                        </p>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          All {selectedProfiles.length} people will be connected to each other and to you
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {profilesWithoutAccounts.length > 0 && (
+                    {profilesWithAccounts.length > 0 && profilesWithoutAccounts.length > 0 && (
+                      <div className="flex items-start gap-2">
+                        <Users className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {profilesWithAccounts.length} {profilesWithAccounts.length === 1 ? 'person has' : 'people have'} an account
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5">
+                            They'll get suggestions to connect to the other {profilesWithoutAccounts.length}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
                   <div className="flex items-start gap-2">
                     <Link2 className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {profilesWithoutAccounts.length} {profilesWithoutAccounts.length === 1 ? 'person doesn\'t' : 'people don\'t'} have an account yet
+                        Connect to you only
                       </p>
                       <p className="text-xs text-gray-600 mt-0.5">
-                        They'll be connected automatically
+                        {profilesWithoutAccounts.length > 0 
+                          ? `${profilesWithoutAccounts.length} ${profilesWithoutAccounts.length === 1 ? 'person' : 'people'} will be connected to you`
+                          : 'Selected profiles will not be modified'
+                        }
                       </p>
                     </div>
                   </div>
