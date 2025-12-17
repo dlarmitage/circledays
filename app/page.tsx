@@ -96,7 +96,7 @@ export default async function HomePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-coral-400 mt-0.5">✗</span>
-                  Multiple calendars for family, friends, work—chaos
+                  Multiple calendars for family, friends, work: chaos
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-coral-400 mt-0.5">✗</span>
