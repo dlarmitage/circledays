@@ -2,14 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, invites, profiles, connections } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
+import { sendSms, generateInviteSms } from '@/lib/sms';
 import { eq, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
+// Helper to detect if input is a phone number
+function isPhoneNumber(input: string): boolean {
+  // Remove common phone formatting characters
+  const cleaned = input.replace(/[\s\-\(\)\+\.]/g, '');
+  // Check if it's all digits and reasonable length for a phone number
+  return /^\d{7,15}$/.test(cleaned);
+}
+
+// Helper to normalize phone number to E.164 format
+function normalizePhoneNumber(phone: string): string {
+  const cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
+  // If no country code, assume US (+1)
+  if (!cleaned.startsWith('+')) {
+    return '+1' + cleaned.replace(/^\+/, '');
+  }
+  return cleaned;
+}
+
 const createInviteSchema = z.object({
   profileId: z.string().uuid(),
-  email: z.string().email(),
+  contact: z.string().min(1, "Email or mobile number is required"),
   seedConnectionIds: z.array(z.string().uuid()).optional(),
+  linkOnly: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -17,30 +37,42 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth();
     const body = await request.json();
     const data = createInviteSchema.parse(body);
-    
+
+    // Detect if contact is email or phone
+    const isPhone = isPhoneNumber(data.contact);
+    const contactValue = isPhone ? normalizePhoneNumber(data.contact) : data.contact.toLowerCase();
+
+    // Validate email format if it's an email
+    if (!isPhone && !z.string().email().safeParse(contactValue).success) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address or mobile number' },
+        { status: 400 }
+      );
+    }
+
     // Get the profile to invite
     const [profile] = await db
       .select()
       .from(profiles)
       .where(eq(profiles.id, data.profileId))
       .limit(1);
-    
+
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
-    
+
     // Check permission - must be creator of an unlinked profile
     if (profile.createdByUserId !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     if (profile.linkedUserId) {
       return NextResponse.json(
         { error: 'This profile is already linked to a user' },
         { status: 400 }
       );
     }
-    
+
     // Check for existing pending invite
     const [existingInvite] = await db
       .select()
@@ -49,23 +81,23 @@ export async function POST(request: NextRequest) {
         sql`${invites.profileId} = ${data.profileId} AND ${invites.status} = 'pending'`
       )
       .limit(1);
-    
+
     if (existingInvite) {
       return NextResponse.json(
         { error: 'An invite is already pending for this profile' },
         { status: 400 }
       );
     }
-    
+
     // Create invite token
     const token = nanoid(32);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-    
-    // Create invite
+
+    // Create invite (store contact in email field regardless of type)
     const [invite] = await db
       .insert(invites)
       .values({
-        email: data.email.toLowerCase(),
+        email: contactValue,
         profileId: data.profileId,
         invitedByUserId: user.id,
         seedConnectionIds: data.seedConnectionIds || [],
@@ -74,12 +106,36 @@ export async function POST(request: NextRequest) {
         expiresAt,
       })
       .returning();
-    
-    // Send invite email
+
+    // Generate invite URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const inviteUrl = `${appUrl}/invite/${token}`;
-    
-    const emailHtml = `
+
+    // If linkOnly mode, skip sending and just return the URL
+    if (data.linkOnly) {
+      return NextResponse.json({
+        invite,
+        inviteUrl,
+        sent: false,
+        method: 'link_only'
+      });
+    }
+
+    // Send via appropriate channel
+    if (isPhone) {
+      // Send SMS
+      const smsBody = generateInviteSms(user.name, profile.name, inviteUrl);
+      await sendSms({ to: contactValue, body: smsBody });
+
+      return NextResponse.json({
+        invite,
+        inviteUrl,
+        sent: true,
+        method: 'sms'
+      });
+    } else {
+      // Send email
+      const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -124,34 +180,39 @@ export async function POST(request: NextRequest) {
   </div>
 </body>
 </html>
-    `.trim();
-    
-    await sendEmail({
-      to: data.email,
-      subject: `${user.name} invited you to CircleDays`,
-      html: emailHtml,
-      text: `${user.name} has invited you to join CircleDays! Accept your invitation here: ${inviteUrl}`,
-    });
-    
-    return NextResponse.json({ invite, inviteUrl });
+      `.trim();
+
+      await sendEmail({
+        to: contactValue,
+        subject: `${user.name} invited you to CircleDays`,
+        html: emailHtml,
+        text: `${user.name} has invited you to join CircleDays! Accept your invitation here: ${inviteUrl}`,
+      });
+
+      return NextResponse.json({
+        invite,
+        inviteUrl,
+        sent: true,
+        method: 'email'
+      });
+    }
   } catch (error) {
     console.error('Create invite error:', error);
-    
+
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid data', details: error.issues },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
       { error: 'Failed to create invite' },
       { status: 500 }
     );
   }
 }
-

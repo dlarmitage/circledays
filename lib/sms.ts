@@ -41,19 +41,23 @@ interface EventReminder {
 
 export function generateReminderSms(events: EventReminder[]): string[] {
   const messages: string[] = [];
-  
+
   for (const event of events) {
     const daysText = event.daysUntil === 0 ? 'today!' : event.daysUntil === 1 ? 'tomorrow!' : `in ${event.daysUntil} days`;
     const ageText = event.age ? ` (turning ${event.age})` : '';
-    const emoji = event.eventType.toLowerCase() === 'birthday' ? '🎂' : 
-                  event.eventType.toLowerCase() === 'anniversary' ? '❤️' : '🎉';
-    
+    const emoji = event.eventType.toLowerCase() === 'birthday' ? '🎂' :
+      event.eventType.toLowerCase() === 'anniversary' ? '❤️' : '🎉';
+
     // Clean, readable format
     const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}`;
     messages.push(message);
   }
-  
+
   return messages;
+}
+
+export function generateInviteSms(inviterName: string, profileName: string, inviteUrl: string): string {
+  return `${inviterName} invited you to CircleDays! Claim your profile as "${profileName}" and never miss special dates: ${inviteUrl}`;
 }
 
 

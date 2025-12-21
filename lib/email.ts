@@ -19,7 +19,7 @@ interface SendEmailOptions {
 
 export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
   const client = getResendClient();
-  
+
   if (!client) {
     console.log('📧 Email would be sent to:', to);
     console.log('Subject:', subject);
@@ -48,7 +48,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
   }
 }
 
-export function generateMagicLinkEmail(name: string, magicLink: string) {
+export function generateMagicLinkEmail(name: string, magicLink: string, code: string) {
   const html = `
 <!DOCTYPE html>
 <html>
@@ -105,10 +105,36 @@ export function generateMagicLinkEmail(name: string, magicLink: string) {
                 </tr>
               </table>
               
+              <!-- Verification Code Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding: 24px; background-color: #f5f5f4; border-radius: 12px; margin-bottom: 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="color: #666666; font-size: 14px; padding-bottom: 12px;">
+                          Using the app on your phone? Enter this code:
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center">
+                          <table cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #0d9488; border-radius: 8px; background-color: #ffffff;">
+                            <tr>
+                              <td style="padding: 12px 24px;">
+                                <span style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 28px; font-weight: 700; color: #0d9488; letter-spacing: 6px;">${code}</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
               <!-- Alt link text -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="color: #666666; font-size: 14px; line-height: 1.6; padding-bottom: 16px;">
+                  <td style="color: #666666; font-size: 14px; line-height: 1.6; padding-top: 24px; padding-bottom: 16px;">
                     Or copy and paste this link into your browser:
                   </td>
                 </tr>
@@ -147,6 +173,8 @@ Hi${name ? ` ${name}` : ''},
 Click the link below to sign in to CircleDays. This link will expire in 15 minutes.
 
 ${magicLink}
+
+Or enter this verification code in the app: ${code}
 
 If you didn't request this email, you can safely ignore it.
   `.trim();
@@ -230,7 +258,7 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` - turning ${event.age}` : '';
     const initial = event.profileName.charAt(0).toUpperCase();
-    
+
     return `
       <tr>
         <td style="padding: 12px 0;">
@@ -240,10 +268,10 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td width="48" valign="top">
-                      ${event.profilePhoto 
-                        ? `<img src="${event.profilePhoto}" width="48" height="48" style="width: 48px; height: 48px; border-radius: 50%; display: block;" alt="${event.profileName}">`
-                        : `<table width="48" height="48" cellpadding="0" cellspacing="0" border="0" style="border-radius: 50%; background-color: #0d9488;"><tr><td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 18px;">${initial}</td></tr></table>`
-                      }
+                      ${event.profilePhoto
+        ? `<img src="${event.profilePhoto}" width="48" height="48" style="width: 48px; height: 48px; border-radius: 50%; display: block;" alt="${event.profileName}">`
+        : `<table width="48" height="48" cellpadding="0" cellspacing="0" border="0" style="border-radius: 50%; background-color: #0d9488;"><tr><td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 18px;">${initial}</td></tr></table>`
+      }
                     </td>
                     <td style="padding-left: 16px;" valign="middle">
                       <p style="margin: 0; font-weight: 600; color: #333333; font-size: 16px;">${event.profileName}</p>
@@ -350,7 +378,7 @@ export async function sendSuggestionEmail(
 ) {
   const count = profileNames.length;
   const profileList = profileNames.slice(0, 5).join(', ') + (count > 5 ? ` and ${count - 5} more` : '');
-  
+
   const html = `
 <!DOCTYPE html>
 <html>
