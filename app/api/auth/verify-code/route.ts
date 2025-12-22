@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, magicLinks, users } from '@/lib/db';
-import { createSession } from '@/lib/auth';
+import { createSession, logLoginEvent } from '@/lib/auth';
 import { eq, and, gt } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         if (existingUser) {
             // Create session for existing user
             await createSession(existingUser.id);
+            await logLoginEvent(existingUser.id, 'verification_code', request.headers.get('user-agent') || undefined);
             return NextResponse.json({
                 success: true,
                 redirect: '/dashboard',

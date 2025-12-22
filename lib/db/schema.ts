@@ -169,4 +169,20 @@ export type NotificationLog = typeof notificationLogs.$inferSelect;
 export type MagicLink = typeof magicLinks.$inferSelect;
 export type ConnectionSuggestion = typeof connectionSuggestions.$inferSelect;
 
+// Login Analytics
+export const loginMethodEnum = pgEnum('login_method', [
+  'magic_link',
+  'verification_code',
+  'invite_accept',
+  'onboarding'
+]);
 
+export const loginEvents = pgTable('login_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  loginMethod: loginMethodEnum('login_method').notNull(),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export type LoginEvent = typeof loginEvents.$inferSelect;

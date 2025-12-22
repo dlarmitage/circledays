@@ -1,6 +1,6 @@
 import { getIronSession, IronSession } from 'iron-session';
 import { cookies } from 'next/headers';
-import { db, users } from './db';
+import { db, users, loginEvents } from './db';
 import { eq } from 'drizzle-orm';
 
 export interface SessionData {
@@ -26,27 +26,27 @@ export async function getSession(): Promise<IronSession<SessionData>> {
 
 export async function getCurrentUser() {
   const session = await getSession();
-  
+
   if (!session.isLoggedIn || !session.userId) {
     return null;
   }
-  
+
   const user = await db
     .select()
     .from(users)
     .where(eq(users.id, session.userId))
     .limit(1);
-  
+
   return user[0] || null;
 }
 
 export async function requireAuth() {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     throw new Error('Unauthorized');
   }
-  
+
   return user;
 }
 
@@ -62,4 +62,21 @@ export async function destroySession() {
   session.destroy();
 }
 
+export type LoginMethod = 'magic_link' | 'verification_code' | 'invite_accept' | 'onboarding';
 
+export async function logLoginEvent(
+  userId: string,
+  method: LoginMethod,
+  userAgent?: string
+) {
+  try {
+    await db.insert(loginEvents).values({
+      userId,
+      loginMethod: method,
+      userAgent: userAgent || null,
+    });
+  } catch (error) {
+    // Don't fail login if analytics logging fails
+    console.error('Failed to log login event:', error);
+  }
+}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, users, profiles, reminderPreferences, events, invites } from '@/lib/db';
-import { createSession } from '@/lib/auth';
+import { createSession, logLoginEvent } from '@/lib/auth';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { capitalizeName } from '@/lib/utils';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createUserSchema.parse(body);
-    
+
     // Create user
     const [newUser] = await db
       .insert(users)
@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
         notificationChannel: data.notificationChannel,
       })
       .returning();
-    
+
     let userProfile;
-    
+
     // Check if we're claiming an existing profile
     if (data.claimProfileId) {
       // Verify the profile exists and is unlinked
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           )
         )
         .limit(1);
-      
+
       if (existingProfile) {
         // Claim the existing profile
         const [claimedProfile] = await db
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
           })
           .where(eq(profiles.id, data.claimProfileId))
           .returning();
-        
+
         userProfile = claimedProfile;
-        
+
         // Mark any pending invites for this profile as accepted
         await db
           .update(invites)
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
           .where(eq(invites.profileId, data.claimProfileId));
       }
     }
-    
+
     // If we didn't claim a profile, create a new one
     if (!userProfile) {
       const [newProfile] = await db
@@ -79,16 +79,16 @@ export async function POST(request: NextRequest) {
           linkedUserId: newUser.id,
         })
         .returning();
-      
+
       userProfile = newProfile;
     }
-    
+
     // Create default reminder preferences
     await db.insert(reminderPreferences).values({
       userId: newUser.id,
       defaultLeadDays: [0, 1, 7],
     });
-    
+
     // If birthdate provided and not already on profile, create birthday event
     if (data.birthdate) {
       // Check if profile already has a birthday event
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
           )
         )
         .limit(1);
-      
+
       if (existingBirthday.length === 0) {
         await db.insert(events).values({
           profileId: userProfile.id,
@@ -112,24 +112,25 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-    
+
     // Create session
     await createSession(newUser.id);
-    
+    await logLoginEvent(newUser.id, 'onboarding', request.headers.get('user-agent') || undefined);
+
     return NextResponse.json({
       user: newUser,
       profile: userProfile,
     });
   } catch (error) {
     console.error('Create user error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid data', details: error.issues },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
       { error: 'Failed to create user' },
       { status: 500 }
