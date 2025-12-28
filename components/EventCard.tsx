@@ -36,24 +36,24 @@ export function EventCard({
 }: EventCardProps) {
   const daysText = getDaysUntilText(daysUntil);
   const eventLabel = getEventTypeLabel(type, customLabel);
-  
+
   const EventIcon = type === 'birthday' ? Cake : type === 'anniversary' ? Heart : Calendar;
-  
+
   const getBadgeVariant = () => {
     if (daysUntil === 0) return 'danger';
     if (daysUntil === 1) return 'warning';
     return 'success';
   };
-  
+
   const formattedDate = formatDate(date);
-  
-  const showMessageAssist = (daysUntil === 0 || daysUntil === 1) && onMessageAssist;
-  
+
+  const showMessageAssist = daysUntil <= 7 && onMessageAssist;
+
   return (
     <Card hover onClick={onClick} className="animate-slide-up">
       <div className="flex items-center gap-4">
         <Avatar src={profilePicture} name={profileName} size="lg" />
-        
+
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 truncate">{profileName}</h3>
           <div className="flex items-center gap-2 mt-1">
@@ -70,8 +70,8 @@ export function EventCard({
               Turning {age}
             </p>
           )}
-          
-          {/* Message Assist button for today/tomorrow */}
+
+          {/* Message Assist button for upcoming events */}
           {showMessageAssist && (
             <button
               onClick={(e) => {
@@ -85,7 +85,7 @@ export function EventCard({
             </button>
           )}
         </div>
-        
+
         <Badge variant={getBadgeVariant()} size="md">
           {daysText}
         </Badge>

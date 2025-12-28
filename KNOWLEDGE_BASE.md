@@ -76,7 +76,7 @@ If someone has suggested connections for you, a **Suggested Connections card** a
 - Keep the connection (green checkmark)
 - Disconnect if you prefer not to be connected (red minus icon)
 
-**Message Assist**: For events happening today or tomorrow, you'll see a "Message Assist" button. This opens a modal where you can:
+**Message Assist**: For events happening within the next week, you'll see a "Message Assist" button. This opens a modal where you can:
 - View and edit your private notes about the person
 - Generate an AI-powered message based on the event type, person's name, and your notes
 - Refine the message tone (friendly, casual, formal, warm)
@@ -314,7 +314,7 @@ Since email and phone numbers are completely hidden, there's no privacy risk in 
 6. **Add photos**: They help you quickly identify people in lists and the calendar
    - You can paste photos directly from your clipboard (Ctrl/Cmd+V)
 7. **Use the calendar List view**: Great for planning ahead for the whole year
-8. **Use Message Assist**: For events today/tomorrow, let AI help you craft a thoughtful message
+8. **Use Message Assist**: For events in the next week, let AI help you craft a thoughtful message
 9. **Auto-save notes**: Your notes are automatically saved as you type (no need to click save)
 
 ---

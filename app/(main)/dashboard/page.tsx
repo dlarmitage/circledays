@@ -52,10 +52,10 @@ export default function DashboardPage() {
   const [days, setDays] = useState(30);
   const [newConnections, setNewConnections] = useState<NewConnection[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  
+
   // Message Assist modal state
   const [messageAssistEvent, setMessageAssistEvent] = useState<UpcomingEvent | null>(null);
-  
+
   // Load dismissed connections from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(DISMISSED_CONNECTIONS_KEY);
@@ -67,7 +67,7 @@ export default function DashboardPage() {
       }
     }
   }, []);
-  
+
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(res => res.json()),
@@ -80,14 +80,14 @@ export default function DashboardPage() {
       setLoading(false);
     });
   }, [days]);
-  
+
   // Handle dismissing a new connection notification
   const handleDismissConnection = (connectionId: string) => {
     const newDismissed = new Set([...dismissedIds, connectionId]);
     setDismissedIds(newDismissed);
     localStorage.setItem(DISMISSED_CONNECTIONS_KEY, JSON.stringify([...newDismissed]));
   };
-  
+
   // Handle disconnecting from someone who connected with you
   const handleDisconnect = async (connectionId: string) => {
     const res = await fetch(`/api/connections/${connectionId}`, {
@@ -99,7 +99,7 @@ export default function DashboardPage() {
       setNewConnections(prev => prev.filter(c => c.connectionId !== connectionId));
     }
   };
-  
+
   // Dismiss all new connection notifications
   const handleDismissAllConnections = () => {
     const allIds = newConnections.map(c => c.connectionId);
@@ -107,10 +107,10 @@ export default function DashboardPage() {
     setDismissedIds(newDismissed);
     localStorage.setItem(DISMISSED_CONNECTIONS_KEY, JSON.stringify([...newDismissed]));
   };
-  
+
   // Filter out already dismissed connections
   const visibleNewConnections = newConnections.filter(c => !dismissedIds.has(c.connectionId));
-  
+
   const groupedEvents = events.reduce((acc, event) => {
     let group: string;
     if (event.daysUntil === 0) group = 'Today';
@@ -118,14 +118,14 @@ export default function DashboardPage() {
     else if (event.daysUntil <= 7) group = 'This Week';
     else if (event.daysUntil <= 30) group = 'Next Four Weeks';
     else group = 'Later';
-    
+
     if (!acc[group]) acc[group] = [];
     acc[group].push(event);
     return acc;
   }, {} as Record<string, UpcomingEvent[]>);
-  
+
   const groupOrder = ['Today', 'Tomorrow', 'This Week', 'Next Four Weeks', 'Later'];
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -133,7 +133,7 @@ export default function DashboardPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       {/* Header */}
@@ -151,7 +151,7 @@ export default function DashboardPage() {
           Add Person
         </Button>
       </div>
-      
+
       {/* New Connections Card */}
       <NewConnectionsCard
         connections={visibleNewConnections}
@@ -159,31 +159,29 @@ export default function DashboardPage() {
         onDisconnect={handleDisconnect}
         onDismissAll={handleDismissAllConnections}
       />
-      
+
       {/* Time filter */}
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setDays(30)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            days === 30
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${days === 30
               ? 'bg-teal-500 text-white'
               : 'bg-white text-gray-600 hover:bg-gray-50'
-          }`}
+            }`}
         >
           Next 4 weeks
         </button>
         <button
           onClick={() => setDays(90)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            days === 90
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${days === 90
               ? 'bg-teal-500 text-white'
               : 'bg-white text-gray-600 hover:bg-gray-50'
-          }`}
+            }`}
         >
           Next 3 months
         </button>
       </div>
-      
+
       {/* Events */}
       {events.length === 0 ? (
         <EmptyState
@@ -202,7 +200,7 @@ export default function DashboardPage() {
           {groupOrder.map(group => {
             const groupEvents = groupedEvents[group];
             if (!groupEvents?.length) return null;
-            
+
             return (
               <div key={group}>
                 <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -228,7 +226,7 @@ export default function DashboardPage() {
           })}
         </div>
       )}
-      
+
       {/* Message Assist Modal */}
       <MessageAssistModal
         isOpen={!!messageAssistEvent}
@@ -236,9 +234,10 @@ export default function DashboardPage() {
         profileId={messageAssistEvent?.profileId || ''}
         profileName={messageAssistEvent?.profileName || ''}
         profilePicture={messageAssistEvent?.profilePicture || null}
-        eventType={messageAssistEvent?.type === 'custom' 
-          ? (messageAssistEvent?.customLabel || 'event') 
+        eventType={messageAssistEvent?.type === 'custom'
+          ? (messageAssistEvent?.customLabel || 'event')
           : (messageAssistEvent?.type || 'birthday')}
+        daysUntil={messageAssistEvent?.daysUntil}
       />
     </div>
   );

@@ -13,6 +13,7 @@ interface MessageAssistModalProps {
   profileName: string;
   profilePicture: string | null;
   eventType: string;
+  daysUntil?: number;
 }
 
 type Tone = 'warm' | 'casual' | 'formal' | 'playful';
@@ -31,6 +32,7 @@ export function MessageAssistModal({
   profileName,
   profilePicture,
   eventType,
+  daysUntil,
 }: MessageAssistModalProps) {
   const [notes, setNotes] = useState<string>('');
   const [originalNotes, setOriginalNotes] = useState<string>('');
@@ -44,9 +46,9 @@ export function MessageAssistModal({
   const [notesSaved, setNotesSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [step, setStep] = useState<'context' | 'message'>('context');
-  
+
   const notesChanged = notes !== originalNotes;
-  
+
   // Fetch existing notes when modal opens
   useEffect(() => {
     if (isOpen && profileId) {
@@ -57,7 +59,7 @@ export function MessageAssistModal({
       setNotesSaved(false);
       setStep('context');
       setLoading(false);
-      
+
       // Fetch existing notes
       setLoadingNotes(true);
       fetch(`/api/profiles/${profileId}/notes`)
@@ -71,10 +73,10 @@ export function MessageAssistModal({
         .finally(() => setLoadingNotes(false));
     }
   }, [isOpen, profileId]);
-  
+
   const saveNotes = async (showConfirmation = true) => {
     if (!notesChanged) return;
-    
+
     setSavingNotes(true);
     try {
       await fetch(`/api/profiles/${profileId}/notes`, {
@@ -93,7 +95,7 @@ export function MessageAssistModal({
       setSavingNotes(false);
     }
   };
-  
+
   // Auto-save notes when closing
   const handleClose = async () => {
     if (notesChanged) {
@@ -101,11 +103,11 @@ export function MessageAssistModal({
     }
     onClose();
   };
-  
+
   const generateMessage = async (isRegenerate = false) => {
     setLoading(true);
     setCopied(false);
-    
+
     try {
       const res = await fetch('/api/message-assist', {
         method: 'POST',
@@ -114,6 +116,7 @@ export function MessageAssistModal({
           profileId,
           profileName,
           eventType,
+          daysUntil,
           notes: notes || undefined,
           additionalContext: additionalContext || undefined,
           tone,
@@ -121,9 +124,9 @@ export function MessageAssistModal({
           previousMessage: isRegenerate ? message : undefined,
         }),
       });
-      
+
       const data = await res.json();
-      
+
       if (data.message) {
         setMessage(data.message);
         setStep('message');
@@ -134,7 +137,7 @@ export function MessageAssistModal({
       setLoading(false);
     }
   };
-  
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(message);
@@ -144,16 +147,16 @@ export function MessageAssistModal({
       console.error('Failed to copy:', err);
     }
   };
-  
+
   const handleRegenerate = () => {
     generateMessage(true);
     setFeedback('');
   };
-  
+
   if (!isOpen) return null;
-  
+
   const firstName = profileName.split(' ')[0];
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <Card className="w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
@@ -169,7 +172,7 @@ export function MessageAssistModal({
             <X className="w-5 h-5" />
           </button>
         </CardHeader>
-        
+
         <CardContent className="flex-1 overflow-auto p-4 space-y-4">
           {/* Person info */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
@@ -179,7 +182,7 @@ export function MessageAssistModal({
               <p className="text-sm text-gray-500 capitalize">{eventType}</p>
             </div>
           </div>
-          
+
           {step === 'context' ? (
             <>
               {/* Private notes (editable) */}
@@ -213,16 +216,15 @@ export function MessageAssistModal({
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={`Add notes about ${firstName} to personalize messages.\ne.g., "Loves hiking", "Has two kids", "Works at Google"`}
                     rows={3}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none ${
-                      notesChanged ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
-                    }`}
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none ${notesChanged ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
+                      }`}
                   />
                 )}
                 <p className="text-xs text-gray-400 mt-1">
                   Private notes • Auto-saved when you close
                 </p>
               </div>
-              
+
               {/* Additional context for this message */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -236,7 +238,7 @@ export function MessageAssistModal({
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm resize-none"
                 />
               </div>
-              
+
               {/* Tone selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -248,23 +250,21 @@ export function MessageAssistModal({
                       key={t.value}
                       type="button"
                       onClick={() => setTone(t.value)}
-                      className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-                        tone === t.value
+                      className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${tone === t.value
                           ? 'bg-violet-100 border-2 border-violet-500'
                           : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                      }`}
+                        }`}
                     >
                       <span className="text-lg">{t.emoji}</span>
-                      <span className={`text-xs font-medium ${
-                        tone === t.value ? 'text-violet-700' : 'text-gray-600'
-                      }`}>
+                      <span className={`text-xs font-medium ${tone === t.value ? 'text-violet-700' : 'text-gray-600'
+                        }`}>
                         {t.label}
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
-              
+
               {/* Generate button */}
               <Button
                 className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
@@ -286,7 +286,7 @@ export function MessageAssistModal({
                   <p className="text-gray-800 whitespace-pre-wrap">{message}</p>
                 </div>
               </div>
-              
+
               {/* Copy button */}
               <Button
                 className="w-full"
@@ -305,7 +305,7 @@ export function MessageAssistModal({
                   </>
                 )}
               </Button>
-              
+
               {/* Regeneration section */}
               <div className="border-t border-gray-100 pt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -338,7 +338,7 @@ export function MessageAssistModal({
                   </Button>
                 </div>
               </div>
-              
+
               {/* Tone quick-switch */}
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>Try different tone:</span>
