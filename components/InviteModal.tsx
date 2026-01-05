@@ -280,7 +280,8 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
                     <InputIcon className="w-5 h-5" />
                   </div>
                   <input
-                    type={inputType === 'phone' ? 'tel' : 'email'}
+                    type="text"
+                    inputMode={inputType === 'phone' ? 'tel' : 'email'}
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
                     placeholder="email@example.com or (555) 123-4567"
@@ -327,8 +328,8 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
                         disabled={isDisabled}
                         onClick={() => setConnectionOption(option.value)}
                         className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all ${isSelected
-                            ? 'bg-teal-50 border-2 border-teal-500'
-                            : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                          ? 'bg-teal-50 border-2 border-teal-500'
+                          : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
                           } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-teal-100' : 'bg-gray-200'
@@ -393,14 +394,14 @@ export function InviteModal({ isOpen, onClose, profileId, profileName, connectio
                           type="button"
                           onClick={() => toggleConnection(conn.profileId)}
                           className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${isSelected
-                              ? 'bg-teal-50'
-                              : 'bg-white hover:bg-gray-50'
+                            ? 'bg-teal-50'
+                            : 'bg-white hover:bg-gray-50'
                             } ${index !== connections.length - 1 ? 'border-b' : ''}`}
                         >
                           {/* Custom checkbox - larger for mobile */}
                           <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected
-                              ? 'bg-teal-600 border-teal-600'
-                              : 'border-gray-300 bg-white'
+                            ? 'bg-teal-600 border-teal-600'
+                            : 'border-gray-300 bg-white'
                             }`}>
                             {isSelected && (
                               <Check className="w-4 h-4 text-white" strokeWidth={3} />
