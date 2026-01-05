@@ -135,6 +135,14 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
           <p className="text-gray-600">
             <strong>{inviteData?.inviterName}</strong> invited you to join CircleDays
           </p>
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
+          >
+            Learn more about CircleDays →
+          </a>
         </div>
 
         <Card padding="lg">
