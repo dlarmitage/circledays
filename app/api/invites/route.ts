@@ -93,11 +93,12 @@ export async function POST(request: NextRequest) {
     const token = nanoid(32);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    // Create invite (store contact in email field regardless of type)
+    // Create invite (store contact in email field, with type indicator)
     const [invite] = await db
       .insert(invites)
       .values({
         email: contactValue,
+        contactType: isPhone ? 'phone' : 'email',
         profileId: data.profileId,
         invitedByUserId: user.id,
         seedConnectionIds: data.seedConnectionIds || [],

@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
-    
+
     // Get invite with profile and inviter info
     const [invite] = await db
       .select({
@@ -20,16 +20,16 @@ export async function GET(
       .innerJoin(profiles, eq(invites.profileId, profiles.id))
       .where(eq(invites.token, token))
       .limit(1);
-    
+
     if (!invite) {
       return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
     }
-    
+
     // Check if expired
     if (new Date() > invite.invite.expiresAt) {
       return NextResponse.json({ error: 'Invite expired' }, { status: 410 });
     }
-    
+
     // Check if already accepted
     if (invite.invite.status !== 'pending') {
       return NextResponse.json(
@@ -37,19 +37,20 @@ export async function GET(
         { status: 410 }
       );
     }
-    
+
     // Get inviter info
     const [inviter] = await db
       .select({ name: users.name })
       .from(users)
       .where(eq(users.id, invite.invite.invitedByUserId))
       .limit(1);
-    
+
     return NextResponse.json({
       profileName: invite.profile.name,
       profilePicture: invite.profile.profilePicture,
       inviterName: inviter?.name || 'Someone',
-      email: invite.invite.email,
+      contact: invite.invite.email, // Contains email or phone depending on contactType
+      contactType: invite.invite.contactType,
     });
   } catch (error) {
     console.error('Get invite error:', error);

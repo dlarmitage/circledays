@@ -6,8 +6,9 @@ import { z } from 'zod';
 
 const acceptInviteSchema = z.object({
   name: z.string().min(1).max(100),
+  email: z.string().email("Please enter a valid email address"),
+  mobile: z.string().min(7, "Please enter a valid phone number"),
   timezone: z.string(),
-  mobile: z.string().optional(),
   notificationChannel: z.enum(['email', 'sms', 'both']).default('email'),
 });
 
@@ -48,7 +49,7 @@ export async function POST(
     const [existingUser] = await db
       .select()
       .from(users)
-      .where(eq(users.email, invite.email))
+      .where(eq(users.email, data.email.toLowerCase()))
       .limit(1);
 
     if (existingUser) {
@@ -58,14 +59,14 @@ export async function POST(
       );
     }
 
-    // Create user
+    // Create user with provided email and mobile
     const [newUser] = await db
       .insert(users)
       .values({
-        email: invite.email,
+        email: data.email.toLowerCase(),
         name: data.name,
         timezone: data.timezone,
-        mobile: data.mobile || null,
+        mobile: data.mobile,
         notificationChannel: data.notificationChannel,
       })
       .returning();

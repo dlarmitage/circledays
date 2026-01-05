@@ -86,9 +86,12 @@ export const notes = pgTable('notes', {
 });
 
 // Invites - invitations to join the platform
+export const inviteContactTypeEnum = pgEnum('invite_contact_type', ['email', 'phone']);
+
 export const invites = pgTable('invites', {
   id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').notNull(),
+  email: text('email').notNull(), // Stores email or phone depending on contactType
+  contactType: inviteContactTypeEnum('contact_type').notNull().default('email'),
   profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
   invitedByUserId: uuid('invited_by_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   seedConnectionIds: uuid('seed_connection_ids').array(),
