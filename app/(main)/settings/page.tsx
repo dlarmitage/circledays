@@ -10,9 +10,9 @@ import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
 import { EditEventModal } from '@/components/EditEventModal';
 import { AddEventModal } from '@/components/AddEventModal';
-import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS, CREDIT_BUNDLES } from '@/lib/constants';
+import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS, CREDIT_BUNDLES, STRINGS } from '@/lib/constants';
 import { formatDate, parseLocalDate } from '@/lib/utils';
-import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus, Mail, CreditCard, History, Check } from 'lucide-react';
+import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus, Mail, CreditCard, History, Check, Eye } from 'lucide-react';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
 
 interface UserData {
@@ -23,6 +23,7 @@ interface UserData {
   timezone: string;
   mobile: string | null;
   notificationChannel: 'email' | 'sms' | 'both';
+  shareNewConnections: boolean;
 }
 
 interface ProfileData {
@@ -93,6 +94,10 @@ export default function SettingsPage() {
   const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
 
+  // Privacy state
+  const [shareNewConnections, setShareNewConnections] = useState(true);
+  const [savedShareNewConnections, setSavedShareNewConnections] = useState(true);
+
   // Saved state — used to compute isDirty and to discard changes
   const [savedFormData, setSavedFormData] = useState({
     name: '', email: '', timezone: '', mobile: '', notificationChannel: 'email' as 'email' | 'sms' | 'both',
@@ -158,7 +163,12 @@ export default function SettingsPage() {
         };
         setFormData(loadedForm);
         setSavedFormData(loadedForm);
-        
+
+        // Load privacy setting
+        const loadedShareNewConnections = authData.user.shareNewConnections !== false;
+        setShareNewConnections(loadedShareNewConnections);
+        setSavedShareNewConnections(loadedShareNewConnections);
+
         // Fetch events for user's profile
         if (authData.profile?.id) {
           await fetchEvents(authData.profile.id);
@@ -217,8 +227,9 @@ export default function SettingsPage() {
     return JSON.stringify(formData) !== JSON.stringify(savedFormData) ||
       JSON.stringify(reminderPrefs) !== JSON.stringify(savedReminderPrefs) ||
       cardHandwritingId !== savedCardHandwritingId ||
-      cardStationeryId !== savedCardStationeryId;
-  }, [formData, savedFormData, reminderPrefs, savedReminderPrefs, cardHandwritingId, savedCardHandwritingId, cardStationeryId, savedCardStationeryId]);
+      cardStationeryId !== savedCardStationeryId ||
+      shareNewConnections !== savedShareNewConnections;
+  }, [formData, savedFormData, reminderPrefs, savedReminderPrefs, cardHandwritingId, savedCardHandwritingId, cardStationeryId, savedCardStationeryId, shareNewConnections, savedShareNewConnections]);
 
   // Warn on browser close / refresh when there are unsaved changes
   useEffect(() => {
@@ -234,6 +245,7 @@ export default function SettingsPage() {
     setReminderPrefs(savedReminderPrefs);
     setCardHandwritingId(savedCardHandwritingId);
     setCardStationeryId(savedCardStationeryId);
+    setShareNewConnections(savedShareNewConnections);
     setMessage(null);
   };
 
@@ -252,6 +264,7 @@ export default function SettingsPage() {
           timezone: formData.timezone,
           mobile: formData.mobile || null,
           notificationChannel: formData.notificationChannel,
+          shareNewConnections,
         }),
       });
       
@@ -303,6 +316,7 @@ export default function SettingsPage() {
       setSavedReminderPrefs(reminderPrefs);
       setSavedCardHandwritingId(cardHandwritingId);
       setSavedCardStationeryId(cardStationeryId);
+      setSavedShareNewConnections(shareNewConnections);
       setMessage({ type: 'success', text: 'Settings saved!' });
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to save settings' });
@@ -506,7 +520,39 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
-      
+
+      {/* Privacy Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="w-5 h-5 text-teal-600" />
+            {STRINGS.privacy.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <div className="relative mt-0.5">
+              <input
+                type="checkbox"
+                checked={shareNewConnections}
+                onChange={(e) => setShareNewConnections(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-6 bg-gray-200 rounded-full peer-checked:bg-teal-500 transition-colors" />
+              <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
+            </div>
+            <div>
+              <p className="font-medium text-gray-900 text-sm">
+                {STRINGS.privacy.shareNewConnections}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {STRINGS.privacy.shareNewConnectionsDescription}
+              </p>
+            </div>
+          </label>
+        </CardContent>
+      </Card>
+
       {/* My Events Section */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">

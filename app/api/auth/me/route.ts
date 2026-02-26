@@ -28,6 +28,7 @@ export async function GET() {
         mobile: user.mobile,
         notificationChannel: user.notificationChannel,
         isPlatformAdmin: user.isPlatformAdmin,
+        shareNewConnections: user.shareNewConnections,
       },
       profile: profile || null,
     });

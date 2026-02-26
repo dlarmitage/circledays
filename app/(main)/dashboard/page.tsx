@@ -6,6 +6,8 @@ import { EventCard } from '@/components/EventCard';
 import { NewConnectionsCard } from '@/components/NewConnectionsCard';
 import { MessageAssistModal } from '@/components/MessageAssistModal';
 import { SendCardModal } from '@/components/SendCardModal';
+import { ConnectionDiscoveriesCard } from '@/components/ConnectionDiscoveriesCard';
+import { ConnectionDiscoveriesModal, type Discovery } from '@/components/ConnectionDiscoveriesModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
@@ -13,6 +15,8 @@ import { STRINGS } from '@/lib/constants';
 import { Plus, Cake } from 'lucide-react';
 
 const DISMISSED_CONNECTIONS_KEY = 'circledays_dismissed_connections';
+const DISMISSED_DISCOVERIES_KEY = 'circledays_dismissed_discoveries';
+const DISCOVERIES_BANNER_DISMISSED_KEY = 'circledays_discoveries_banner_dismissed';
 
 interface UpcomingEvent {
   id: string;
@@ -31,6 +35,7 @@ interface UserData {
   user: {
     id: string;
     name: string;
+    email: string;
   };
 }
 
@@ -60,7 +65,13 @@ export default function DashboardPage() {
   // Send Card modal state
   const [sendCardEvent, setSendCardEvent] = useState<UpcomingEvent | null>(null);
 
-  // Load dismissed connections from localStorage
+  // Discoveries state
+  const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
+  const [dismissedDiscoveryIds, setDismissedDiscoveryIds] = useState<Set<string>>(new Set());
+  const [discoveryBannerDismissed, setDiscoveryBannerDismissed] = useState(false);
+  const [discoveriesModalOpen, setDiscoveriesModalOpen] = useState(false);
+
+  // Load dismissed state from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(DISMISSED_CONNECTIONS_KEY);
     if (saved) {
@@ -70,6 +81,18 @@ export default function DashboardPage() {
         // Invalid JSON, ignore
       }
     }
+    const savedDiscoveries = localStorage.getItem(DISMISSED_DISCOVERIES_KEY);
+    if (savedDiscoveries) {
+      try {
+        setDismissedDiscoveryIds(new Set(JSON.parse(savedDiscoveries)));
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
+    }
+    const bannerDismissed = localStorage.getItem(DISCOVERIES_BANNER_DISMISSED_KEY);
+    if (bannerDismissed) {
+      setDiscoveryBannerDismissed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -77,10 +100,12 @@ export default function DashboardPage() {
       fetch('/api/auth/me').then(res => res.json()),
       fetch(`/api/events/upcoming?days=${days}`).then(res => res.json()),
       fetch('/api/connections?includeNew=true').then(res => res.json()),
-    ]).then(([userRes, eventsRes, connectionsRes]) => {
+      fetch('/api/discoveries').then(res => res.json()),
+    ]).then(([userRes, eventsRes, connectionsRes, discoveriesRes]) => {
       setUserData(userRes);
       setEvents(eventsRes.events || []);
       setNewConnections(connectionsRes.newConnections || []);
+      setDiscoveries(discoveriesRes.discoveries || []);
       setLoading(false);
     });
   }, [days]);
@@ -114,6 +139,36 @@ export default function DashboardPage() {
 
   // Filter out already dismissed connections
   const visibleNewConnections = newConnections.filter(c => !dismissedIds.has(c.connectionId));
+
+  // Discoveries handlers
+  const handleDismissDiscovery = (profileId: string) => {
+    const newDismissed = new Set([...dismissedDiscoveryIds, profileId]);
+    setDismissedDiscoveryIds(newDismissed);
+    localStorage.setItem(DISMISSED_DISCOVERIES_KEY, JSON.stringify([...newDismissed]));
+  };
+
+  const handleDismissDiscoveryBanner = () => {
+    setDiscoveryBannerDismissed(true);
+    localStorage.setItem(DISCOVERIES_BANNER_DISMISSED_KEY, 'true');
+  };
+
+  const handleAddDiscovery = async (profileId: string) => {
+    const res = await fetch('/api/connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileId }),
+    });
+    if (!res.ok) {
+      throw new Error('Failed to add connection');
+    }
+    // Refresh events in case the new connection has upcoming events
+    const eventsRes = await fetch(`/api/events/upcoming?days=${days}`);
+    const eventsData = await eventsRes.json();
+    setEvents(eventsData.events || []);
+  };
+
+  // Filter out dismissed discoveries
+  const visibleDiscoveries = discoveries.filter(d => !dismissedDiscoveryIds.has(d.profileId));
 
   const groupedEvents = events.reduce((acc, event) => {
     let group: string;
@@ -163,6 +218,15 @@ export default function DashboardPage() {
         onDisconnect={handleDisconnect}
         onDismissAll={handleDismissAllConnections}
       />
+
+      {/* Connection Discoveries Banner */}
+      {!discoveryBannerDismissed && (
+        <ConnectionDiscoveriesCard
+          count={visibleDiscoveries.length}
+          onShowMe={() => setDiscoveriesModalOpen(true)}
+          onDismiss={handleDismissDiscoveryBanner}
+        />
+      )}
 
       {/* Time filter */}
       <div className="flex gap-2 mb-6">
@@ -221,7 +285,7 @@ export default function DashboardPage() {
                         {...event}
                         onClick={() => router.push(`/profile/${event.profileId}`)}
                         onMessageAssist={() => setMessageAssistEvent(event)}
-                        onSendCard={() => setSendCardEvent(event)}
+                        onSendCard={userData?.user?.email === 'dlarmitage@gmail.com' ? () => setSendCardEvent(event) : undefined}
                       />
                     </div>
                   ))}
@@ -243,6 +307,15 @@ export default function DashboardPage() {
           ? (messageAssistEvent?.customLabel || 'event')
           : (messageAssistEvent?.type || 'birthday')}
         daysUntil={messageAssistEvent?.daysUntil}
+      />
+
+      {/* Connection Discoveries Modal */}
+      <ConnectionDiscoveriesModal
+        isOpen={discoveriesModalOpen}
+        onClose={() => setDiscoveriesModalOpen(false)}
+        discoveries={visibleDiscoveries}
+        onAdd={handleAddDiscovery}
+        onDismiss={handleDismissDiscovery}
       />
 
       {/* Send Handwritten Card Modal */}

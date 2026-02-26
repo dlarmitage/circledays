@@ -82,6 +82,21 @@ export const STRINGS = {
     daysBefore: 'day before',
     onTheDay: 'on the day',
   },
+  discoveries: {
+    bannerTitle: 'People You May Want to Celebrate',
+    bannerSubtitle: 'Your connections have added some new people you might be interested in celebrating.',
+    modalTitle: 'People to Celebrate',
+    showMe: 'Show Me',
+    dismiss: 'Not Now',
+    addedBy: 'Added by',
+    added: 'Added!',
+    addToMyCircle: 'Add',
+  },
+  privacy: {
+    title: 'Privacy',
+    shareNewConnections: 'Share new connections',
+    shareNewConnectionsDescription: 'When enabled, people you add may be suggested to your connections as people they might want to celebrate too.',
+  },
   errors: {
     generic: 'Something went wrong. Please try again.',
     notFound: 'Not found',

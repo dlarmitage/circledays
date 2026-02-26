@@ -13,6 +13,7 @@ const updateUserSchema = z.object({
   timezone: z.string().optional(),
   mobile: z.string().nullable().optional(),
   notificationChannel: z.enum(['email', 'sms', 'both']).optional(),
+  shareNewConnections: z.boolean().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -61,6 +62,7 @@ export async function PATCH(request: NextRequest) {
       if (data.timezone) updateData.timezone = data.timezone;
       if (data.mobile !== undefined) updateData.mobile = data.mobile;
       if (data.notificationChannel) updateData.notificationChannel = data.notificationChannel;
+      if (data.shareNewConnections !== undefined) updateData.shareNewConnections = data.shareNewConnections;
     }
     
     // Update user

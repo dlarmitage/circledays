@@ -33,6 +33,7 @@ export const users = pgTable('users', {
   mobile: text('mobile'),
   notificationChannel: notificationChannelEnum('notification_channel').notNull().default('email'),
   isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
+  shareNewConnections: boolean('share_new_connections').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
