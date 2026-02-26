@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Users, Calendar, Settings } from 'lucide-react';
+import { Home, Users, Calendar, Settings, Shield } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Home', icon: Home },
@@ -12,25 +12,32 @@ const navItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-export function Navigation() {
+const adminItem = { href: '/admin', label: 'Admin', icon: Shield };
+
+interface NavigationProps {
+  isAdmin?: boolean;
+}
+
+export function Navigation({ isAdmin }: NavigationProps) {
   const pathname = usePathname();
-  
+  const allItems = isAdmin ? [...navItems, adminItem] : navItems;
+
   return (
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-100 p-4">
         <Link href="/dashboard" className="flex items-center gap-2 px-3 py-4 mb-6">
-          <img 
-            src="/icons/touch-icon-96x96.png" 
-            alt="CircleDays" 
+          <img
+            src="/icons/touch-icon-96x96.png"
+            alt="CircleDays"
             className="w-10 h-10 rounded-xl"
           />
           <span className="font-display text-xl font-bold text-teal-600">CircleDays</span>
         </Link>
-        
+
         <nav className="flex-1">
           <ul className="space-y-1">
-            {navItems.map(({ href, label, icon: Icon }) => {
+            {allItems.map(({ href, label, icon: Icon }) => {
               const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
               return (
                 <li key={href}>
@@ -52,11 +59,11 @@ export function Navigation() {
           </ul>
         </nav>
       </aside>
-      
+
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 pb-safe z-50">
         <ul className="flex justify-around">
-          {navItems.map(({ href, label, icon: Icon }) => {
+          {allItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
             return (
               <li key={href} className="flex-1">
@@ -80,5 +87,3 @@ export function Navigation() {
     </>
   );
 }
-
-

@@ -327,6 +327,15 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
                 ${eventItems}
               </table>
               
+              <!-- CTA prompt -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="color: #666666; font-size: 14px; line-height: 1.6; padding-bottom: 16px;">
+                    See what other birthdays and special events are coming up in the weeks ahead.
+                  </td>
+                </tr>
+              </table>
+
               <!-- Button -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
@@ -334,14 +343,14 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
                     <table cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td align="center" bgcolor="#0d9488" style="background-color: #0d9488; border-radius: 8px;">
-                          <a href="${appUrl}/dashboard" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">View in CircleDays</a>
+                          <a href="${appUrl}/dashboard" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">Open CircleDays</a>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
               </table>
-              
+
               <!-- Footer -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
@@ -366,7 +375,143 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
     return `${event.profileName}'s ${event.eventType} - ${event.eventDate}${ageText} - ${daysText}`;
   }).join('\n');
 
-  return { html, text: `Hi ${userName},\n\nUpcoming celebrations:\n\n${text}\n\nView more at ${appUrl}/dashboard` };
+  return { html, text: `Hi ${userName},\n\nUpcoming celebrations:\n\n${text}\n\nSee what other birthdays and special events are coming up in the weeks ahead:\n${appUrl}/dashboard` };
+}
+
+export function generateNudgeEmail(
+  userName: string,
+  currentChannel: 'email' | 'sms' | 'both',
+  hasMobile: boolean,
+  settingsUrl: string,
+  optOutUrl: string,
+) {
+  // Determine what the user is missing
+  const missingSms = currentChannel === 'email';
+  const missingEmail = currentChannel === 'sms';
+  const needsMobile = missingSms && !hasMobile;
+
+  let nudgeMessage: string;
+  let nudgeDetail: string;
+
+  if (missingSms) {
+    nudgeMessage = 'Get reminders by text too';
+    nudgeDetail = needsMobile
+      ? 'Add your mobile number and turn on SMS reminders so you never miss a special day — even when you\'re away from email.'
+      : 'Turn on SMS reminders so you never miss a special day — even when you\'re away from email.';
+  } else if (missingEmail) {
+    nudgeMessage = 'Get reminders by email too';
+    nudgeDetail = 'Turn on email reminders so you get a detailed summary of upcoming celebrations right in your inbox.';
+  } else {
+    // Shouldn't happen (both enabled) but handle gracefully
+    nudgeMessage = 'Stay up to date';
+    nudgeDetail = 'Make sure your notification preferences are just the way you like them.';
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; background: #ffffff; border-radius: 16px;">
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Logo -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 32px;">
+                    <h1 style="color: #0d9488; font-size: 28px; margin: 0; font-weight: 700;">CircleDays</h1>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Greeting -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 24px;">
+                    Hi ${userName},
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Nudge header -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-bottom: 16px;">
+                    <h2 style="color: #333333; font-size: 20px; margin: 0; font-weight: 600;">${nudgeMessage}</h2>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Nudge detail -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="color: #555555; font-size: 16px; line-height: 1.6; padding-bottom: 32px;">
+                    ${nudgeDetail}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Update Settings Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 16px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#0d9488" style="background-color: #0d9488; border-radius: 8px;">
+                          <a href="${settingsUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">Update My Settings</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Opt-out link -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 32px;">
+                    <a href="${optOutUrl}" style="color: #999999; font-size: 14px; text-decoration: none;">No thanks, I'm all set</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="color: #999999; font-size: 12px; border-top: 1px solid #eeeeee; padding-top: 24px;">
+                    This is a one-time reminder from CircleDays. You can stop these by clicking "No thanks" above.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const text = `
+Hi ${userName},
+
+${nudgeMessage}
+
+${nudgeDetail}
+
+Update your settings: ${settingsUrl}
+
+Don't want these reminders? Click here to opt out: ${optOutUrl}
+  `.trim();
+
+  return { html, text };
 }
 
 export async function sendSuggestionEmail(

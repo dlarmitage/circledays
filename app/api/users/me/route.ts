@@ -63,6 +63,11 @@ export async function PATCH(request: NextRequest) {
       if (data.mobile !== undefined) updateData.mobile = data.mobile;
       if (data.notificationChannel) updateData.notificationChannel = data.notificationChannel;
       if (data.shareNewConnections !== undefined) updateData.shareNewConnections = data.shareNewConnections;
+
+      // If user upgrades to 'both' channels, clear nudge state — they've done what we asked
+      if (data.notificationChannel === 'both') {
+        updateData.nudgeOptedOut = true;
+      }
     }
     
     // Update user

@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 export interface SessionData {
   userId?: string;
   isLoggedIn: boolean;
+  originalUserId?: string; // Set when an admin is impersonating another user
 }
 
 const sessionOptions = {
@@ -60,6 +61,30 @@ export async function createSession(userId: string) {
 export async function destroySession() {
   const session = await getSession();
   session.destroy();
+}
+
+export async function startImpersonation(targetUserId: string) {
+  const session = await getSession();
+  if (!session.userId) throw new Error('Not logged in');
+  // If already impersonating, keep the original admin ID; otherwise save current
+  if (!session.originalUserId) {
+    session.originalUserId = session.userId;
+  }
+  session.userId = targetUserId;
+  await session.save();
+}
+
+export async function stopImpersonation() {
+  const session = await getSession();
+  if (!session.originalUserId) throw new Error('Not impersonating');
+  session.userId = session.originalUserId;
+  session.originalUserId = undefined;
+  await session.save();
+}
+
+export async function isImpersonating(): Promise<boolean> {
+  const session = await getSession();
+  return !!session.originalUserId;
 }
 
 export type LoginMethod = 'magic_link' | 'verification_code' | 'invite_accept' | 'onboarding';

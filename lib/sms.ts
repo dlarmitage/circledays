@@ -39,8 +39,9 @@ interface EventReminder {
   age?: number;
 }
 
-export function generateReminderSms(events: EventReminder[]): string[] {
+export function generateReminderSms(events: EventReminder[], appUrl?: string): string[] {
   const messages: string[] = [];
+  const link = appUrl ? `\n\nSee what's coming up: ${appUrl}/dashboard` : '';
 
   for (const event of events) {
     const daysText = event.daysUntil === 0 ? 'today!' : event.daysUntil === 1 ? 'tomorrow!' : `in ${event.daysUntil} days`;
@@ -48,12 +49,16 @@ export function generateReminderSms(events: EventReminder[]): string[] {
     const emoji = event.eventType.toLowerCase() === 'birthday' ? '🎂' :
       event.eventType.toLowerCase() === 'anniversary' ? '❤️' : '🎉';
 
-    // Clean, readable format
-    const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}`;
+    // Clean, readable format with link to app
+    const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}${link}`;
     messages.push(message);
   }
 
   return messages;
+}
+
+export function generateNudgeSms(settingsUrl: string, optOutUrl: string): string {
+  return `CircleDays: Did you know you can get reminders by email too? Turn it on in settings: ${settingsUrl}\n\nNo thanks: ${optOutUrl}`;
 }
 
 export function generateInviteSms(inviterName: string, profileName: string, inviteUrl: string): string {

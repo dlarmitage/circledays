@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -94,6 +94,9 @@ export default function SettingsPage() {
   const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
 
+  // Ref for mobile input auto-focus
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+
   // Privacy state
   const [shareNewConnections, setShareNewConnections] = useState(true);
   const [savedShareNewConnections, setSavedShareNewConnections] = useState(true);
@@ -140,6 +143,15 @@ export default function SettingsPage() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('credits') === 'added') {
         setMessage({ type: 'success', text: 'Credits added! Your balance has been updated.' });
+        window.history.replaceState({}, '', '/settings');
+      }
+    }
+
+    // Check if user just opted out of nudge emails
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('nudgeOptedOut') === 'true') {
+        setMessage({ type: 'success', text: 'Got it! You won\'t receive notification setup reminders anymore.' });
         window.history.replaceState({}, '', '/settings');
       }
     }
@@ -506,17 +518,34 @@ export default function SettingsPage() {
             label="Notification method"
             options={NOTIFICATION_CHANNELS.map(c => ({ value: c.value, label: c.label }))}
             value={formData.notificationChannel}
-            onChange={(e) => setFormData({ ...formData, notificationChannel: e.target.value as typeof formData.notificationChannel })}
+            onChange={(e) => {
+              const newChannel = e.target.value as typeof formData.notificationChannel;
+              setFormData({ ...formData, notificationChannel: newChannel });
+              // Auto-focus mobile input when switching to SMS/both without a number
+              if ((newChannel === 'sms' || newChannel === 'both') && !formData.mobile) {
+                setTimeout(() => mobileInputRef.current?.focus(), 100);
+              }
+            }}
           />
-          
+
           {(formData.notificationChannel === 'sms' || formData.notificationChannel === 'both') && (
-            <Input
-              label="Mobile number"
-              type="tel"
-              value={formData.mobile}
-              onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              placeholder="+1 (555) 000-0000"
-            />
+            <>
+              {!formData.mobile && (
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    Add your mobile number below to start receiving SMS reminders.
+                  </p>
+                </div>
+              )}
+              <Input
+                ref={mobileInputRef}
+                label="Mobile number"
+                type="tel"
+                value={formData.mobile}
+                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                placeholder="+1 (555) 000-0000"
+              />
+            </>
           )}
         </CardContent>
       </Card>

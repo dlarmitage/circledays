@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const { bundleId } = checkoutSchema.parse(body);
 
     const bundle = CREDIT_BUNDLES.find(b => b.id === bundleId)!;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://circledays.ambient.technology';
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

@@ -15,15 +15,31 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/reminders")
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
-          
+
           echo "Response: $body"
           echo "HTTP Status: $http_code"
-          
+
           if [ "$http_code" != "200" ]; then
             echo "Error: Received HTTP $http_code"
             exit 1
+          fi
+
+      - name: Trigger Notification Nudge
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/nudge")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Nudge Response: $body"
+          echo "Nudge HTTP Status: $http_code"
+
+          if [ "$http_code" != "200" ]; then
+            echo "Warning: Nudge received HTTP $http_code (non-fatal)"
           fi
 

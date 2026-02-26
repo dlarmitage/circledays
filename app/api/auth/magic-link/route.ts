@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send email
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology';
     const magicLinkUrl = `${appUrl}/api/auth/verify?token=${token}`;
 
     const { html, text } = generateMagicLinkEmail(userName, magicLinkUrl, code);

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       },
     ];
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology';
     const results: { email?: any; sms?: any } = {};
     
     // Test email
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     
     // Test SMS
     if ((channel === 'sms' || channel === 'both') && userData.mobile) {
-      const messages = generateReminderSms(testEvents);
+      const messages = generateReminderSms(testEvents, appUrl);
       const smsResults = [];
       
       for (const messageBody of messages) {

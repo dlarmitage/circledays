@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, loginEvents, users } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { eq, gte, sql, count, countDistinct } from 'drizzle-orm';
 
 // GET /api/admin/analytics?period=7d
 export async function GET(request: NextRequest) {
     try {
-        const user = await requireAuth();
+        // Check admin status via the original user (in case impersonating)
+        const session = await getSession();
+        const adminId = session.originalUserId || session.userId;
 
-        // Check if user is platform admin
-        if (!user.isPlatformAdmin) {
+        if (!adminId) {
+            return NextResponse.json(
+                { error: 'Authentication required' },
+                { status: 401 }
+            );
+        }
+
+        const [admin] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, adminId))
+            .limit(1);
+
+        if (!admin || !admin.isPlatformAdmin) {
             return NextResponse.json(
                 { error: 'Admin access required' },
                 { status: 403 }
@@ -119,13 +133,6 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         console.error('Analytics error:', error);
-
-        if (error instanceof Error && error.message === 'Unauthorized') {
-            return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
-        }
 
         return NextResponse.json(
             { error: 'Failed to fetch analytics' },

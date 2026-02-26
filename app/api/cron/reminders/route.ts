@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
         }));
         
         const newEventIds = newEventsToNotify.map(e => e.event.id);
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology';
         
         // Send notifications based on preference
         if (user.notificationChannel === 'email' || user.notificationChannel === 'both') {
@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
         }
         
         if ((user.notificationChannel === 'sms' || user.notificationChannel === 'both') && user.mobile) {
-          const messages = generateReminderSms(eventData);
+          const messages = generateReminderSms(eventData, appUrl);
           
           for (const body of messages) {
             const result = await sendSms({
