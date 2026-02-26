@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { cardCredits, cardCreditTransactions } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
-export { CREDIT_BUNDLES } from '@/lib/constants';
+import { CREDIT_BUNDLES } from '@/lib/constants';
+export { CREDIT_BUNDLES };
 
 // GET /api/card-credits — return current balance and recent transactions
 export async function GET() {
