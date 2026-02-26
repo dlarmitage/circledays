@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
 import { cardCredits, cardCreditTransactions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+    event = getStripe().webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
     console.error('Stripe webhook signature verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { CREDIT_BUNDLES } from '@/app/api/card-credits/route';
 import { z } from 'zod';
 
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const bundle = CREDIT_BUNDLES.find(b => b.id === bundleId)!;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://circledays.ambient.technology';
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
