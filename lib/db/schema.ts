@@ -10,6 +10,10 @@ import {
   date,
 } from 'drizzle-orm/pg-core';
 
+// Handwritten cards enums
+export const cardOrderStatusEnum = pgEnum('card_order_status', ['pending', 'processing', 'written', 'complete', 'problem', 'cancelled']);
+export const cardCreditTransactionTypeEnum = pgEnum('card_credit_transaction_type', ['purchase', 'use', 'refund']);
+
 // Enums
 export const notificationChannelEnum = pgEnum('notification_channel', ['email', 'sms', 'both']);
 export const eventTypeEnum = pgEnum('event_type', ['birthday', 'anniversary', 'custom']);
@@ -189,3 +193,75 @@ export const loginEvents = pgTable('login_events', {
 });
 
 export type LoginEvent = typeof loginEvents.$inferSelect;
+
+// Profile Addresses - stored mailing addresses entered manually by users
+export const profileAddresses = pgTable('profile_addresses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  street: text('street').notNull(),
+  city: text('city').notNull(),
+  state: text('state').notNull(),
+  zip: text('zip').notNull(),
+  country: text('country').notNull().default('US'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  unique('unique_profile_user_address').on(table.profileId, table.userId),
+]);
+
+// Card Preferences - per-user stationery and handwriting style settings
+export const cardPreferences = pgTable('card_preferences', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  handwritingId: text('handwriting_id').notNull().default(''),
+  stationeryId: text('stationery_id').notNull().default(''),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Card Credits - current balance per user
+export const cardCredits = pgTable('card_credits', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  balance: integer('balance').notNull().default(0),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Card Credit Transactions - purchase/use ledger
+export const cardCreditTransactions = pgTable('card_credit_transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  amount: integer('amount').notNull(), // positive = credit added, negative = card sent
+  type: cardCreditTransactionTypeEnum('type').notNull(),
+  description: text('description').notNull(),
+  stripeSessionId: text('stripe_session_id'), // set on Stripe purchases; used for idempotency
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Card Orders - history of handwritten cards sent
+export const cardOrders = pgTable('card_orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  profileId: uuid('profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+  eventId: uuid('event_id').references(() => events.id, { onDelete: 'set null' }),
+  recipientName: text('recipient_name').notNull(),
+  recipientStreet: text('recipient_street').notNull(),
+  recipientCity: text('recipient_city').notNull(),
+  recipientState: text('recipient_state').notNull(),
+  recipientZip: text('recipient_zip').notNull(),
+  message: text('message').notNull(),
+  handwritingId: text('handwriting_id').notNull(),
+  stationeryId: text('stationery_id').notNull(),
+  handwriteOrderId: text('handwrite_order_id'), // external ID returned by Handwrite.io
+  status: cardOrderStatusEnum('status').notNull().default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Types
+export type ProfileAddress = typeof profileAddresses.$inferSelect;
+export type NewProfileAddress = typeof profileAddresses.$inferInsert;
+export type CardPreference = typeof cardPreferences.$inferSelect;
+export type CardCredit = typeof cardCredits.$inferSelect;
+export type CardCreditTransaction = typeof cardCreditTransactions.$inferSelect;
+export type CardOrder = typeof cardOrders.$inferSelect;
+export type NewCardOrder = typeof cardOrders.$inferInsert;

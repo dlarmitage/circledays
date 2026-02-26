@@ -23,6 +23,9 @@ export default async function HomePage() {
       redirect('/dashboard');
     }
   } catch (error) {
+    // Re-throw Next.js redirects — they use throw internally and must propagate
+    if (error instanceof Error && error.message === 'NEXT_REDIRECT') throw error;
+    if (typeof error === 'object' && error !== null && 'digest' in error) throw error;
     console.error('Auth check failed:', error);
   }
   

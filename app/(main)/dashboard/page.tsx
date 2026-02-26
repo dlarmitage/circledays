@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EventCard } from '@/components/EventCard';
 import { NewConnectionsCard } from '@/components/NewConnectionsCard';
 import { MessageAssistModal } from '@/components/MessageAssistModal';
+import { SendCardModal } from '@/components/SendCardModal';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
@@ -55,6 +56,9 @@ export default function DashboardPage() {
 
   // Message Assist modal state
   const [messageAssistEvent, setMessageAssistEvent] = useState<UpcomingEvent | null>(null);
+
+  // Send Card modal state
+  const [sendCardEvent, setSendCardEvent] = useState<UpcomingEvent | null>(null);
 
   // Load dismissed connections from localStorage
   useEffect(() => {
@@ -217,6 +221,7 @@ export default function DashboardPage() {
                         {...event}
                         onClick={() => router.push(`/profile/${event.profileId}`)}
                         onMessageAssist={() => setMessageAssistEvent(event)}
+                        onSendCard={() => setSendCardEvent(event)}
                       />
                     </div>
                   ))}
@@ -238,6 +243,20 @@ export default function DashboardPage() {
           ? (messageAssistEvent?.customLabel || 'event')
           : (messageAssistEvent?.type || 'birthday')}
         daysUntil={messageAssistEvent?.daysUntil}
+      />
+
+      {/* Send Handwritten Card Modal */}
+      <SendCardModal
+        isOpen={!!sendCardEvent}
+        onClose={() => setSendCardEvent(null)}
+        profileId={sendCardEvent?.profileId || ''}
+        profileName={sendCardEvent?.profileName || ''}
+        profilePicture={sendCardEvent?.profilePicture || null}
+        eventType={sendCardEvent?.type === 'custom'
+          ? (sendCardEvent?.customLabel || 'event')
+          : (sendCardEvent?.type || 'birthday')}
+        daysUntil={sendCardEvent?.daysUntil}
+        eventId={sendCardEvent?.id}
       />
     </div>
   );

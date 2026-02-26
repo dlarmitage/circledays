@@ -29,6 +29,13 @@
       "when": 1766419443924,
       "tag": "0003_giant_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1769000000000,
+      "tag": "0004_add-handwritten-cards",
+      "breakpoints": true
     }
   ]
 }

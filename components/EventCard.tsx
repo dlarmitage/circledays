@@ -5,7 +5,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
-import { Cake, Heart, Calendar, Lock, Sparkles } from 'lucide-react';
+import { Cake, Heart, Calendar, Lock, Sparkles, Mail } from 'lucide-react';
 
 interface EventCardProps {
   id: string;
@@ -20,6 +20,7 @@ interface EventCardProps {
   isPrivate?: boolean;
   onClick?: () => void;
   onMessageAssist?: () => void;
+  onSendCard?: () => void;
 }
 
 export function EventCard({
@@ -33,6 +34,7 @@ export function EventCard({
   isPrivate,
   onClick,
   onMessageAssist,
+  onSendCard,
 }: EventCardProps) {
   const daysText = getDaysUntilText(daysUntil);
   const eventLabel = getEventTypeLabel(type, customLabel);
@@ -48,6 +50,7 @@ export function EventCard({
   const formattedDate = formatDate(date);
 
   const showMessageAssist = daysUntil <= 7 && onMessageAssist;
+  const showSendCard = daysUntil <= 7 && onSendCard;
 
   return (
     <Card hover onClick={onClick} className="animate-slide-up">
@@ -71,18 +74,34 @@ export function EventCard({
             </p>
           )}
 
-          {/* Message Assist button for upcoming events */}
-          {showMessageAssist && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onMessageAssist();
-              }}
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-100 hover:bg-violet-200 rounded-full transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Message Assist
-            </button>
+          {/* Action buttons for upcoming events */}
+          {(showMessageAssist || showSendCard) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {showMessageAssist && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMessageAssist!();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-100 hover:bg-violet-200 rounded-full transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Message Assist
+                </button>
+              )}
+              {showSendCard && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSendCard!();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-full transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Send Card
+                </button>
+              )}
+            </div>
           )}
         </div>
 
