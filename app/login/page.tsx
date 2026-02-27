@@ -197,6 +197,8 @@ function LoginContent() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         autoComplete="one-time-code"
+                        data-1p-ignore
+                        data-lpignore="true"
                         value={code}
                         onChange={handleCodeChange}
                         placeholder="000000"
