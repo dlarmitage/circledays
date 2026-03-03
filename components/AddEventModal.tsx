@@ -18,7 +18,7 @@ interface AddEventModalProps {
 const EVENT_TYPES = [
   { value: 'birthday', label: 'Birthday', icon: Cake },
   { value: 'anniversary', label: 'Anniversary', icon: Heart },
-  { value: 'custom', label: 'Custom Event', icon: Calendar },
+  { value: 'custom', label: 'Custom Occasion', icon: Calendar },
 ];
 
 export function AddEventModal({ isOpen, onClose, profileId, profileName, onEventAdded }: AddEventModalProps) {
@@ -51,7 +51,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
     }
     
     if (eventType === 'custom' && !customLabel.trim()) {
-      setError('Please enter a label for this custom event');
+      setError('Please enter a label for this custom occasion');
       return;
     }
     
@@ -104,7 +104,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Icon className="w-5 h-5 text-teal-600" />
-            Add Event for {profileName}
+            Add Occasion for {profileName}
           </CardTitle>
           <button
             onClick={onClose}
@@ -118,7 +118,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
           {/* Event Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Event Type
+              Occasion Type
             </label>
             <div className="grid grid-cols-3 gap-2">
               {EVENT_TYPES.map(type => {
@@ -148,7 +148,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
           {/* Custom Label (only for custom events) */}
           {eventType === 'custom' && (
             <Input
-              label="Event Name"
+              label="Occasion Name"
               placeholder="e.g., Work Anniversary, Graduation"
               value={customLabel}
               onChange={(e) => setCustomLabel(e.target.value)}
@@ -210,7 +210,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
               required
               hint={eventType === 'birthday' 
                 ? (unknownYear ? "Just pick any year - we'll only use month and day" : "Enter their birth date")
-                : "When does this event occur?"}
+                : "When does this occasion occur?"}
             />
             {eventType === 'birthday' && (
               <label className="flex items-center gap-2 cursor-pointer">
@@ -264,9 +264,9 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              {isPrivate 
-                ? "Only you can see this event and get reminders" 
-                : "All connections can see this event"}
+              {isPrivate
+                ? "Only you can see this occasion and get reminders"
+                : "All connections can see this occasion"}
             </p>
           </div>
           
@@ -288,7 +288,7 @@ export function AddEventModal({ isOpen, onClose, profileId, profileName, onEvent
               loading={saving}
               disabled={!date || (eventType === 'custom' && !customLabel.trim())}
             >
-              Add Event
+              Add Occasion
             </Button>
           </div>
         </CardContent>

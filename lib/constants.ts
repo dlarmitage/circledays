@@ -1,5 +1,6 @@
 // Handwritten cards
-export const CARD_CHAR_LIMIT = 320;
+export const CARD_CHAR_LIMIT = 320; // fallback default when no card-specific limit is available
+export const DEFAULT_HANDWRYTTEN_CHAR_LIMIT = 500;
 
 // Credit bundle pricing — single source of truth
 export const CREDIT_BUNDLES = [
@@ -36,7 +37,7 @@ export const STRINGS = {
   dashboard: {
     title: 'Dashboard',
     upcoming: 'Upcoming',
-    nothingUpcoming: 'No upcoming events',
+    nothingUpcoming: 'No upcoming occasions',
     addPeople: 'Add people you care about to get started.',
     today: 'Today',
     tomorrow: 'Tomorrow',
@@ -54,10 +55,10 @@ export const STRINGS = {
   profile: {
     addPerson: 'Add Person',
     editProfile: 'Edit Profile',
-    events: 'Events',
+    events: 'Occasions',
     notes: 'My Notes',
     notesPlaceholder: 'Add private notes about this person...',
-    addEvent: 'Add Event',
+    addEvent: 'Add Occasion',
     invite: 'Invite to Join',
     connect: 'Connect',
     requestConnection: 'Request Connection',
@@ -67,7 +68,7 @@ export const STRINGS = {
   events: {
     birthday: 'Birthday',
     anniversary: 'Anniversary',
-    custom: 'Custom Event',
+    custom: 'Custom Occasion',
     turningAge: 'turning',
   },
   settings: {

@@ -202,7 +202,7 @@ export default function DashboardPage() {
             {userData?.user?.name ? `Hey, ${userData.user.name.split(' ')[0]}!` : 'Dashboard'}
           </h1>
           <p className="text-gray-600 mt-1">
-            {events.length} upcoming {events.length === 1 ? 'event' : 'events'}
+            {events.length} upcoming {events.length === 1 ? 'occasion' : 'occasions'}
           </p>
         </div>
         <Button onClick={() => router.push('/add-person')}>
@@ -304,7 +304,7 @@ export default function DashboardPage() {
         profileName={messageAssistEvent?.profileName || ''}
         profilePicture={messageAssistEvent?.profilePicture || null}
         eventType={messageAssistEvent?.type === 'custom'
-          ? (messageAssistEvent?.customLabel || 'event')
+          ? (messageAssistEvent?.customLabel || 'occasion')
           : (messageAssistEvent?.type || 'birthday')}
         daysUntil={messageAssistEvent?.daysUntil}
       />
@@ -330,6 +330,7 @@ export default function DashboardPage() {
           : (sendCardEvent?.type || 'birthday')}
         daysUntil={sendCardEvent?.daysUntil}
         eventId={sendCardEvent?.id}
+        userName={userData?.user?.name || ''}
       />
     </div>
   );

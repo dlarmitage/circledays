@@ -474,7 +474,7 @@ export function Calendar({ onEventClick }: CalendarProps) {
           ) : listEvents.length === 0 ? (
             <div className="text-center py-12">
               <CalendarDays className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500">No upcoming events in the next year</p>
+              <p className="text-gray-500">No upcoming occasions in the next year</p>
             </div>
           ) : (
             <div className="space-y-6">

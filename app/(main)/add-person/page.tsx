@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { PhotoUpload } from '@/components/PhotoUpload';
-import { ArrowLeft, UserPlus, Cake, AlertTriangle, Check, Users, Link as LinkIcon, HelpCircle } from 'lucide-react';
+import { ArrowLeft, UserPlus, Cake, AlertTriangle, Check, Users, Link as LinkIcon, HelpCircle, Lock } from 'lucide-react';
 import { UNKNOWN_YEAR } from '@/lib/utils';
 
 interface PotentialDuplicate {
@@ -35,6 +35,7 @@ export default function AddPersonPage() {
     birthdate: '',
   });
   const [unknownYear, setUnknownYear] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   
   // Debounced duplicate check
   useEffect(() => {
@@ -102,6 +103,7 @@ export default function AddPersonPage() {
           name: formData.name,
           birthdate,
           profilePicture: photoUrl,
+          isPrivate,
         }),
       });
       
@@ -174,7 +176,7 @@ export default function AddPersonPage() {
           Add a Person
         </h1>
         <p className="text-gray-600 mt-2">
-          Add someone to your connections and never miss their special days
+          Add someone to your circle and never miss their special days
         </p>
       </div>
       
@@ -221,7 +223,21 @@ export default function AddPersonPage() {
               </span>
             </label>
           </div>
-          
+
+          {/* Keep Private */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+            />
+            <span className="text-sm text-gray-600 flex items-center gap-1">
+              <Lock className="w-3.5 h-3.5" />
+              Keep private — only you can see this person
+            </span>
+          </label>
+
           {/* Potential Duplicates Warning */}
           {hasDuplicates && !confirmedNew && (
             <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
@@ -301,7 +317,7 @@ export default function AddPersonPage() {
             loading={loading}
           >
             <Cake className="w-4 h-4 mr-2" />
-            Add to My Connections
+            Add to My Circle
           </Button>
         </form>
       </Card>

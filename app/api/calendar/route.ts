@@ -58,9 +58,10 @@ export async function GET(request: NextRequest) {
           )
       : [];
     
-    // Filter out private events unless current user created them
-    const allEvents = allEventsRaw.filter(({ event }) => 
-      !event.isPrivate || event.createdByUserId === user.id
+    // Filter out private profiles and private events unless current user created them
+    const allEvents = allEventsRaw.filter(({ event, profile }) =>
+      (!profile.isPrivate || profile.createdByUserId === user.id) &&
+      (!event.isPrivate || event.createdByUserId === user.id)
     );
     
     // Filter events that occur in the requested month

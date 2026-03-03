@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
     if (!targetProfile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
-    
+
+    // Private profiles are only visible to their creator
+    if (targetProfile.isPrivate && targetProfile.createdByUserId !== user.id) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     // Get user's connection IDs
     const userConnectionRows = await db
       .select({
@@ -83,8 +88,10 @@ export async function GET(request: NextRequest) {
       );
     
     // Find mutual connections (people both user and target are connected to)
+    // Exclude private profiles not created by the current user
     const mutualConnections = targetConnectionRows
       .filter(c => userConnectionIds.has(c.profile.id))
+      .filter(c => !c.profile.isPrivate || c.profile.createdByUserId === user.id)
       .map(c => ({
         id: c.profile.id,
         name: c.profile.name,

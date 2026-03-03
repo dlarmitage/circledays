@@ -46,6 +46,7 @@ export const profiles = pgTable('profiles', {
   profilePicture: text('profile_picture'),
   createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   linkedUserId: uuid('linked_user_id').references(() => users.id, { onDelete: 'set null' }),
+  isPrivate: boolean('is_private').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -213,12 +214,18 @@ export const profileAddresses = pgTable('profile_addresses', {
   unique('unique_profile_user_address').on(table.profileId, table.userId),
 ]);
 
-// Card Preferences - per-user stationery and handwriting style settings
+// Card Preferences - per-user font, card, and sender address settings
 export const cardPreferences = pgTable('card_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
-  handwritingId: text('handwriting_id').notNull().default(''),
-  stationeryId: text('stationery_id').notNull().default(''),
+  fontId: text('font_id').notNull().default(''),
+  cardId: text('card_id').notNull().default(''),
+  signOff: text('sign_off'),
+  senderName: text('sender_name'),
+  senderAddress1: text('sender_address1'),
+  senderCity: text('sender_city'),
+  senderState: text('sender_state'),
+  senderZip: text('sender_zip'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
@@ -253,9 +260,9 @@ export const cardOrders = pgTable('card_orders', {
   recipientState: text('recipient_state').notNull(),
   recipientZip: text('recipient_zip').notNull(),
   message: text('message').notNull(),
-  handwritingId: text('handwriting_id').notNull(),
-  stationeryId: text('stationery_id').notNull(),
-  handwriteOrderId: text('handwrite_order_id'), // external ID returned by Handwrite.io
+  fontId: text('font_id').notNull(),
+  cardId: text('card_id').notNull(),
+  handwriteOrderId: text('handwrite_order_id'), // external order ID (Handwrytten order_id)
   status: cardOrderStatusEnum('status').notNull().default('pending'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });

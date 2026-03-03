@@ -4,8 +4,7 @@ import { db } from '@/lib/db';
 import { cardOrders, cardCredits, cardCreditTransactions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { sendCard } from '@/lib/handwrite';
-import { CARD_CHAR_LIMIT } from '@/lib/constants';
+import { placeOrder } from '@/lib/handwrytten';
 
 const sendCardSchema = z.object({
   profileId: z.string().uuid().optional(),
@@ -15,9 +14,15 @@ const sendCardSchema = z.object({
   recipientCity: z.string().min(1),
   recipientState: z.string().min(1),
   recipientZip: z.string().regex(/^\d{5}$/, 'ZIP must be 5 digits'),
-  message: z.string().min(1).max(CARD_CHAR_LIMIT),
-  handwritingId: z.string().min(1),
-  stationeryId: z.string().min(1),
+  message: z.string().min(1),
+  fontId: z.string().min(1),     // Handwrytten font label (e.g. "Ambitious Anita")
+  cardId: z.string().min(1),     // Handwrytten card ID
+  // Sender address
+  senderName: z.string().min(1),
+  senderAddress1: z.string().min(1),
+  senderCity: z.string().min(1),
+  senderState: z.string().min(1),
+  senderZip: z.string().regex(/^\d{5}$/, 'ZIP must be 5 digits'),
 });
 
 // GET /api/handwritten-cards — list the user's card order history
@@ -42,7 +47,7 @@ export async function GET() {
   }
 }
 
-// POST /api/handwritten-cards — send a handwritten card
+// POST /api/handwritten-cards — send a handwritten card via Handwrytten
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
@@ -65,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Deduct credit BEFORE sending to Handwrite — if the API call fails we refund,
+    // Deduct credit BEFORE sending — if the API call fails we refund,
     // but this ensures a DB failure never results in a free card.
     if (creditRow) {
       await db
@@ -82,28 +87,23 @@ export async function POST(request: NextRequest) {
       description: `Handwritten card sent to ${data.recipientName}`,
     });
 
-    // Parse recipient name into first/last for Handwrite API
-    const nameParts = data.recipientName.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || undefined;
-
-    // Send to Handwrite.io — if this fails, refund the credit
-    let order: Awaited<ReturnType<typeof sendCard>>[0];
+    // Place order with Handwrytten — if this fails, refund the credit
+    let orderResponse: Awaited<ReturnType<typeof placeOrder>>;
     try {
-      [order] = await sendCard({
+      orderResponse = await placeOrder({
+        card_id: parseInt(data.cardId, 10),
+        font_label: data.fontId,
         message: data.message,
-        card: data.stationeryId,
-        handwriting: data.handwritingId,
-        recipients: [
-          {
-            firstName,
-            lastName,
-            street1: data.recipientStreet,
-            city: data.recipientCity,
-            state: data.recipientState,
-            zip: data.recipientZip,
-          },
-        ],
+        sender_name: data.senderName,
+        sender_address1: data.senderAddress1,
+        sender_city: data.senderCity,
+        sender_state: data.senderState,
+        sender_zip: data.senderZip,
+        recipient_name: data.recipientName,
+        recipient_address1: data.recipientStreet,
+        recipient_city: data.recipientCity,
+        recipient_state: data.recipientState,
+        recipient_zip: data.recipientZip,
       });
     } catch (sendErr) {
       // Refund the credit since the card was never sent
@@ -131,13 +131,17 @@ export async function POST(request: NextRequest) {
       recipientState: data.recipientState,
       recipientZip: data.recipientZip,
       message: data.message,
-      handwritingId: data.handwritingId,
-      stationeryId: data.stationeryId,
-      handwriteOrderId: order._id,
-      status: order.status,
+      fontId: data.fontId,
+      cardId: data.cardId,
+      handwriteOrderId: String(orderResponse.order_id),
+      status: 'pending',
     });
 
-    return NextResponse.json({ success: true, orderId: order._id, status: order.status });
+    return NextResponse.json({
+      success: true,
+      orderId: orderResponse.order_id,
+      status: orderResponse.status,
+    });
   } catch (error) {
     console.error('Card send error:', error);
 
@@ -149,6 +153,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data', details: error.issues }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Failed to send card' }, { status: 500 });
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Failed to send card', detail }, { status: 500 });
   }
 }

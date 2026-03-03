@@ -46,10 +46,12 @@ interface Event {
   createdByUserId: string | null;
 }
 
-interface StyleOption {
+interface FontOption {
   id: string;
-  name: string;
-  preview?: string;
+  label: string;
+  image: string;
+  font_name: string;
+  font_id: number;
 }
 
 interface CardOrder {
@@ -86,10 +88,8 @@ export default function SettingsPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   // Card prefs state
-  const [cardHandwritingId, setCardHandwritingId] = useState('');
-  const [cardStationeryId, setCardStationeryId] = useState('');
-  const [handwritingStyles, setHandwritingStyles] = useState<StyleOption[]>([]);
-  const [stationeryOptions, setStationeryOptions] = useState<StyleOption[]>([]);
+  const [cardFontId, setCardFontId] = useState('');
+  const [cardFonts, setCardFonts] = useState<FontOption[]>([]);
   const [cardCredits, setCardCredits] = useState<number | null>(null);
   const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
@@ -106,8 +106,7 @@ export default function SettingsPage() {
     name: '', email: '', timezone: '', mobile: '', notificationChannel: 'email' as 'email' | 'sms' | 'both',
   });
   const [savedReminderPrefs, setSavedReminderPrefs] = useState<number[]>([0, 1, 7]);
-  const [savedCardHandwritingId, setSavedCardHandwritingId] = useState('');
-  const [savedCardStationeryId, setSavedCardStationeryId] = useState('');
+  const [savedCardFontId, setSavedCardFontId] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -190,30 +189,19 @@ export default function SettingsPage() {
         setReminderPrefs(prefsData.preferences.defaultLeadDays);
         setSavedReminderPrefs(prefsData.preferences.defaultLeadDays);
       }
-      let loadedHandwritingId = '';
-      let loadedStationeryId = '';
+      let loadedFontId = '';
       if (cardPrefsData.preferences) {
-        loadedHandwritingId = cardPrefsData.preferences.handwritingId || '';
-        loadedStationeryId = cardPrefsData.preferences.stationeryId || '';
-        setCardHandwritingId(loadedHandwritingId);
-        setCardStationeryId(loadedStationeryId);
+        loadedFontId = cardPrefsData.preferences.fontId || '';
+        setCardFontId(loadedFontId);
       }
-      if (cardPrefsData.handwritingStyles?.length) {
-        setHandwritingStyles(cardPrefsData.handwritingStyles);
-        if (!cardPrefsData.preferences?.handwritingId) {
-          loadedHandwritingId = cardPrefsData.handwritingStyles[0].id;
-          setCardHandwritingId(loadedHandwritingId);
+      if (cardPrefsData.fonts?.length) {
+        setCardFonts(cardPrefsData.fonts);
+        if (!cardPrefsData.preferences?.fontId) {
+          loadedFontId = cardPrefsData.fonts[0].label;
+          setCardFontId(loadedFontId);
         }
       }
-      if (cardPrefsData.stationeryOptions?.length) {
-        setStationeryOptions(cardPrefsData.stationeryOptions);
-        if (!cardPrefsData.preferences?.stationeryId) {
-          loadedStationeryId = cardPrefsData.stationeryOptions[0].id;
-          setCardStationeryId(loadedStationeryId);
-        }
-      }
-      setSavedCardHandwritingId(loadedHandwritingId);
-      setSavedCardStationeryId(loadedStationeryId);
+      setSavedCardFontId(loadedFontId);
       if (typeof cardCreditsData.balance === 'number') {
         setCardCredits(cardCreditsData.balance);
       }
@@ -238,10 +226,9 @@ export default function SettingsPage() {
   const isDirty = useMemo(() => {
     return JSON.stringify(formData) !== JSON.stringify(savedFormData) ||
       JSON.stringify(reminderPrefs) !== JSON.stringify(savedReminderPrefs) ||
-      cardHandwritingId !== savedCardHandwritingId ||
-      cardStationeryId !== savedCardStationeryId ||
+      cardFontId !== savedCardFontId ||
       shareNewConnections !== savedShareNewConnections;
-  }, [formData, savedFormData, reminderPrefs, savedReminderPrefs, cardHandwritingId, savedCardHandwritingId, cardStationeryId, savedCardStationeryId, shareNewConnections, savedShareNewConnections]);
+  }, [formData, savedFormData, reminderPrefs, savedReminderPrefs, cardFontId, savedCardFontId, shareNewConnections, savedShareNewConnections]);
 
   // Warn on browser close / refresh when there are unsaved changes
   useEffect(() => {
@@ -255,8 +242,7 @@ export default function SettingsPage() {
   const handleDiscard = () => {
     setFormData(savedFormData);
     setReminderPrefs(savedReminderPrefs);
-    setCardHandwritingId(savedCardHandwritingId);
-    setCardStationeryId(savedCardStationeryId);
+    setCardFontId(savedCardFontId);
     setShareNewConnections(savedShareNewConnections);
     setMessage(null);
   };
@@ -315,19 +301,18 @@ export default function SettingsPage() {
       }
 
       // Save card preferences
-      if (handwritingStyles.length > 0 || stationeryOptions.length > 0) {
+      if (cardFonts.length > 0) {
         await fetch('/api/card-preferences', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ handwritingId: cardHandwritingId, stationeryId: cardStationeryId }),
+          body: JSON.stringify({ fontId: cardFontId }),
         });
       }
 
       // Update saved state so isDirty resets to false
       setSavedFormData(formData);
       setSavedReminderPrefs(reminderPrefs);
-      setSavedCardHandwritingId(cardHandwritingId);
-      setSavedCardStationeryId(cardStationeryId);
+      setSavedCardFontId(cardFontId);
       setSavedShareNewConnections(shareNewConnections);
       setMessage({ type: 'success', text: 'Settings saved!' });
     } catch (error) {
@@ -715,81 +700,40 @@ export default function SettingsPage() {
             onClose={() => setCheckoutBundleId(null)}
           />
 
-          {/* Handwriting style picker */}
-          {handwritingStyles.length > 0 && (
+          {/* Font picker */}
+          {cardFonts.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-3">Preferred handwriting style</p>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {handwritingStyles.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => setCardHandwritingId(s.id)}
-                    className={`relative flex flex-col rounded-xl border-2 overflow-hidden transition-all active:scale-95 ${
-                      cardHandwritingId === s.id
-                        ? 'border-teal-500'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {s.preview ? (
-                      <img
-                        src={s.preview}
-                        alt={s.name}
-                        className="w-full aspect-[4/3] object-cover bg-gray-50"
-                      />
-                    ) : (
-                      <div className="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center">
-                        <span className="text-2xl font-serif italic text-gray-400">Aa</span>
-                      </div>
-                    )}
-                    <div className={`px-1.5 py-1 text-center text-xs font-medium truncate ${
-                      cardHandwritingId === s.id ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'
-                    }`}>
-                      {s.name}
-                    </div>
-                    {cardHandwritingId === s.id && (
-                      <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center shadow">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Stationery picker */}
-          {stationeryOptions.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-3">Preferred stationery</p>
+              <p className="text-sm font-medium text-gray-700 mb-3">Preferred handwriting font</p>
               <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-200 p-3 scrollbar-thin">
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {stationeryOptions.map(s => (
+                  {cardFonts.map(f => (
                     <button
-                      key={s.id}
-                      onClick={() => setCardStationeryId(s.id)}
+                      key={f.id}
+                      onClick={() => setCardFontId(f.label)}
                       className={`relative flex flex-col rounded-xl border-2 overflow-hidden transition-all active:scale-95 ${
-                        cardStationeryId === s.id
+                        cardFontId === f.label
                           ? 'border-teal-500'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      {s.preview ? (
+                      {f.image ? (
                         <img
-                          src={s.preview}
-                          alt={s.name}
-                          className="w-full aspect-[3/4] object-cover bg-gray-50"
+                          src={f.image}
+                          alt={f.label}
+                          className="w-full aspect-[4/3] object-contain bg-white p-1"
+                          loading="lazy"
                         />
                       ) : (
-                        <div className="w-full aspect-[3/4] bg-gray-100 flex items-center justify-center">
-                          <Mail className="w-5 h-5 text-gray-300" />
+                        <div className="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center">
+                          <span className="text-2xl font-serif italic text-gray-400">Aa</span>
                         </div>
                       )}
-                      <div className={`px-1 py-1 text-center leading-tight text-[10px] font-medium ${
-                        cardStationeryId === s.id ? 'bg-teal-500 text-white' : 'bg-white text-gray-600'
+                      <div className={`px-1.5 py-1 text-center text-xs font-medium truncate ${
+                        cardFontId === f.label ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'
                       }`}>
-                        {s.name}
+                        {f.label}
                       </div>
-                      {cardStationeryId === s.id && (
+                      {cardFontId === f.label && (
                         <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center shadow">
                           <Check className="w-3 h-3 text-white" />
                         </div>
@@ -798,7 +742,7 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2">Scroll to see all {stationeryOptions.length} designs</p>
+              <p className="text-xs text-gray-400 mt-2">Scroll to see all {cardFonts.length} fonts</p>
             </div>
           )}
 

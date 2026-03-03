@@ -91,8 +91,11 @@ export async function GET() {
         )
       );
 
-    // 5. Build response with "addedBy" context
-    const discoveries = discoveredProfiles.map(profile => ({
+    // 5. Exclude private profiles — discoveries should never show private contacts
+    const visibleProfiles = discoveredProfiles.filter(p => !p.isPrivate);
+
+    // 6. Build response with "addedBy" context
+    const discoveries = visibleProfiles.map(profile => ({
       profileId: profile.id,
       name: profile.name,
       profilePicture: profile.profilePicture,

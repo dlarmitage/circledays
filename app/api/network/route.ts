@@ -52,13 +52,17 @@ export async function GET() {
         )
       );
     
-    const oneHopIds = new Set(oneHopConnections.map(c => c.profile.id));
+    // Filter out private profiles not created by this user
+    const visibleOneHopConnections = oneHopConnections.filter(
+      ({ profile }) => !profile.isPrivate || profile.createdByUserId === user.id
+    );
+    const oneHopIds = new Set(visibleOneHopConnections.map(c => c.profile.id));
     
     // Get 2-hop connections (connections of connections)
     const twoHopProfiles: Map<string, GraphNode> = new Map();
     const twoHopEdges: GraphEdge[] = [];
     
-    for (const { profile: oneHopProfile } of oneHopConnections) {
+    for (const { profile: oneHopProfile } of visibleOneHopConnections) {
       const theirConnections = await db
         .select({
           profile: profiles,
@@ -79,8 +83,8 @@ export async function GET() {
         );
       
       for (const { profile: twoHopProfile } of theirConnections) {
-        // Skip if it's the user or already a 1-hop connection
-        if (twoHopProfile.id === userProfile.id || oneHopIds.has(twoHopProfile.id)) {
+        // Skip if it's the user, already a 1-hop connection, or private
+        if (twoHopProfile.id === userProfile.id || oneHopIds.has(twoHopProfile.id) || twoHopProfile.isPrivate) {
           continue;
         }
         
@@ -113,7 +117,7 @@ export async function GET() {
         linkedUserId: userProfile.linkedUserId,
       },
       // 1-hop connections
-      ...oneHopConnections.map(({ profile }) => ({
+      ...visibleOneHopConnections.map(({ profile }) => ({
         id: profile.id,
         name: profile.name,
         profilePicture: profile.profilePicture,
@@ -127,7 +131,7 @@ export async function GET() {
     // Build edges array
     const edges: GraphEdge[] = [
       // Edges from user to 1-hop
-      ...oneHopConnections.map(({ profile }) => ({
+      ...visibleOneHopConnections.map(({ profile }) => ({
         source: userProfile.id,
         target: profile.id,
       })),

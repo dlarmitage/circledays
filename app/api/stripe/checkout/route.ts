@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 const checkoutSchema = z.object({
   bundleId: z.enum(['bundle_1', 'bundle_5', 'bundle_10']),
+  returnPath: z.string().optional(),
 });
 
 // POST /api/stripe/checkout — create a Stripe Checkout session for a credit bundle
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
     const body = await request.json();
-    const { bundleId } = checkoutSchema.parse(body);
+    const { bundleId, returnPath } = checkoutSchema.parse(body);
 
     const bundle = CREDIT_BUNDLES.find(b => b.id === bundleId)!;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://circledays.ambient.technology';
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       ],
       mode: 'payment',
       ui_mode: 'embedded',
-      return_url: `${appUrl}/settings?credits=added`,
+      return_url: `${appUrl}${returnPath || '/settings?credits=added'}`,
       metadata: {
         userId: user.id,
         bundleId,

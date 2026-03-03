@@ -54,12 +54,14 @@ export async function GET(request: NextRequest) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      newConnections = userConnections.filter(({ connection }) => {
+      newConnections = userConnections.filter(({ connection, profile }) => {
         // Connection was created by someone else (not this user)
         const createdByOther = connection.createdByUserId !== user.id;
         // Connection is recent (within 30 days)
         const isRecent = connection.createdAt && new Date(connection.createdAt) > thirtyDaysAgo;
-        return createdByOther && isRecent;
+        // Don't show private profiles created by others
+        const isVisible = !profile.isPrivate || profile.createdByUserId === user.id;
+        return createdByOther && isRecent && isVisible;
       });
     }
     

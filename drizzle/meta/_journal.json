@@ -36,6 +36,27 @@
       "when": 1769000000000,
       "tag": "0004_add-handwritten-cards",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772275200000,
+      "tag": "0005_add-profile-privacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772531200000,
+      "tag": "0006_handwrytten-migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772617600000,
+      "tag": "0007_add-card-signoff",
+      "breakpoints": true
     }
   ]
 }

@@ -11,9 +11,10 @@ interface StripeCheckoutModalProps {
   bundleId: string | null;
   onSuccess: () => void;
   onClose: () => void;
+  returnPath?: string;
 }
 
-export function StripeCheckoutModal({ bundleId, onSuccess, onClose }: StripeCheckoutModalProps) {
+export function StripeCheckoutModal({ bundleId, onSuccess, onClose, returnPath }: StripeCheckoutModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollYRef = useRef(0);
@@ -35,7 +36,7 @@ export function StripeCheckoutModal({ bundleId, onSuccess, onClose }: StripeChec
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bundleId }),
+        body: JSON.stringify({ bundleId, returnPath }),
       });
       const data = await res.json();
       if (res.ok && data.clientSecret) {

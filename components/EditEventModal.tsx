@@ -28,7 +28,7 @@ interface EditEventModalProps {
 const EVENT_TYPES = [
   { value: 'birthday', label: 'Birthday', icon: Cake },
   { value: 'anniversary', label: 'Anniversary', icon: Heart },
-  { value: 'custom', label: 'Custom Event', icon: Calendar },
+  { value: 'custom', label: 'Custom Occasion', icon: Calendar },
 ];
 
 export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpdated }: EditEventModalProps) {
@@ -68,7 +68,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
     }
     
     if (eventType === 'custom' && !customLabel.trim()) {
-      setError('Please enter a label for this custom event');
+      setError('Please enter a label for this custom occasion');
       return;
     }
     
@@ -146,7 +146,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Icon className="w-5 h-5 text-teal-600" />
-            Edit Event
+            Edit Occasion
           </CardTitle>
           <button
             onClick={onClose}
@@ -163,9 +163,9 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
               <div className="flex items-center gap-3 p-4 bg-coral-50 rounded-xl">
                 <AlertTriangle className="w-6 h-6 text-coral-600 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-coral-900">Delete this event?</p>
+                  <p className="font-medium text-coral-900">Delete this occasion?</p>
                   <p className="text-sm text-coral-700">
-                    This will permanently remove this event from {profileName}'s profile.
+                    This will permanently remove this occasion from {profileName}'s profile.
                   </p>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
                   onClick={handleDelete}
                   loading={deleting}
                 >
-                  Delete Event
+                  Delete Occasion
                 </Button>
               </div>
             </div>
@@ -198,7 +198,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
               {/* Event Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Event Type
+                  Occasion Type
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {EVENT_TYPES.map(type => {
@@ -228,7 +228,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
               {/* Custom Label (only for custom events) */}
               {eventType === 'custom' && (
                 <Input
-                  label="Event Name"
+                  label="Occasion Name"
                   placeholder="e.g., Work Anniversary, Graduation"
                   value={customLabel}
                   onChange={(e) => setCustomLabel(e.target.value)}
@@ -342,8 +342,8 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   {isPrivate 
-                    ? "Only you can see this event and get reminders" 
-                    : "All connections can see this event"}
+                    ? "Only you can see this occasion and get reminders"
+                    : "All connections can see this occasion"}
                 </p>
               </div>
               

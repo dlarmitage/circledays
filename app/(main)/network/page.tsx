@@ -368,7 +368,7 @@ export default function NetworkPage() {
             ? `${selectedIds.size} selected` 
             : showAll 
               ? 'All Profiles' 
-              : 'Connections'}
+              : 'My Circle'}
         </h1>
         <div className="flex items-center gap-2">
           {selectMode ? (

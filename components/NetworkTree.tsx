@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '@/components/ui/Avatar';
@@ -84,11 +84,25 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   onMergeClick,
 }, ref) {
   const router = useRouter();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [focusStack, setFocusStack] = useState<{ profile: Profile; connections: Profile[] }[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Restore scroll position when connections load (e.g. after navigating back)
+  useEffect(() => {
+    const saved = sessionStorage.getItem('networkTree_scrollTop');
+    if (saved && scrollContainerRef.current && connections.length > 0) {
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = parseInt(saved, 10);
+        }
+        sessionStorage.removeItem('networkTree_scrollTop');
+      });
+    }
+  }, [connections]);
   
   // Current view state
   const currentFocus = focusStack.length > 0 ? focusStack[focusStack.length - 1] : null;
@@ -186,6 +200,10 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
   };
   
   const handleProfileTap = (profile: Profile) => {
+    // Save scroll position before navigating away
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem('networkTree_scrollTop', String(scrollContainerRef.current.scrollTop));
+    }
     // Pass connection status so parent knows whether to show full profile or modal
     onProfileClick(profile.id, profile.isConnectedToUser);
   };
@@ -284,10 +302,10 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 truncate group-hover:text-teal-600 transition-colors">
-                  Your Connections
+                  My Circle
                 </p>
                 <p className="text-xs text-gray-500">
-                  {connections.length} connections
+                  {connections.length} people in My Circle
                 </p>
               </div>
               <Pencil className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -297,7 +315,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
       </div>
       
       {/* Connection List */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         {loading || searchLoading ? (
           <div className="flex items-center justify-center py-12">
             <Spinner size="lg" />

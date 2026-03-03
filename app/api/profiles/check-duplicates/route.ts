@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
     // Score and filter duplicates
     const duplicates = similarProfiles
       .filter(p => p.id !== userProfile.id) // Exclude self
+      .filter(p => !p.isPrivate || p.createdByUserId === user.id) // Exclude others' private profiles
       .map(profile => {
         let score = 0;
         let reasons: string[] = [];

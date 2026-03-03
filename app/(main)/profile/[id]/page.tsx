@@ -55,6 +55,7 @@ interface ProfileData {
     profilePicture: string | null;
     linkedUserId: string | null;
     createdByUserId: string;
+    isPrivate?: boolean;
   };
   events: Event[];
   note: { content: string } | null;
@@ -404,7 +405,14 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
               Not on CircleDays yet
             </Badge>
           )}
-          
+
+          {profile.isPrivate && (
+            <Badge variant="warning" className="mb-4">
+              <Lock className="w-3 h-3 mr-1" />
+              Private
+            </Badge>
+          )}
+
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
             {/* Can edit if: own profile, OR creator of unlinked profile, OR admin */}
             {(isOwnProfile || (isCreator && !profile.linkedUserId) || data.isPlatformAdmin) ? (
@@ -441,7 +449,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 onClick={() => setShowDisconnectModal(true)}
               >
                 <UserMinus className="w-4 h-4 mr-2" />
-                Disconnect
+                Remove from My Circle
               </Button>
             )}
             
@@ -575,12 +583,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-teal-600" />
-              Events
+              Occasions
             </CardTitle>
           </CardHeader>
           <CardContent>
             {events.length === 0 ? (
-              <p className="text-gray-500 text-sm">No events yet</p>
+              <p className="text-gray-500 text-sm">No occasions yet</p>
             ) : (
               <div className="space-y-3">
                 {events.map(event => {
@@ -631,7 +639,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 onClick={() => setShowAddEventModal(true)}
               >
                 <Calendar className="w-4 h-4 mr-2" />
-                Add Event
+                Add Occasion
               </Button>
             )}
           </CardContent>
@@ -683,7 +691,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-teal-600" />
-              {profile.name}'s Connections
+              {profile.name}'s Circle
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -742,7 +750,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         onClose={() => setShowDisconnectModal(false)}
         onConfirm={handleDisconnect}
         title="Disconnect"
-        message={`Are you sure you want to disconnect from ${profile.name}? You'll no longer receive reminders about their events.`}
+        message={`Are you sure you want to disconnect from ${profile.name}? You'll no longer receive reminders about their occasions.`}
         confirmText="Disconnect"
         loading={actionLoading}
       />
@@ -753,7 +761,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteProfile}
         title="Delete Profile"
-        message={`Are you sure you want to delete ${profile.name}'s profile? This will remove all their events and cannot be undone.`}
+        message={`Are you sure you want to delete ${profile.name}'s profile? This will remove all their occasions and cannot be undone.`}
         confirmText="Delete"
         loading={actionLoading}
       />

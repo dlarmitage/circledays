@@ -83,7 +83,7 @@ export function EventCard({
                     e.stopPropagation();
                     onMessageAssist!();
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-100 hover:bg-violet-200 rounded-full transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-full transition-colors"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   Message Assist

@@ -162,7 +162,7 @@ export function ConnectionModal({
               className="w-full"
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              Connect
+              Add to My Circle
             </Button>
           )}
           

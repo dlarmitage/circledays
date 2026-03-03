@@ -35,7 +35,12 @@ export async function GET(
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
-    
+
+    // Private profiles are only visible to their creator
+    if (profile.isPrivate && profile.createdByUserId !== user.id) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     // Check if directly connected (1-hop)
     const [profileA, profileB] = [userProfile.id, profile.id].sort();
     const [connection] = await db
@@ -161,7 +166,9 @@ export async function GET(
       profile,
       events: profileEvents,
       note: userNote || null,
-      connections: profileConnections.map(c => c.profile),
+      connections: profileConnections
+        .map(c => c.profile)
+        .filter(p => !p.isPrivate || p.createdByUserId === user.id),
       userConnections: userConnectionsFiltered,
       connectionId: connection?.id || null,
       isDirectConnection: true,
@@ -188,6 +195,7 @@ export async function GET(
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   profilePicture: z.string().url().nullable().optional(),
+  isPrivate: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -231,7 +239,20 @@ export async function PATCH(
       .set(updateData)
       .where(eq(profiles.id, id))
       .returning();
-    
+
+    // Cascade privacy to events created by this user on this profile
+    if (data.isPrivate !== undefined) {
+      await db
+        .update(events)
+        .set({ isPrivate: data.isPrivate })
+        .where(
+          and(
+            eq(events.profileId, id),
+            eq(events.createdByUserId, user.id)
+          )
+        );
+    }
+
     return NextResponse.json({ profile: updatedProfile });
   } catch (error) {
     console.error('Update profile error:', error);

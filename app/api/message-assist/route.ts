@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
 const generateMessageSchema = z.object({
@@ -21,15 +20,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = generateMessageSchema.parse(body);
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.KIMI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json({
         message: generateFallbackMessage(data.profileName, data.eventType, data.tone),
       });
     }
-
-    const anthropic = new Anthropic({ apiKey });
 
     // Build the prompt
     const toneDescriptions = {
@@ -40,7 +37,6 @@ export async function POST(request: NextRequest) {
     };
 
     // Determine timing context for the message
-    const isToday = data.daysUntil === 0;
     const isTomorrow = data.daysUntil === 1;
     const isUpcoming = data.daysUntil !== undefined && data.daysUntil > 1;
 
@@ -76,15 +72,39 @@ IMPORTANT STYLE RULES:
 
     prompt += `\n\nGenerate ONLY the message text, nothing else. No quotes, no explanation, just the message itself.`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 256,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    let message: string;
+    try {
+      const response = await fetch('https://api.moonshot.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'moonshot-v1-auto',
+          max_tokens: 256,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a personal message writer. You write short, authentic messages for special occasions. Always incorporate any personal details provided to make the message feel genuine and specific to the person. Match the requested tone precisely.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      });
 
-    const message = response.content[0].type === 'text'
-      ? response.content[0].text.trim()
-      : generateFallbackMessage(data.profileName, data.eventType, data.tone);
+      const result = await response.json();
+
+      if (result.choices?.[0]?.message?.content) {
+        message = result.choices[0].message.content.trim();
+      } else {
+        console.error('Unexpected Kimi API response:', result);
+        message = generateFallbackMessage(data.profileName, data.eventType, data.tone);
+      }
+    } catch (apiError) {
+      console.error('Kimi API error, using fallback:', apiError);
+      message = generateFallbackMessage(data.profileName, data.eventType, data.tone);
+    }
 
     return NextResponse.json({ message });
   } catch (error) {
@@ -130,4 +150,3 @@ function generateFallbackMessage(name: string, eventType: string, tone: string):
 
   return `Hope you have a wonderful ${eventType}! Thinking of you today.`;
 }
-

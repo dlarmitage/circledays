@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
     // Build response with connection status
     const results = searchResults
       .filter(p => p.id !== userProfile.id) // Exclude self
+      .filter(p => !p.isPrivate || p.createdByUserId === user.id) // Exclude others' private profiles
       .map(profile => ({
         id: profile.id,
         name: profile.name,

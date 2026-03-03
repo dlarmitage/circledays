@@ -48,7 +48,9 @@ export async function GET() {
       );
     
     return NextResponse.json({
-      profiles: connectedProfiles.map(c => c.profile),
+      profiles: connectedProfiles
+        .map(c => c.profile)
+        .filter(p => !p.isPrivate || p.createdByUserId === user.id),
     });
   } catch (error) {
     console.error('Get profiles error:', error);
@@ -68,6 +70,7 @@ const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
   birthdate: z.string(), // ISO date string, required
   profilePicture: z.string().url().nullable().optional(),
+  isPrivate: z.boolean().optional().default(false),
 });
 
 // Create a new profile
@@ -98,14 +101,17 @@ export async function POST(request: NextRequest) {
         name: capitalizeName(data.name),
         profilePicture: data.profilePicture || null,
         createdByUserId: user.id,
+        isPrivate: data.isPrivate,
       })
       .returning();
-    
-    // Create birthday event
+
+    // Create birthday event (propagate privacy from profile)
     await db.insert(events).values({
       profileId: newProfile.id,
       type: 'birthday',
       date: data.birthdate,
+      isPrivate: data.isPrivate,
+      createdByUserId: user.id,
     });
     
     // Auto-connect to creator

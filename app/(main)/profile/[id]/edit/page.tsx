@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
 import { EVENT_TYPES } from '@/lib/constants';
-import { ArrowLeft, Save, Plus, Trash2, Calendar, X, Repeat, CalendarCheck } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Calendar, X, Repeat, CalendarCheck, Lock } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Event {
@@ -24,6 +24,7 @@ interface ProfileData {
     id: string;
     name: string;
     profilePicture: string | null;
+    isPrivate?: boolean;
   };
   events: Event[];
   isOwnProfile: boolean;
@@ -58,6 +59,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [events, setEvents] = useState<Event[]>([]);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [newEvent, setNewEvent] = useState<NewEvent | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   
@@ -85,6 +87,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
       setProfileData(data);
       setName(data.profile.name);
       setPhotoUrl(data.profile.profilePicture);
+      setIsPrivate(data.profile.isPrivate || false);
       setEvents(data.events || []);
       if (data.userData) {
         setEmail(data.userData.email || '');
@@ -108,6 +111,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({
           name,
           profilePicture: photoUrl,
+          isPrivate,
         }),
       });
       
@@ -245,7 +249,23 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter name"
           />
-          
+
+          {/* Privacy toggle - only for profiles the user created (not their own profile) */}
+          {profileData?.isCreator && !profileData?.isOwnProfile && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm text-gray-600 flex items-center gap-1">
+                <Lock className="w-3.5 h-3.5" />
+                Keep private — only you can see this person
+              </span>
+            </label>
+          )}
+
           {/* Email and Mobile - only for own profile */}
           {profileData?.isOwnProfile && (
             <>
@@ -276,7 +296,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-teal-600" />
-            Events
+            Occasions
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -319,7 +339,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
           {newEvent ? (
             <div className="border border-teal-200 rounded-xl p-4 bg-teal-50/50">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="font-medium text-gray-900">New Event</h4>
+                <h4 className="font-medium text-gray-900">New Occasion</h4>
                 <button
                   onClick={() => setNewEvent(null)}
                   className="text-gray-400 hover:text-gray-600"
@@ -330,7 +350,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
               
               <div className="space-y-4">
                 <Select
-                  label="Event Type"
+                  label="Occasion Type"
                   options={EVENT_TYPES.map(t => ({ value: t.value, label: t.label }))}
                   value={newEvent.type}
                   onChange={(e) => setNewEvent({
@@ -341,7 +361,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
                 
                 {newEvent.type === 'custom' && (
                   <Input
-                    label="Event Name"
+                    label="Occasion Name"
                     placeholder="e.g., Gotcha Day"
                     value={newEvent.customLabel}
                     onChange={(e) => setNewEvent({
@@ -409,7 +429,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
                   disabled={!newEvent.date || (newEvent.type === 'custom' && !newEvent.customLabel)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Event
+                  Add Occasion
                 </Button>
               </div>
             </div>
@@ -419,7 +439,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
               onClick={() => setNewEvent({ type: 'birthday', customLabel: '', date: '', recurring: true })}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Event
+              Add Occasion
             </Button>
           )}
         </CardContent>

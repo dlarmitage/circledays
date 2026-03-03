@@ -60,6 +60,11 @@ export async function GET(request: NextRequest) {
         if (profile.id === userProfile.id) {
           return null;
         }
+
+        // Skip private profiles not created by the current user
+        if (profile.isPrivate && profile.createdByUserId !== user.id) {
+          return null;
+        }
         
         let hopDistance: number;
         let mutualCount = 0;

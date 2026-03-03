@@ -130,9 +130,10 @@ export async function GET(request: NextRequest) {
             )
           );
         
-        // Filter out private events unless current user created them
-        const allEvents = allEventsRaw.filter(({ event }) => 
-          !event.isPrivate || event.createdByUserId === user.id
+        // Filter out private profiles and private events unless current user created them
+        const allEvents = allEventsRaw.filter(({ event, profile }) =>
+          (!profile.isPrivate || profile.createdByUserId === user.id) &&
+          (!event.isPrivate || event.createdByUserId === user.id)
         );
         
         // Get user's reminder preferences
@@ -199,7 +200,7 @@ export async function GET(request: NextRequest) {
         const eventData = newEventsToNotify.map(({ event, profile }) => ({
           profileName: profile.name,
           profilePhoto: profile.profilePicture,
-          eventType: event.type === 'custom' ? (event.customLabel || 'Event') : event.type,
+          eventType: event.type === 'custom' ? (event.customLabel || 'Occasion') : event.type,
           eventDate: formatDate(event.date, { month: 'long', day: 'numeric' }),
           daysUntil: daysUntil(event.date),
           age: event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined,

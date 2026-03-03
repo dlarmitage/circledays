@@ -92,8 +92,13 @@ export async function GET(request: NextRequest) {
       countMap.set(conn.profileBId, (countMap.get(conn.profileBId) || 0) + 1);
     });
     
+    // Filter out private profiles not created by the current user
+    const visibleProfiles = connectionProfiles.filter(
+      profile => !profile.isPrivate || profile.createdByUserId === user.id
+    );
+
     // Build response
-    const result = connectionProfiles.map(profile => ({
+    const result = visibleProfiles.map(profile => ({
       id: profile.id,
       name: profile.name,
       profilePicture: profile.profilePicture,
