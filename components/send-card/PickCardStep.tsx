@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { X, Check, Image as ImageIcon } from 'lucide-react';
 import type { HandwryttenCategory, HandwryttenCard } from './types';
@@ -27,6 +27,14 @@ export function PickCardStep({
   onContinue,
 }: PickCardStepProps) {
   const [previewCard, setPreviewCard] = useState<HandwryttenCard | null>(null);
+  const pillRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  // Scroll selected category pill into view
+  useEffect(() => {
+    if (selectedCategory === null) return;
+    const el = pillRefs.current.get(selectedCategory);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [selectedCategory]);
 
   return (
     <div className="space-y-4">
@@ -38,6 +46,7 @@ export function PickCardStep({
           {categories.map(cat => (
             <button
               key={cat.id}
+              ref={el => { if (el) pillRefs.current.set(cat.id, el); }}
               onClick={() => onSelectCategory(cat.id)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 selectedCategory === cat.id

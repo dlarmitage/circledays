@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
 import { CREDIT_BUNDLES } from '@/lib/constants';
-import { PenTool, Check, ChevronLeft } from 'lucide-react';
+import { PenLine, Mail, Heart, ChevronLeft } from 'lucide-react';
 
 type Page = 'welcome' | 'setup' | 'credits';
 
@@ -84,37 +84,54 @@ export function CardOnboarding({ userName, onComplete, onClose }: CardOnboarding
 
   // ——— Welcome page ———
   if (page === 'welcome') {
-    return (
-      <div className="flex flex-col items-center text-center space-y-5 py-4">
-        <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center">
-          <PenTool className="w-8 h-8 text-teal-600" />
-        </div>
+    const features = [
+      {
+        icon: <PenLine className="w-5 h-5 text-teal-600" />,
+        title: 'Written with real pen & ink',
+        desc: 'Your message, penned in a handwriting style you choose. Not printed — actually written.',
+      },
+      {
+        icon: <Mail className="w-5 h-5 text-teal-600" />,
+        title: 'Timed to arrive on their day',
+        desc: 'Send a card weeks ahead — we\u2019ll time delivery so it arrives right on their special day.',
+      },
+      {
+        icon: <Heart className="w-5 h-5 text-teal-600" />,
+        title: 'The gesture people remember',
+        desc: 'In a world of quick texts, a real card on the doorstep means the world.',
+      },
+    ];
 
+    return (
+      <div className="flex flex-col items-center text-center space-y-6 py-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Send real handwritten cards</h3>
-          <p className="text-sm text-gray-500 mt-1">
-            A personal touch that means the world
+          <h3 className="text-xl font-semibold text-gray-900">
+            The card they&apos;ll keep
+          </h3>
+          <p className="text-base text-gray-500 mt-2 leading-relaxed">
+            You remembered their day. Now send something they&apos;ll treasure — a real handwritten card.
           </p>
         </div>
 
-        <div className="w-full text-left space-y-3">
-          {[
-            'Written with actual pen and ink, not printed',
-            'We handle postage and mailing for you',
-            'About $4 per card, purchased as credits',
-          ].map((text) => (
-            <div key={text} className="flex items-start gap-3 px-3">
-              <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Check className="w-3 h-3 text-teal-600" />
+        <div className="w-full text-left space-y-4">
+          {features.map((f) => (
+            <div key={f.title} className="flex items-start gap-3 px-2">
+              <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+                {f.icon}
               </div>
-              <p className="text-sm text-gray-700">{text}</p>
+              <div>
+                <p className="text-base font-medium text-gray-900">{f.title}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="w-full space-y-2 pt-2">
+        <p className="text-sm text-gray-400">$5 per card, purchased as credits</p>
+
+        <div className="w-full space-y-2">
           <Button
-            className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
+            className="w-full text-base bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
             onClick={() => setPage('setup')}
           >
             Get Started
@@ -267,7 +284,6 @@ export function CardOnboarding({ userName, onComplete, onClose }: CardOnboarding
 
       <div className="grid grid-cols-3 gap-3">
         {CREDIT_BUNDLES.map(bundle => {
-          const perCard = bundle.priceUsd / bundle.quantity;
           const isSelected = selectedBundle === bundle.id;
           return (
             <button
@@ -282,9 +298,6 @@ export function CardOnboarding({ userName, onComplete, onClose }: CardOnboarding
             >
               <span className="font-semibold text-gray-900 text-sm">{bundle.label}</span>
               <span className="text-base font-bold text-teal-700 mt-1">${bundle.priceUsd.toFixed(2)}</span>
-              {bundle.quantity > 1 && (
-                <span className="text-xs text-gray-500 mt-0.5">${perCard.toFixed(2)}/ea</span>
-              )}
             </button>
           );
         })}

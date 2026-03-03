@@ -4,9 +4,9 @@ export const DEFAULT_HANDWRYTTEN_CHAR_LIMIT = 500;
 
 // Credit bundle pricing — single source of truth
 export const CREDIT_BUNDLES = [
-  { id: 'bundle_1', quantity: 1, label: '1 card', priceUsd: 4.00 },
-  { id: 'bundle_5', quantity: 5, label: '5 cards', priceUsd: 18.00 },
-  { id: 'bundle_10', quantity: 10, label: '10 cards', priceUsd: 34.00 },
+  { id: 'bundle_1', quantity: 1, label: '1 card', priceUsd: 5.00 },
+  { id: 'bundle_5', quantity: 5, label: '5 cards', priceUsd: 25.00 },
+  { id: 'bundle_10', quantity: 10, label: '10 cards', priceUsd: 50.00 },
 ] as const;
 
 // User-facing strings - centralized for future i18n

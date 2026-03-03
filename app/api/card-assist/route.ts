@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     const data = cardAssistSchema.parse(body);
 
     const limit = data.charLimit ?? CARD_CHAR_LIMIT;
-    const targetLength = Math.floor(limit * 0.88);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -41,6 +40,12 @@ export async function POST(request: NextRequest) {
     const senderFirst = signOff
       ? (signOff.includes(',') ? signOff.split(',').pop()!.trim() : signOff)
       : (data.senderName || user.name || '').split(' ')[0];
+
+    // Reserve space for the sign-off so the AI writes a shorter body
+    const expectedSignOff = signOff || senderFirst || null;
+    const signOffReserve = expectedSignOff ? expectedSignOff.length + 2 : 0; // +2 for \n\n
+    const bodyLimit = limit - signOffReserve;
+    const targetLength = Math.floor(bodyLimit * 0.88);
     const recipientFirst = data.profileName.split(' ')[0];
 
     // Build timing context
@@ -74,7 +79,7 @@ WHAT MAKES A GREAT CARD MESSAGE:
 - Open with something specific and personal — not "Dear ${recipientFirst}," followed by a generic wish
 - Weave in personal details naturally, as if you actually know this person (because you do)
 - Vary your sentence structure — mix short punchy lines with longer flowing ones
-- End with something forward-looking or a specific wish, then sign off${signOff ? ` with exactly "${signOff}"` : senderFirst ? ` with just "${senderFirst}"` : ' with a warm phrase like "With love," or "Cheers," or "Thinking of you,"'}
+- End with something forward-looking or a specific wish — do NOT add a sign-off (we append "${expectedSignOff}" automatically)
 - The best cards feel like a conversation, not a Hallmark template
 
 AVOID THESE CLICHÉS:
@@ -89,7 +94,8 @@ AVOID THESE CLICHÉS:
 HARD RULES:
 - Max ${targetLength} characters (aim for ${Math.floor(targetLength * 0.85)}-${targetLength})
 - No em-dashes (—), no hashtags, no URLs, no brackets, no placeholder text
-- ${signOff ? `Sign off with exactly "${signOff}" — do not rephrase, embellish, or add to it` : senderFirst ? `Sign off with just "${senderFirst}" — never "[Your Name]" or similar` : 'End with a natural sign-off phrase (e.g. "With love," or "Cheers,") — never write "[Your Name]" or "A warm closing" or any placeholder'}`;
+- Do NOT include a sign-off or sender name at the end — we will add "${expectedSignOff}" automatically after your message
+- End the message with your final sentiment, not a signature`;
 
     if (timingContext) {
       prompt += `\n\nTIMING: ${timingContext}`;
@@ -156,22 +162,25 @@ HARD RULES:
     message = message.replace(/—\s*/g, '');
     message = message.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
 
-    // Ensure the message ends with the sign-off or sender name
-    const expectedSignOff = signOff || senderFirst || null;
+    // Strip any sign-off the model added despite instructions not to
     if (expectedSignOff) {
       const nameToCheck = signOff
         ? (signOff.includes(',') ? signOff.split(',').pop()!.trim() : signOff)
         : senderFirst;
-      const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
-      const lastLine = lines[lines.length - 1] || '';
-      if (!lastLine.toLowerCase().includes(nameToCheck.toLowerCase())) {
-        message = message.trimEnd() + '\n\n' + expectedSignOff;
+      const lines = message.split('\n');
+      // Remove trailing lines that look like a sign-off (contain the sender's name)
+      while (lines.length > 1) {
+        const last = lines[lines.length - 1].trim();
+        if (last && last.toLowerCase().includes(nameToCheck.toLowerCase())) {
+          lines.pop();
+        } else break;
       }
+      message = lines.join('\n').trimEnd();
     }
 
-    // Safety net truncation — cut at the last sentence boundary within the limit
-    if (message.length > limit) {
-      const truncated = message.slice(0, limit);
+    // Truncate body to leave room for sign-off
+    if (message.length > bodyLimit) {
+      const truncated = message.slice(0, bodyLimit);
       const lastSentenceEnd = Math.max(
         truncated.lastIndexOf('. '),
         truncated.lastIndexOf('! '),
@@ -181,6 +190,11 @@ HARD RULES:
       message = lastSentenceEnd > 0
         ? message.slice(0, lastSentenceEnd + 1).trimEnd()
         : truncated.slice(0, truncated.lastIndexOf(' ')).trimEnd();
+    }
+
+    // Always append the sign-off
+    if (expectedSignOff) {
+      message = message.trimEnd() + '\n\n' + expectedSignOff;
     }
 
     return NextResponse.json({ message });

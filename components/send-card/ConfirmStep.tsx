@@ -22,6 +22,7 @@ interface ConfirmStepProps {
   sendError: string | null;
   onSend: () => void;
   onBack: () => void;
+  daysUntil?: number;
 }
 
 export function ConfirmStep({
@@ -38,6 +39,7 @@ export function ConfirmStep({
   sendError,
   onSend,
   onBack,
+  daysUntil,
 }: ConfirmStepProps) {
   const [editingSender, setEditingSender] = useState(false);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
@@ -180,7 +182,9 @@ export function ConfirmStep({
       </Button>
 
       <p className="text-xs text-center text-gray-400">
-        Cards are typically delivered within 3&ndash;4 days.
+        {daysUntil !== undefined && daysUntil > 5
+          ? 'Your card will be timed to arrive on or about their special day.'
+          : 'Cards are typically delivered within 3\u20134 business days.'}
       </p>
     </div>
   );

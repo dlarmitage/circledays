@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, connections, events } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq, or, and, sql } from 'drizzle-orm';
-import { daysUntil, turningAge } from '@/lib/utils';
+import { daysUntil, daysSinceOccurrence, turningAge } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth();
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30', 10);
+    const pastDays = parseInt(searchParams.get('pastDays') || '0', 10);
     
     // Get user's profile
     const [userProfile] = await db
@@ -67,28 +68,49 @@ export async function GET(request: NextRequest) {
     );
     
     // Calculate days until each event and filter
-    const upcomingEvents = allEvents
-      .map(({ event, profile }) => {
-        const daysUntilEvent = daysUntil(event.date);
-        const age = event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined;
-        
-        return {
-          id: event.id,
-          profileId: profile.id,
-          profileName: profile.name,
-          profilePicture: profile.profilePicture,
-          type: event.type,
-          customLabel: event.customLabel,
-          date: event.date,
-          daysUntil: daysUntilEvent,
-          age,
-          isPrivate: event.isPrivate,
-        };
-      })
+    const enrichedEvents = allEvents.map(({ event, profile }) => {
+      const daysUntilEvent = daysUntil(event.date);
+      const age = event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined;
+
+      return {
+        id: event.id,
+        profileId: profile.id,
+        profileName: profile.name,
+        profilePicture: profile.profilePicture,
+        type: event.type,
+        customLabel: event.customLabel,
+        date: event.date,
+        daysUntil: daysUntilEvent,
+        age,
+        isPrivate: event.isPrivate,
+        _rawDate: event.date, // used for past-event calculation below
+      };
+    });
+
+    // Upcoming events (today + future)
+    const upcomingEvents = enrichedEvents
       .filter(e => e.daysUntil >= 0 && e.daysUntil <= days)
       .sort((a, b) => a.daysUntil - b.daysUntil);
-    
-    return NextResponse.json({ events: upcomingEvents });
+
+    // Recently passed events (optional)
+    let recentEvents: typeof upcomingEvents = [];
+    if (pastDays > 0) {
+      recentEvents = enrichedEvents
+        .map(e => {
+          const daysSince = daysSinceOccurrence(e._rawDate);
+          if (daysSince > 0 && daysSince <= pastDays) {
+            return { ...e, daysUntil: -daysSince };
+          }
+          return null;
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null)
+        .sort((a, b) => b.daysUntil - a.daysUntil); // most recent first (-1 before -5)
+    }
+
+    // Strip internal field before sending
+    const allResults = [...upcomingEvents, ...recentEvents].map(({ _rawDate, ...rest }) => rest);
+
+    return NextResponse.json({ events: allResults });
   } catch (error) {
     console.error('Get upcoming events error:', error);
     

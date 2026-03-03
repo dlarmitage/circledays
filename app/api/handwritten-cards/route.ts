@@ -23,6 +23,8 @@ const sendCardSchema = z.object({
   senderCity: z.string().min(1),
   senderState: z.string().min(1),
   senderZip: z.string().regex(/^\d{5}$/, 'ZIP must be 5 digits'),
+  // Delivery timing
+  daysUntil: z.number().optional(),
 });
 
 // GET /api/handwritten-cards — list the user's card order history
@@ -87,6 +89,17 @@ export async function POST(request: NextRequest) {
       description: `Handwritten card sent to ${data.recipientName}`,
     });
 
+    // Calculate date_send for timed delivery (send 4 days before the event)
+    let dateSend: string | undefined;
+    if (data.daysUntil !== undefined && data.daysUntil > 4) {
+      const sendDate = new Date();
+      sendDate.setDate(sendDate.getDate() + data.daysUntil - 4);
+      const mm = String(sendDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(sendDate.getDate()).padStart(2, '0');
+      const yyyy = sendDate.getFullYear();
+      dateSend = `${mm}/${dd}/${yyyy}`;
+    }
+
     // Place order with Handwrytten — if this fails, refund the credit
     let orderResponse: Awaited<ReturnType<typeof placeOrder>>;
     try {
@@ -104,6 +117,7 @@ export async function POST(request: NextRequest) {
         recipient_city: data.recipientCity,
         recipient_state: data.recipientState,
         recipient_zip: data.recipientZip,
+        date_send: dateSend,
       });
     } catch (sendErr) {
       // Refund the credit since the card was never sent

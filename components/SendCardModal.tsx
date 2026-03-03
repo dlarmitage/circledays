@@ -181,7 +181,8 @@ export function SendCardModal({
   useEffect(() => {
     if (categories.length === 0 || selectedCategory !== null) return;
     const match = categories.find(c => c.name.toLowerCase() === eventType.toLowerCase());
-    setSelectedCategory(match?.id ?? categories[0].id);
+    const everyday = categories.find(c => c.name.toLowerCase() === 'everyday');
+    setSelectedCategory(match?.id ?? everyday?.id ?? categories[0].id);
   }, [categories, selectedCategory, eventType]);
 
   // Dynamically load selected font
@@ -281,6 +282,7 @@ export function SendCardModal({
           cardId: selectedCard ? String(selectedCard.id) : '',
           senderName: senderAddress.senderName, senderAddress1: senderAddress.senderAddress1,
           senderCity: senderAddress.senderCity, senderState: senderAddress.senderState, senderZip: senderAddress.senderZip,
+          daysUntil,
         }),
       });
       const data = await res.json();
@@ -328,7 +330,7 @@ export function SendCardModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" padding="none">
+      <Card className="w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col" padding="none">
         <CardHeader className="flex flex-row items-center justify-between flex-shrink-0 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-t-2xl px-4 py-3 mb-0">
           <CardTitle className="flex items-center gap-2 text-white">
             <Mail className="w-5 h-5" />
@@ -450,6 +452,7 @@ export function SendCardModal({
               sendError={sendError}
               onSend={handleSend}
               onBack={() => setStep('address')}
+              daysUntil={daysUntil}
             />
           )}
 

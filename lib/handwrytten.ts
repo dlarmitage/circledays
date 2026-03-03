@@ -42,6 +42,13 @@ export interface HandwryttenOrderResponse {
   mail_sent: number;
 }
 
+export interface HandwryttenOrderStatus {
+  id: number;
+  status: string;
+  date_send?: string;
+  date_fulfilled?: string;
+}
+
 export interface PlaceOrderParams {
   card_id: number;
   font_label: string;
@@ -192,3 +199,23 @@ export async function placeOrder(
   return res.json();
 }
 
+/** Fetch order history from Handwrytten to sync statuses. */
+export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
+  const headers = authedHeaders();
+  const res = await fetch(`${BASE_URL}/v2/orders/listGrouped`, { headers });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten orders list failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  const orders = data.orders ?? data;
+  if (!Array.isArray(orders)) return [];
+  return orders.map((o: Record<string, unknown>) => ({
+    id: o.id as number,
+    status: (o.status as string) ?? 'unknown',
+    date_send: o.date_send as string | undefined,
+    date_fulfilled: o.date_fulfilled as string | undefined,
+  }));
+}

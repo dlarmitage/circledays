@@ -12,8 +12,9 @@ import { EditEventModal } from '@/components/EditEventModal';
 import { AddEventModal } from '@/components/AddEventModal';
 import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS, CREDIT_BUNDLES, STRINGS } from '@/lib/constants';
 import { formatDate, parseLocalDate } from '@/lib/utils';
-import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus, Mail, CreditCard, History, Check, Eye } from 'lucide-react';
+import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus, Mail, CreditCard, History, Eye } from 'lucide-react';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 interface UserData {
   id: string;
@@ -44,14 +45,6 @@ interface Event {
   recurring: boolean;
   isPrivate: boolean;
   createdByUserId: string | null;
-}
-
-interface FontOption {
-  id: string;
-  label: string;
-  image: string;
-  font_name: string;
-  font_id: number;
 }
 
 interface CardOrder {
@@ -88,11 +81,21 @@ export default function SettingsPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   // Card prefs state
-  const [cardFontId, setCardFontId] = useState('');
-  const [cardFonts, setCardFonts] = useState<FontOption[]>([]);
   const [cardCredits, setCardCredits] = useState<number | null>(null);
   const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
+
+  // Sign-off state
+  const [cardSignOff, setCardSignOff] = useState('');
+  const [cardSignOffCustom, setCardSignOffCustom] = useState('');
+  const [cardSignOffIsCustom, setCardSignOffIsCustom] = useState(false);
+
+  // Sender address state
+  const [cardSenderName, setCardSenderName] = useState('');
+  const [cardSenderStreet, setCardSenderStreet] = useState('');
+  const [cardSenderCity, setCardSenderCity] = useState('');
+  const [cardSenderState, setCardSenderState] = useState('');
+  const [cardSenderZip, setCardSenderZip] = useState('');
 
   // Ref for mobile input auto-focus
   const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +109,14 @@ export default function SettingsPage() {
     name: '', email: '', timezone: '', mobile: '', notificationChannel: 'email' as 'email' | 'sms' | 'both',
   });
   const [savedReminderPrefs, setSavedReminderPrefs] = useState<number[]>([0, 1, 7]);
-  const [savedCardFontId, setSavedCardFontId] = useState('');
+  const [savedCardSignOff, setSavedCardSignOff] = useState('');
+  const [savedCardSignOffIsCustom, setSavedCardSignOffIsCustom] = useState(false);
+  const [savedCardSignOffCustom, setSavedCardSignOffCustom] = useState('');
+  const [savedCardSenderName, setSavedCardSenderName] = useState('');
+  const [savedCardSenderStreet, setSavedCardSenderStreet] = useState('');
+  const [savedCardSenderCity, setSavedCardSenderCity] = useState('');
+  const [savedCardSenderState, setSavedCardSenderState] = useState('');
+  const [savedCardSenderZip, setSavedCardSenderZip] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -189,19 +199,43 @@ export default function SettingsPage() {
         setReminderPrefs(prefsData.preferences.defaultLeadDays);
         setSavedReminderPrefs(prefsData.preferences.defaultLeadDays);
       }
-      let loadedFontId = '';
       if (cardPrefsData.preferences) {
-        loadedFontId = cardPrefsData.preferences.fontId || '';
-        setCardFontId(loadedFontId);
-      }
-      if (cardPrefsData.fonts?.length) {
-        setCardFonts(cardPrefsData.fonts);
-        if (!cardPrefsData.preferences?.fontId) {
-          loadedFontId = cardPrefsData.fonts[0].label;
-          setCardFontId(loadedFontId);
+        // Load sign-off
+        const loadedSignOff = cardPrefsData.preferences.signOff || '';
+        const firstName = (authData.user?.name || '').split(' ')[0];
+        const presets = [firstName, `Warmly, ${firstName}`, `Love, ${firstName}`, `Cheers, ${firstName}`];
+        const isPreset = presets.includes(loadedSignOff);
+        if (isPreset) {
+          setCardSignOff(loadedSignOff);
+          setCardSignOffIsCustom(false);
+          setCardSignOffCustom('');
+          setSavedCardSignOff(loadedSignOff);
+          setSavedCardSignOffIsCustom(false);
+          setSavedCardSignOffCustom('');
+        } else if (loadedSignOff) {
+          setCardSignOffIsCustom(true);
+          setCardSignOffCustom(loadedSignOff);
+          setSavedCardSignOffIsCustom(true);
+          setSavedCardSignOffCustom(loadedSignOff);
         }
+
+        // Load sender address
+        const sName = cardPrefsData.preferences.senderName || '';
+        const sStreet = cardPrefsData.preferences.senderAddress1 || '';
+        const sCity = cardPrefsData.preferences.senderCity || '';
+        const sState = cardPrefsData.preferences.senderState || '';
+        const sZip = cardPrefsData.preferences.senderZip || '';
+        setCardSenderName(sName);
+        setCardSenderStreet(sStreet);
+        setCardSenderCity(sCity);
+        setCardSenderState(sState);
+        setCardSenderZip(sZip);
+        setSavedCardSenderName(sName);
+        setSavedCardSenderStreet(sStreet);
+        setSavedCardSenderCity(sCity);
+        setSavedCardSenderState(sState);
+        setSavedCardSenderZip(sZip);
       }
-      setSavedCardFontId(loadedFontId);
       if (typeof cardCreditsData.balance === 'number') {
         setCardCredits(cardCreditsData.balance);
       }
@@ -223,12 +257,20 @@ export default function SettingsPage() {
     });
   };
 
+  const activeCardSignOff = cardSignOffIsCustom ? cardSignOffCustom : cardSignOff;
+  const savedActiveCardSignOff = savedCardSignOffIsCustom ? savedCardSignOffCustom : savedCardSignOff;
+
   const isDirty = useMemo(() => {
     return JSON.stringify(formData) !== JSON.stringify(savedFormData) ||
       JSON.stringify(reminderPrefs) !== JSON.stringify(savedReminderPrefs) ||
-      cardFontId !== savedCardFontId ||
-      shareNewConnections !== savedShareNewConnections;
-  }, [formData, savedFormData, reminderPrefs, savedReminderPrefs, cardFontId, savedCardFontId, shareNewConnections, savedShareNewConnections]);
+      shareNewConnections !== savedShareNewConnections ||
+      activeCardSignOff !== savedActiveCardSignOff ||
+      cardSenderName !== savedCardSenderName ||
+      cardSenderStreet !== savedCardSenderStreet ||
+      cardSenderCity !== savedCardSenderCity ||
+      cardSenderState !== savedCardSenderState ||
+      cardSenderZip !== savedCardSenderZip;
+  }, [formData, savedFormData, reminderPrefs, savedReminderPrefs, shareNewConnections, savedShareNewConnections, activeCardSignOff, savedActiveCardSignOff, cardSenderName, savedCardSenderName, cardSenderStreet, savedCardSenderStreet, cardSenderCity, savedCardSenderCity, cardSenderState, savedCardSenderState, cardSenderZip, savedCardSenderZip]);
 
   // Warn on browser close / refresh when there are unsaved changes
   useEffect(() => {
@@ -242,8 +284,15 @@ export default function SettingsPage() {
   const handleDiscard = () => {
     setFormData(savedFormData);
     setReminderPrefs(savedReminderPrefs);
-    setCardFontId(savedCardFontId);
     setShareNewConnections(savedShareNewConnections);
+    setCardSignOff(savedCardSignOff);
+    setCardSignOffIsCustom(savedCardSignOffIsCustom);
+    setCardSignOffCustom(savedCardSignOffCustom);
+    setCardSenderName(savedCardSenderName);
+    setCardSenderStreet(savedCardSenderStreet);
+    setCardSenderCity(savedCardSenderCity);
+    setCardSenderState(savedCardSenderState);
+    setCardSenderZip(savedCardSenderZip);
     setMessage(null);
   };
 
@@ -300,20 +349,32 @@ export default function SettingsPage() {
         throw new Error('Failed to save preferences');
       }
 
-      // Save card preferences
-      if (cardFonts.length > 0) {
-        await fetch('/api/card-preferences', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fontId: cardFontId }),
-        });
-      }
+      // Save card preferences (font, sign-off, sender address)
+      await fetch('/api/card-preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signOff: activeCardSignOff,
+          senderName: cardSenderName,
+          senderAddress1: cardSenderStreet,
+          senderCity: cardSenderCity,
+          senderState: cardSenderState,
+          senderZip: cardSenderZip,
+        }),
+      });
 
       // Update saved state so isDirty resets to false
       setSavedFormData(formData);
       setSavedReminderPrefs(reminderPrefs);
-      setSavedCardFontId(cardFontId);
       setSavedShareNewConnections(shareNewConnections);
+      setSavedCardSignOff(cardSignOff);
+      setSavedCardSignOffIsCustom(cardSignOffIsCustom);
+      setSavedCardSignOffCustom(cardSignOffCustom);
+      setSavedCardSenderName(cardSenderName);
+      setSavedCardSenderStreet(cardSenderStreet);
+      setSavedCardSenderCity(cardSenderCity);
+      setSavedCardSenderState(cardSenderState);
+      setSavedCardSenderZip(cardSenderZip);
       setMessage({ type: 'success', text: 'Settings saved!' });
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to save settings' });
@@ -669,7 +730,7 @@ export default function SettingsPage() {
                 <p className="font-medium text-gray-900">
                   {cardCredits !== null ? `${cardCredits} credit${cardCredits === 1 ? '' : 's'}` : '—'}
                 </p>
-                <p className="text-xs text-gray-500">Each credit sends one card (~$4 value)</p>
+                <p className="text-xs text-gray-500">Each credit sends one card ($5 value)</p>
               </div>
             </div>
           </div>
@@ -700,51 +761,107 @@ export default function SettingsPage() {
             onClose={() => setCheckoutBundleId(null)}
           />
 
-          {/* Font picker */}
-          {cardFonts.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-3">Preferred handwriting font</p>
-              <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-200 p-3 scrollbar-thin">
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {cardFonts.map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => setCardFontId(f.label)}
-                      className={`relative flex flex-col rounded-xl border-2 overflow-hidden transition-all active:scale-95 ${
-                        cardFontId === f.label
-                          ? 'border-teal-500'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      {f.image ? (
-                        <img
-                          src={f.image}
-                          alt={f.label}
-                          className="w-full aspect-[4/3] object-contain bg-white p-1"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center">
-                          <span className="text-2xl font-serif italic text-gray-400">Aa</span>
-                        </div>
-                      )}
-                      <div className={`px-1.5 py-1 text-center text-xs font-medium truncate ${
-                        cardFontId === f.label ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'
-                      }`}>
-                        {f.label}
-                      </div>
-                      {cardFontId === f.label && (
-                        <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center shadow">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">Scroll to see all {cardFonts.length} fonts</p>
+          {/* Sign-off picker */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Card sign-off
+            </label>
+            <p className="text-xs text-gray-400 mb-2">Used when AI drafts card messages for you</p>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                formData.name.split(' ')[0],
+                `Warmly, ${formData.name.split(' ')[0]}`,
+                `Love, ${formData.name.split(' ')[0]}`,
+                `Cheers, ${formData.name.split(' ')[0]}`,
+              ].map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => { setCardSignOff(opt); setCardSignOffIsCustom(false); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    !cardSignOffIsCustom && cardSignOff === opt
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCardSignOffIsCustom(true)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  cardSignOffIsCustom
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Custom...
+              </button>
             </div>
-          )}
+            {cardSignOffIsCustom && (
+              <Input
+                value={cardSignOffCustom}
+                onChange={e => setCardSignOffCustom(e.target.value)}
+                placeholder={`e.g. Best wishes, ${formData.name.split(' ')[0]}`}
+                className="mt-2"
+              />
+            )}
+          </div>
+
+          {/* Return address */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Return address</label>
+            <p className="text-xs text-gray-400 mb-2">Printed on the back of every card</p>
+            <div className="space-y-3">
+              <Input
+                label="Name"
+                value={cardSenderName}
+                onChange={e => setCardSenderName(e.target.value)}
+                placeholder="Full name"
+                autoComplete="name"
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Street address</label>
+                <AddressAutocomplete
+                  value={cardSenderStreet}
+                  onChange={v => setCardSenderStreet(v)}
+                  onPlaceSelect={parsed => {
+                    setCardSenderStreet(parsed.street);
+                    if (parsed.city) setCardSenderCity(parsed.city);
+                    if (parsed.state) setCardSenderState(parsed.state);
+                    if (parsed.zip) setCardSenderZip(parsed.zip);
+                  }}
+                  placeholder="123 Main St"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="City"
+                  value={cardSenderCity}
+                  onChange={e => setCardSenderCity(e.target.value)}
+                  placeholder="City"
+                  autoComplete="address-level2"
+                />
+                <Input
+                  label="State"
+                  value={cardSenderState}
+                  onChange={e => setCardSenderState(e.target.value)}
+                  placeholder="CA"
+                  autoComplete="address-level1"
+                />
+              </div>
+              <Input
+                label="ZIP code"
+                value={cardSenderZip}
+                onChange={e => setCardSenderZip(e.target.value)}
+                placeholder="12345"
+                maxLength={5}
+                autoComplete="postal-code"
+                inputMode="numeric"
+              />
+            </div>
+          </div>
 
           {/* Card history */}
           {cardOrders.length > 0 && (

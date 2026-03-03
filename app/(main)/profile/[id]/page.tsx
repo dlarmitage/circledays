@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { InviteModal } from '@/components/InviteModal';
 import { AddEventModal } from '@/components/AddEventModal';
 import { EditEventModal } from '@/components/EditEventModal';
+import { SendCardModal } from '@/components/SendCardModal';
 import { formatDate, turningAge, getDaysUntilText, daysUntil } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -157,6 +158,10 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [actionLoading, setActionLoading] = useState(false);
   const [disconnectingConnection, setDisconnectingConnection] = useState<{ profileId: string; name: string } | null>(null);
   const [showAllConnections, setShowAllConnections] = useState(false);
+
+  // Card nudge state
+  const [showSendCardModal, setShowSendCardModal] = useState(false);
+  const [nudgeText, setNudgeText] = useState<string | null>(null);
   
   // Account editing state (for own profile)
   const [editingEmail, setEditingEmail] = useState(false);
@@ -225,7 +230,46 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       }
     };
   }, []);
-  
+
+  // Fetch AI-generated card nudge for direct connections
+  useEffect(() => {
+    if (!data || data.isOwnProfile || !data.isDirectConnection || !data.isPlatformAdmin) return;
+
+    const firstName = data.profile.name.split(' ')[0];
+
+    // Show a random fallback immediately
+    const fallbacks = [
+      `Surprise ${firstName} with a handwritten card`,
+      `Brighten ${firstName}'s day with a card`,
+      `Send ${firstName} a card, just because`,
+      `Make ${firstName}'s day with a handwritten note`,
+      `A handwritten card for ${firstName}? Great idea`,
+    ];
+    setNudgeText(fallbacks[Math.floor(Math.random() * fallbacks.length)]);
+
+    // Only mention an event in the nudge if it's coming up soon (within 14 days)
+    let eventContext: string | undefined;
+    const upcomingEvents = data.events
+      .map(e => ({ ...e, days: daysUntil(e.date, e.recurring ?? true) }))
+      .filter(e => e.days >= 0 && e.days <= 14)
+      .sort((a, b) => a.days - b.days);
+    if (upcomingEvents.length > 0) {
+      const nearest = upcomingEvents[0];
+      const label = nearest.type === 'custom' ? nearest.customLabel : nearest.type;
+      eventContext = `${label} in ${nearest.days} days`;
+    }
+
+    // Fire-and-forget AI fetch, swap in when ready
+    fetch('/api/card-nudge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName, eventContext }),
+    })
+      .then(res => res.json())
+      .then(result => { if (result.nudge) setNudgeText(result.nudge); })
+      .catch(() => { /* fallback already set */ });
+  }, [data]);
+
   const handleConnect = async () => {
     const res = await fetch('/api/connections', {
       method: 'POST',
@@ -354,7 +398,14 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   
   // Can disconnect if: directly connected and not own profile
   const canDisconnect = isDirectConnection && !isOwnProfile;
-  
+
+  // Card nudge: show for direct connections (feature-gated to admin for now)
+  const showCardNudge = isDirectConnection && !isOwnProfile && !!data.isPlatformAdmin;
+
+  // Profile-page "Send a Card" is always a spontaneous/everyday card.
+  // Event-specific cards are sent from the dashboard where the event context is explicit.
+  const cardEventType = 'thinking of you';
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'birthday': return Cake;
@@ -466,7 +517,28 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           </div>
         </CardContent>
       </Card>
-      
+
+      {/* Card Sending Nudge */}
+      {showCardNudge && nudgeText && (
+        <div className="mb-6 rounded-2xl bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 border border-teal-100 p-5 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
+              <Mail className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-gray-700 font-medium text-sm leading-relaxed">
+              {nudgeText}
+            </p>
+            <button
+              onClick={() => setShowSendCardModal(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white text-sm font-semibold hover:from-teal-600 hover:to-emerald-700 transition-all shadow-sm hover:shadow-md"
+            >
+              <Mail className="w-4 h-4" />
+              Send a Card
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Account Details - only for own profile */}
       {isOwnProfile && data.userData && (
         <Card className="mb-6">
@@ -810,6 +882,16 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         event={editingEvent}
         profileName={profile.name}
         onEventUpdated={fetchProfileData}
+      />
+
+      {/* Send Card Modal (from nudge) */}
+      <SendCardModal
+        isOpen={showSendCardModal}
+        onClose={() => setShowSendCardModal(false)}
+        profileId={profile.id}
+        profileName={profile.name}
+        profilePicture={profile.profilePicture}
+        eventType={cardEventType}
       />
     </div>
   );

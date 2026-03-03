@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { ChevronLeft, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { HandwryttenCard, HandwryttenFont } from './types';
 
 interface PreviewStepProps {
@@ -28,7 +27,13 @@ export function PreviewStep({
   onBack,
   onContinue,
 }: PreviewStepProps) {
-  const [showFontPicker, setShowFontPicker] = useState(false);
+  const currentIndex = selectedFont ? fonts.findIndex(f => f.id === selectedFont.id) : 0;
+
+  const goToFont = (direction: -1 | 1) => {
+    if (fonts.length === 0) return;
+    const nextIndex = (currentIndex + direction + fonts.length) % fonts.length;
+    onSelectFont(fonts[nextIndex]);
+  };
 
   return (
     <div className="space-y-3">
@@ -37,23 +42,24 @@ export function PreviewStep({
         Edit message
       </button>
 
-      {/* Card preview — constrained to fit viewport */}
+      {/* Card preview */}
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Card preview</p>
         <div
-          className="relative rounded-xl overflow-hidden border-2 border-teal-200 bg-white max-h-[45vh]"
-          style={{ aspectRatio: `${selectedCard.orientation === 'P' ? 4.25 : 5.5} / ${selectedCard.orientation === 'P' ? 5.5 : 4.25}` }}
+          className="relative rounded-xl overflow-hidden border border-gray-200 bg-white"
+          style={{ aspectRatio: `${selectedCard.orientation === 'P' ? 4.25 : 5.5} / ${selectedCard.orientation === 'P' ? 5.5 : 4.25}`, containerType: 'inline-size' }}
         >
           {selectedCard.inside_image && (
             <img src={selectedCard.inside_image} alt="Card inside" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <div
-            className="absolute inset-0 p-[12%] overflow-y-auto"
+            className="absolute inset-0 p-[8%] overflow-y-auto"
             style={{
               fontFamily: selectedFont && fontLoaded ? `hw-${selectedFont.font_name}, cursive` : 'cursive',
-              fontSize: selectedCard.font_size ? `${Math.max(18, selectedCard.font_size * 1.3)}px` : '24px',
-              lineHeight: selectedFont?.line_spacing ? `${1 + selectedFont.line_spacing}` : '1.7',
-              color: '#1a1a2e',
+              fontSize: 'clamp(18px, 12cqi, 48px)',
+              lineHeight: '0.65',
+              color: '#0040ac',
+              fontWeight: 600,
             }}
           >
             <p className="whitespace-pre-wrap break-words">{message}</p>
@@ -62,65 +68,33 @@ export function PreviewStep({
         <p className="text-xs text-gray-400 mt-1.5 text-right">{message.length} / {charLimit}</p>
       </div>
 
-      {/* Font picker */}
-      {fonts.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              {selectedFont && (
-                <>
-                  {selectedFont.image && (
-                    <img src={selectedFont.image} alt={selectedFont.label} className="h-6 object-contain rounded border border-gray-200" />
-                  )}
-                  <span className="text-xs text-gray-600">{selectedFont.label}</span>
-                </>
-              )}
-            </div>
-            <button
-              onClick={() => setShowFontPicker(v => !v)}
-              className="text-xs text-teal-600 hover:text-teal-700 font-medium"
-            >
-              {showFontPicker ? 'Done' : 'Change font'}
-            </button>
-          </div>
-
-          {showFontPicker && (
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 p-2">
-              <div className="grid grid-cols-3 gap-2">
-                {fonts.map(f => (
-                  <button
-                    key={f.id}
-                    onClick={() => onSelectFont(f)}
-                    className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all active:scale-95 ${
-                      selectedFont?.id === f.id ? 'border-teal-500' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {f.image ? (
-                      <img src={f.image} alt={f.label} className="w-full aspect-[4/3] object-contain bg-white p-1" loading="lazy" />
-                    ) : (
-                      <div className="w-full aspect-[4/3] bg-gray-100 flex items-center justify-center">
-                        <span className="text-lg font-serif italic text-gray-400">Aa</span>
-                      </div>
-                    )}
-                    <div className={`px-1 py-0.5 text-center text-[10px] font-medium truncate ${
-                      selectedFont?.id === f.id ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'
-                    }`}>{f.label}</div>
-                    {selectedFont?.id === f.id && (
-                      <div className="absolute top-1 right-1 w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center shadow">
-                        <Check className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Font selector — arrow navigation */}
+      {fonts.length > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => goToFont(-1)}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors active:scale-95"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm text-gray-700 font-medium min-w-0 text-center">
+            {selectedFont?.label || 'Default'}
+            <span className="text-gray-400 font-normal ml-1.5">
+              {currentIndex + 1}/{fonts.length}
+            </span>
+          </span>
+          <button
+            onClick={() => goToFont(1)}
+            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors active:scale-95"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       <Button
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
-        onClick={() => { setShowFontPicker(false); onContinue(); }}
+        onClick={onContinue}
       >
         Continue
       </Button>

@@ -199,8 +199,27 @@ export function daysUntil(date: Date | string, recurring: boolean = true): numbe
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * For recurring events, returns how many days ago this year's occurrence was.
+ * Returns 0 if today is the day, -1 if it hasn't happened yet this year.
+ */
+export function daysSinceOccurrence(date: Date | string): number {
+  const target = typeof date === 'string' ? parseLocalDate(date) : date;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const thisYear = new Date(today.getFullYear(), target.getMonth(), target.getDate());
+  const diffTime = today.getTime() - thisYear.getTime();
+  const daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  // daysDiff < 0 means it hasn't happened yet this year
+  return daysDiff >= 0 ? daysDiff : -1;
+}
+
 export function getDaysUntilText(days: number): string {
-  if (days < 0) return 'Passed';
+  if (days === -1) return 'Yesterday';
+  if (days < -1 && days >= -7) return `${Math.abs(days)} days ago`;
+  if (days < -7) return `${Math.ceil(Math.abs(days) / 7)} weeks ago`;
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
   if (days < 7) return `In ${days} days`;

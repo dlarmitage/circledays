@@ -26,6 +26,8 @@ export async function GET() {
         listCategories(),
         listFonts(),
       ]);
+      // Filter out "All Categories" — it has no cards when queried directly
+      categories = categories.filter(c => c.name.toLowerCase() !== 'all categories');
     } catch (err) {
       // Non-fatal — return empty lists if Handwrytten credentials not yet configured
       console.warn('Could not fetch Handwrytten options:', err);

@@ -42,6 +42,7 @@ export function EventCard({
   const EventIcon = type === 'birthday' ? Cake : type === 'anniversary' ? Heart : Calendar;
 
   const getBadgeVariant = () => {
+    if (daysUntil < 0) return 'default';
     if (daysUntil === 0) return 'danger';
     if (daysUntil === 1) return 'warning';
     return 'success';
@@ -49,8 +50,8 @@ export function EventCard({
 
   const formattedDate = formatDate(date);
 
-  const showMessageAssist = daysUntil <= 7 && onMessageAssist;
-  const showSendCard = daysUntil <= 7 && onSendCard;
+  const showMessageAssist = Math.abs(daysUntil) <= 7 && onMessageAssist;
+  const showSendCard = !!onSendCard;
 
   return (
     <Card hover onClick={onClick} className="animate-slide-up">
@@ -95,6 +96,7 @@ export function EventCard({
                     e.stopPropagation();
                     onSendCard!();
                   }}
+                  title={daysUntil > 7 ? 'Card will be timed to arrive for their special day' : undefined}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-full transition-colors"
                 >
                   <Mail className="w-3.5 h-3.5" />

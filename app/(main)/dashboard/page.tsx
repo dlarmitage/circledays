@@ -56,6 +56,7 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const [view, setView] = useState<'upcoming' | 'past'>('upcoming');
   const [newConnections, setNewConnections] = useState<NewConnection[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
@@ -98,7 +99,7 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(res => res.json()),
-      fetch(`/api/events/upcoming?days=${days}`).then(res => res.json()),
+      fetch(`/api/events/upcoming?days=${days}&pastDays=7`).then(res => res.json()),
       fetch('/api/connections?includeNew=true').then(res => res.json()),
       fetch('/api/discoveries').then(res => res.json()),
     ]).then(([userRes, eventsRes, connectionsRes, discoveriesRes]) => {
@@ -162,7 +163,7 @@ export default function DashboardPage() {
       throw new Error('Failed to add connection');
     }
     // Refresh events in case the new connection has upcoming events
-    const eventsRes = await fetch(`/api/events/upcoming?days=${days}`);
+    const eventsRes = await fetch(`/api/events/upcoming?days=${days}&pastDays=7`);
     const eventsData = await eventsRes.json();
     setEvents(eventsData.events || []);
   };
@@ -170,7 +171,11 @@ export default function DashboardPage() {
   // Filter out dismissed discoveries
   const visibleDiscoveries = discoveries.filter(d => !dismissedDiscoveryIds.has(d.profileId));
 
-  const groupedEvents = events.reduce((acc, event) => {
+  // Separate upcoming from recently passed events
+  const upcomingEvents = events.filter(e => e.daysUntil >= 0);
+  const pastEvents = events.filter(e => e.daysUntil < 0);
+
+  const groupedEvents = upcomingEvents.reduce((acc, event) => {
     let group: string;
     if (event.daysUntil === 0) group = 'Today';
     else if (event.daysUntil === 1) group = 'Tomorrow';
@@ -202,7 +207,9 @@ export default function DashboardPage() {
             {userData?.user?.name ? `Hey, ${userData.user.name.split(' ')[0]}!` : 'Dashboard'}
           </h1>
           <p className="text-gray-600 mt-1">
-            {events.length} upcoming {events.length === 1 ? 'occasion' : 'occasions'}
+            {view === 'past'
+              ? `${pastEvents.length} recently passed`
+              : `${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'occasion' : 'occasions'}`}
           </p>
         </div>
         <Button onClick={() => router.push('/add-person')}>
@@ -231,8 +238,8 @@ export default function DashboardPage() {
       {/* Time filter */}
       <div className="flex gap-2 mb-6">
         <button
-          onClick={() => setDays(30)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${days === 30
+          onClick={() => { setView('upcoming'); setDays(30); }}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${view === 'upcoming' && days === 30
               ? 'bg-teal-500 text-white'
               : 'bg-white text-gray-600 hover:bg-gray-50'
             }`}
@@ -240,18 +247,41 @@ export default function DashboardPage() {
           Next 4 weeks
         </button>
         <button
-          onClick={() => setDays(90)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${days === 90
+          onClick={() => { setView('upcoming'); setDays(90); }}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${view === 'upcoming' && days === 90
               ? 'bg-teal-500 text-white'
               : 'bg-white text-gray-600 hover:bg-gray-50'
             }`}
         >
           Next 3 months
         </button>
+        {pastEvents.length > 0 && (
+          <button
+            onClick={() => setView('past')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${view === 'past'
+                ? 'bg-gray-700 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+          >
+            Past week
+          </button>
+        )}
       </div>
 
       {/* Events */}
-      {events.length === 0 ? (
+      {view === 'past' ? (
+        <div className="space-y-3">
+          {pastEvents.map((event) => (
+            <EventCard
+              key={event.id}
+              {...event}
+              onClick={() => router.push(`/profile/${event.profileId}`)}
+              onMessageAssist={() => setMessageAssistEvent(event)}
+              onSendCard={userData?.user?.email === 'dlarmitage@gmail.com' ? () => setSendCardEvent(event) : undefined}
+            />
+          ))}
+        </div>
+      ) : upcomingEvents.length === 0 ? (
         <EmptyState
           icon={<Cake className="w-8 h-8" />}
           title={STRINGS.dashboard.nothingUpcoming}
