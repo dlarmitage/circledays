@@ -3,7 +3,6 @@
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
 import { Cake, Heart, Calendar, Lock, Sparkles, Mail } from 'lucide-react';
 
@@ -74,19 +73,23 @@ export function EventCard({
               Turning {age}
             </p>
           )}
+        </div>
 
-          {/* Action buttons for upcoming events */}
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+          <Badge variant={getBadgeVariant()} size="md">
+            {daysText}
+          </Badge>
           {(showMessageAssist || showSendCard) && (
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5">
               {showMessageAssist && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onMessageAssist!();
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-full transition-colors"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-full transition-colors"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Sparkles className="w-3 h-3" />
                   Message Assist
                 </button>
               )}
@@ -97,7 +100,7 @@ export function EventCard({
                     onSendCard!();
                   }}
                   title={daysUntil > 7 ? 'Card will be timed to arrive for their special day' : undefined}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-100 hover:bg-teal-200 rounded-full transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 rounded-full transition-all shadow-sm"
                 >
                   <Mail className="w-3.5 h-3.5" />
                   Send Card
@@ -106,13 +109,7 @@ export function EventCard({
             </div>
           )}
         </div>
-
-        <Badge variant={getBadgeVariant()} size="md">
-          {daysText}
-        </Badge>
       </div>
     </Card>
   );
 }
-
-
