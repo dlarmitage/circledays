@@ -36,6 +36,7 @@ interface UserData {
     id: string;
     name: string;
     email: string;
+    isPlatformAdmin?: boolean;
   };
 }
 
@@ -277,7 +278,7 @@ export default function DashboardPage() {
               {...event}
               onClick={() => router.push(`/profile/${event.profileId}`)}
               onMessageAssist={() => setMessageAssistEvent(event)}
-              onSendCard={userData?.user?.email === 'dlarmitage@gmail.com' ? () => setSendCardEvent(event) : undefined}
+              onSendCard={userData?.user?.isPlatformAdmin ? () => setSendCardEvent(event) : undefined}
             />
           ))}
         </div>
@@ -315,7 +316,7 @@ export default function DashboardPage() {
                         {...event}
                         onClick={() => router.push(`/profile/${event.profileId}`)}
                         onMessageAssist={() => setMessageAssistEvent(event)}
-                        onSendCard={userData?.user?.email === 'dlarmitage@gmail.com' ? () => setSendCardEvent(event) : undefined}
+                        onSendCard={userData?.user?.isPlatformAdmin ? () => setSendCardEvent(event) : undefined}
                       />
                     </div>
                   ))}

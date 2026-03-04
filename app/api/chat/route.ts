@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { withAuth } from '@/lib/api-handler';
 import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -9,7 +9,7 @@ let knowledgeBase: string | null = null;
 
 function getKnowledgeBase(): string {
   if (knowledgeBase) return knowledgeBase;
-  
+
   // Load from the full knowledge base file
   try {
     const filePath = join(process.cwd(), 'KNOWLEDGE_BASE.md');
@@ -139,7 +139,7 @@ For unlinked profiles you created:
 - Paste photos directly from clipboard for quick additions
 `;
   }
-  
+
   return knowledgeBase;
 }
 
@@ -164,65 +164,50 @@ Guidelines:
 - Keep responses focused and actionable
 - IMPORTANT: You will be told if the user is an admin. Only discuss admin features if they are an admin. If a non-admin asks about admin features, politely decline and explain those features are only available to platform administrators.`;
 
-export async function POST(request: NextRequest) {
-  try {
-    const user = await requireAuth();
-    const isAdmin = user.isPlatformAdmin || false;
-    
-    const { message, history = [] } = await request.json();
-    
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Message required' }, { status: 400 });
-    }
-    
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    
-    if (!apiKey) {
-      // Fallback response when API key not configured
-      return NextResponse.json({
-        response: "I'm the CircleDays Help Assistant, but I'm not fully configured yet. The team needs to add the ANTHROPIC_API_KEY to enable AI responses. In the meantime, you can check the Settings page or explore the app!",
-      });
-    }
-    
-    const anthropic = new Anthropic({ apiKey });
-    
-    // Build system prompt with admin context
-    const systemPrompt = isAdmin 
-      ? SYSTEM_PROMPT + '\n\nIMPORTANT: The user is a platform admin. You can discuss admin features with them.'
-      : SYSTEM_PROMPT + '\n\nIMPORTANT: The user is NOT an admin. Do NOT mention or discuss any admin-only features. If asked about admin features, politely decline and say those features are only available to platform administrators.';
-    
-    // Build messages array with history
-    const messages: Anthropic.MessageParam[] = [
-      ...history.map((h: { role: string; content: string }) => ({
-        role: h.role as 'user' | 'assistant',
-        content: h.content,
-      })),
-      { role: 'user', content: message },
-    ];
-    
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307', // Fast and cheap for support
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages,
-    });
-    
-    const assistantMessage = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : 'I had trouble generating a response. Please try again.';
-    
-    return NextResponse.json({ response: assistantMessage });
-  } catch (error) {
-    console.error('Chat API error:', error);
-    
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to process chat message' },
-      { status: 500 }
-    );
-  }
-}
+export const POST = withAuth(async (request, user) => {
+  const isAdmin = user.isPlatformAdmin || false;
 
+  const { message, history = [] } = await request.json();
+
+  if (!message || typeof message !== 'string') {
+    return NextResponse.json({ error: 'Message required' }, { status: 400 });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    // Fallback response when API key not configured
+    return NextResponse.json({
+      response: "I'm the CircleDays Help Assistant, but I'm not fully configured yet. The team needs to add the ANTHROPIC_API_KEY to enable AI responses. In the meantime, you can check the Settings page or explore the app!",
+    });
+  }
+
+  const anthropic = new Anthropic({ apiKey });
+
+  // Build system prompt with admin context
+  const systemPrompt = isAdmin
+    ? SYSTEM_PROMPT + '\n\nIMPORTANT: The user is a platform admin. You can discuss admin features with them.'
+    : SYSTEM_PROMPT + '\n\nIMPORTANT: The user is NOT an admin. Do NOT mention or discuss any admin-only features. If asked about admin features, politely decline and say those features are only available to platform administrators.';
+
+  // Build messages array with history
+  const messages: Anthropic.MessageParam[] = [
+    ...history.map((h: { role: string; content: string }) => ({
+      role: h.role as 'user' | 'assistant',
+      content: h.content,
+    })),
+    { role: 'user', content: message },
+  ];
+
+  const response = await anthropic.messages.create({
+    model: 'claude-3-haiku-20240307', // Fast and cheap for support
+    max_tokens: 1024,
+    system: systemPrompt,
+    messages,
+  });
+
+  const assistantMessage = response.content[0].type === 'text'
+    ? response.content[0].text
+    : 'I had trouble generating a response. Please try again.';
+
+  return NextResponse.json({ response: assistantMessage });
+}, 'process chat message');

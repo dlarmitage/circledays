@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { X, Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
+import { MESSAGE_TONE_OPTIONS } from '@/lib/constants';
 
 interface MessageAssistModalProps {
   isOpen: boolean;
@@ -16,14 +17,7 @@ interface MessageAssistModalProps {
   daysUntil?: number;
 }
 
-type Tone = 'warm' | 'casual' | 'formal' | 'playful';
-
-const TONES: { value: Tone; label: string; emoji: string }[] = [
-  { value: 'warm', label: 'Warm', emoji: '💛' },
-  { value: 'casual', label: 'Casual', emoji: '👋' },
-  { value: 'formal', label: 'Formal', emoji: '🎩' },
-  { value: 'playful', label: 'Playful', emoji: '🎉' },
-];
+type Tone = (typeof MESSAGE_TONE_OPTIONS)[number]['value'];
 
 export function MessageAssistModal({
   isOpen,
@@ -250,7 +244,7 @@ export function MessageAssistModal({
                   Tone
                 </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {TONES.map(t => (
+                  {MESSAGE_TONE_OPTIONS.map(t => (
                     <button
                       key={t.value}
                       type="button"
@@ -355,7 +349,7 @@ export function MessageAssistModal({
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>Try different tone:</span>
                 <div className="flex gap-1">
-                  {TONES.filter(t => t.value !== tone).map(t => (
+                  {MESSAGE_TONE_OPTIONS.filter(t => t.value !== tone).map(t => (
                     <button
                       key={t.value}
                       onClick={() => {

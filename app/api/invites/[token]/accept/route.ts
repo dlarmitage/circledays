@@ -3,6 +3,7 @@ import { db, invites, profiles, users, connections, reminderPreferences, connect
 import { createSession, logLoginEvent } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { withPublicHandler } from '@/lib/api-handler';
 
 const acceptInviteSchema = z.object({
   name: z.string().min(1).max(100),
@@ -12,13 +13,15 @@ const acceptInviteSchema = z.object({
   notificationChannel: z.enum(['email', 'sms', 'both']).default('email'),
 });
 
+// Note: This is a public route with URL params. Since withPublicHandler doesn't
+// support params, we wrap the outer function manually and delegate error handling.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
-  try {
+  const handler = withPublicHandler(async (req) => {
     const { token } = await params;
-    const body = await request.json();
+    const body = await req.json();
     const data = acceptInviteSchema.parse(body);
 
     // Get invite
@@ -132,26 +135,13 @@ export async function POST(
 
     // Create session
     await createSession(newUser.id);
-    await logLoginEvent(newUser.id, 'invite_accept', request.headers.get('user-agent') || undefined);
+    await logLoginEvent(newUser.id, 'invite_accept', req.headers.get('user-agent') || undefined);
 
     return NextResponse.json({
       success: true,
       user: newUser,
     });
-  } catch (error) {
-    console.error('Accept invite error:', error);
+  }, 'accept invite');
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to accept invite' },
-      { status: 500 }
-    );
-  }
+  return handler(request);
 }
-

@@ -120,7 +120,24 @@ export const NOTIFICATION_CHANNELS = [
 export const EVENT_TYPES = [
   { value: 'birthday', label: 'Birthday' },
   { value: 'anniversary', label: 'Anniversary' },
-  { value: 'custom', label: 'Custom' },
+  { value: 'custom', label: 'Custom Occasion' },
+] as const;
+
+// Tone options for card compose (handwritten cards)
+export const CARD_TONE_OPTIONS = [
+  { value: 'warm and sincere', label: 'Warm' },
+  { value: 'funny and lighthearted', label: 'Funny' },
+  { value: 'heartfelt and emotional', label: 'Heartfelt' },
+  { value: 'casual and friendly', label: 'Casual' },
+  { value: 'grateful and appreciative', label: 'Grateful' },
+] as const;
+
+// Tone options for message assist (text messages)
+export const MESSAGE_TONE_OPTIONS = [
+  { value: 'warm', label: 'Warm', emoji: '\u{1F49B}' },
+  { value: 'casual', label: 'Casual', emoji: '\u{1F44B}' },
+  { value: 'formal', label: 'Formal', emoji: '\u{1F3A9}' },
+  { value: 'playful', label: 'Playful', emoji: '\u{1F389}' },
 ] as const;
 
 // Common timezones for quick selection

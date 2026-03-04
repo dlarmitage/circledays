@@ -29,7 +29,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
 
   try {
     const { data, error } = await client.emails.send({
-      from: process.env.EMAIL_FROM || 'CircleDays <noreply@circledays.app>',
+      from: process.env.EMAIL_FROM || 'CircleDays <admin@ambient.technology>',
       to,
       subject,
       html,

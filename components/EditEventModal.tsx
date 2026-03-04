@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { X, Calendar, Cake, Heart, Trash2, AlertTriangle, Repeat, CalendarCheck, Lock, Globe, HelpCircle } from 'lucide-react';
+import { X, Calendar, Cake, Heart, Trash2, AlertTriangle, Repeat, CalendarCheck, Lock, Globe, HelpCircle, type LucideIcon } from 'lucide-react';
 import { UNKNOWN_YEAR, hasUnknownYear } from '@/lib/utils';
+import { EVENT_TYPES } from '@/lib/constants';
+
+const EVENT_TYPE_ICONS: Record<string, LucideIcon> = { birthday: Cake, anniversary: Heart, custom: Calendar };
 
 interface Event {
   id: string;
@@ -24,12 +27,6 @@ interface EditEventModalProps {
   profileName: string;
   onEventUpdated: () => void;
 }
-
-const EVENT_TYPES = [
-  { value: 'birthday', label: 'Birthday', icon: Cake },
-  { value: 'anniversary', label: 'Anniversary', icon: Heart },
-  { value: 'custom', label: 'Custom Occasion', icon: Calendar },
-];
 
 export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpdated }: EditEventModalProps) {
   const [eventType, setEventType] = useState<'birthday' | 'anniversary' | 'custom'>('birthday');
@@ -138,7 +135,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
   if (!isOpen || !event) return null;
   
   const selectedType = EVENT_TYPES.find(t => t.value === eventType);
-  const Icon = selectedType?.icon || Calendar;
+  const Icon = EVENT_TYPE_ICONS[eventType] || Calendar;
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -202,7 +199,7 @@ export function EditEventModal({ isOpen, onClose, event, profileName, onEventUpd
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {EVENT_TYPES.map(type => {
-                    const TypeIcon = type.icon;
+                    const TypeIcon = EVENT_TYPE_ICONS[type.value] || Calendar;
                     const isSelected = eventType === type.value;
                     return (
                       <button

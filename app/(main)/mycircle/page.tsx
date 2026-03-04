@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Avatar } from '@/components/ui/Avatar';
 import { Plus, Users, CheckSquare, X, Send, UserMinus } from 'lucide-react';
 import { areNamesSimilar } from '@/lib/utils';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 interface Profile {
   id: string;
@@ -55,8 +56,8 @@ export default function NetworkPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [suggestModalOpen, setSuggestModalOpen] = useState(false);
   
-  // Admin merge state
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Admin state
+  const { isAdmin } = useCurrentUser();
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [mergeProfiles, setMergeProfiles] = useState<{ profileA: any; profileB: any } | null>(null);
   
@@ -69,13 +70,6 @@ export default function NetworkPage() {
   
   useEffect(() => {
     fetchNetwork();
-    
-    // Check if user is admin
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        setIsAdmin(data.user?.isPlatformAdmin || false);
-      });
   }, []);
   
   const fetchNetwork = async () => {
@@ -362,7 +356,8 @@ export default function NetworkPage() {
   return (
     <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] flex flex-col bg-white md:rounded-2xl md:shadow-soft md:m-4 overflow-hidden">
       {/* Header with Add Person button and Select mode */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div className="border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 py-3 max-w-3xl mx-auto">
         <h1 className="font-display text-lg font-bold text-gray-900">
           {selectMode 
             ? `${selectedIds.size} selected` 
@@ -425,7 +420,8 @@ export default function NetworkPage() {
           )}
         </div>
       </div>
-      
+      </div>
+
       {/* Tree Navigation */}
       {connections.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-4">

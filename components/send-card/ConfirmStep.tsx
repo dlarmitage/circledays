@@ -6,52 +6,43 @@ import { Input } from '@/components/ui/Input';
 import { ChevronLeft, Send } from 'lucide-react';
 import { CREDIT_BUNDLES } from '@/lib/constants';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
-import type { AddressData, SenderAddress, HandwryttenCard, HandwryttenFont } from './types';
+import { useSendCard } from './SendCardContext';
 
-interface ConfirmStepProps {
-  selectedCard: HandwryttenCard;
-  selectedFont: HandwryttenFont | null;
-  address: AddressData;
-  senderAddress: SenderAddress;
-  onSenderChange: (update: Partial<SenderAddress>) => void;
-  senderValid: boolean;
-  onSaveSender: () => void;
-  creditBalance: number | null;
-  onCreditRefresh: () => void;
-  sending: boolean;
-  sendError: string | null;
-  onSend: () => void;
-  onBack: () => void;
-  daysUntil?: number;
-}
+export function ConfirmStep() {
+  const {
+    selectedCard,
+    selectedFont,
+    address,
+    senderAddress,
+    setSenderAddress,
+    senderValid,
+    handleSaveSenderAddress,
+    creditBalance,
+    handleCreditRefresh,
+    sending,
+    sendError,
+    handleSend,
+    setStep,
+    daysUntil,
+  } = useSendCard();
 
-export function ConfirmStep({
-  selectedCard,
-  selectedFont,
-  address,
-  senderAddress,
-  onSenderChange,
-  senderValid,
-  onSaveSender,
-  creditBalance,
-  onCreditRefresh,
-  sending,
-  sendError,
-  onSend,
-  onBack,
-  daysUntil,
-}: ConfirmStepProps) {
   const [editingSender, setEditingSender] = useState(false);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
 
+  const onSenderChange = (update: Partial<typeof senderAddress>) => {
+    setSenderAddress(a => ({ ...a, ...update }));
+  };
+
   const handlePurchaseSuccess = async () => {
     setCheckoutBundleId(null);
-    onCreditRefresh();
+    handleCreditRefresh();
   };
+
+  if (!selectedCard) return null;
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+      <button onClick={() => setStep('address')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ChevronLeft className="w-4 h-4" />
         Edit address
       </button>
@@ -121,7 +112,7 @@ export function ConfirmStep({
               maxLength={5}
               inputMode="numeric"
             />
-            <Button variant="secondary" className="w-full" onClick={() => { onSaveSender(); setEditingSender(false); }}>
+            <Button variant="secondary" className="w-full" onClick={() => { handleSaveSenderAddress(); setEditingSender(false); }}>
               Save Return Address
             </Button>
           </div>
@@ -173,7 +164,7 @@ export function ConfirmStep({
 
       <Button
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
-        onClick={onSend}
+        onClick={handleSend}
         loading={sending}
         disabled={(creditBalance !== null && creditBalance < 1) || !senderValid}
       >

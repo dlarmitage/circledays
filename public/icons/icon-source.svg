@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Rounded rectangle background -->
+  <rect width="512" height="512" rx="108" ry="108" fill="#134e4a"/>
+
+  <!-- Calendar white border (drawn as a larger white rect behind the fill) -->
+  <rect x="64" y="118" width="384" height="310" rx="44" ry="44" fill="white"/>
+  <!-- Calendar colored fill (inset from the white border) -->
+  <rect x="82" y="136" width="348" height="274" rx="32" ry="32" fill="#1f857c"/>
+
+  <!-- Header separator — white bar spanning full calendar width -->
+  <rect x="64" y="200" width="384" height="18" fill="white"/>
+
+  <!-- Calendar rings — chunky -->
+  <rect x="170" y="82" width="34" height="84" rx="17" fill="white"/>
+  <rect x="308" y="82" width="34" height="84" rx="17" fill="white"/>
+
+  <!-- Cake base -->
+  <rect x="182" y="306" width="148" height="80" rx="16" fill="white"/>
+
+  <!-- Cake frosting wave -->
+  <path d="M182 322 Q188 292 214 312 Q236 280 256 312 Q276 280 298 312 Q324 292 330 322 L330 324 L182 324 Z" fill="white"/>
+
+  <!-- Candles -->
+  <rect x="218" y="266" width="14" height="44" rx="7" fill="white"/>
+  <rect x="249" y="252" width="14" height="58" rx="7" fill="white"/>
+  <rect x="280" y="266" width="14" height="44" rx="7" fill="white"/>
+
+  <!-- Flames -->
+  <ellipse cx="225" cy="256" rx="9" ry="14" fill="#fbbf24"/>
+  <ellipse cx="256" cy="242" rx="9" ry="14" fill="#fbbf24"/>
+  <ellipse cx="287" cy="256" rx="9" ry="14" fill="#fbbf24"/>
+</svg>

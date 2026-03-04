@@ -169,7 +169,7 @@ export default function CardsPage() {
 
           <Button
             className="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 px-8"
-            onClick={() => router.push('/network')}
+            onClick={() => router.push('/mycircle')}
           >
             <Send className="w-4 h-4 mr-2" />
             Send Your First Card

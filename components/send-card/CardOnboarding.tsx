@@ -7,6 +7,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
 import { CREDIT_BUNDLES } from '@/lib/constants';
 import { PenLine, Mail, Heart, ChevronLeft } from 'lucide-react';
+import { isValidUSAddress } from '@/lib/validators';
 
 type Page = 'welcome' | 'setup' | 'credits';
 
@@ -45,12 +46,7 @@ export function CardOnboarding({ userName, onComplete, onClose }: CardOnboarding
 
   const activeSignOff = isCustom ? customSignOff : signOff;
 
-  const addressValid =
-    senderName.trim().length > 0 &&
-    street.trim().length > 0 &&
-    city.trim().length > 0 &&
-    state.trim().length > 0 &&
-    /^\d{5}$/.test(zip.trim());
+  const addressValid = isValidUSAddress({ name: senderName, street, city, state, zip });
 
   const setupValid = activeSignOff.trim().length > 0 && addressValid;
 

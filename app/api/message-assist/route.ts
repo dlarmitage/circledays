@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { withAuth } from '@/lib/api-handler';
 import { z } from 'zod';
 
 const generateMessageSchema = z.object({
@@ -14,40 +14,38 @@ const generateMessageSchema = z.object({
   previousMessage: z.string().optional(), // For regeneration
 });
 
-export async function POST(request: NextRequest) {
-  try {
-    await requireAuth();
-    const body = await request.json();
-    const data = generateMessageSchema.parse(body);
+export const POST = withAuth(async (request, _user) => {
+  const body = await request.json();
+  const data = generateMessageSchema.parse(body);
 
-    const apiKey = process.env.KIMI_API_KEY;
+  const apiKey = process.env.KIMI_API_KEY;
 
-    if (!apiKey) {
-      return NextResponse.json({
-        message: generateFallbackMessage(data.profileName, data.eventType, data.tone),
-      });
-    }
+  if (!apiKey) {
+    return NextResponse.json({
+      message: generateFallbackMessage(data.profileName, data.eventType, data.tone),
+    });
+  }
 
-    // Build the prompt
-    const toneDescriptions = {
-      warm: 'warm, heartfelt, and sincere',
-      casual: 'casual, friendly, and relaxed',
-      formal: 'polite, respectful, and professional',
-      playful: 'fun, lighthearted, with a touch of humor',
-    };
+  // Build the prompt
+  const toneDescriptions = {
+    warm: 'warm, heartfelt, and sincere',
+    casual: 'casual, friendly, and relaxed',
+    formal: 'polite, respectful, and professional',
+    playful: 'fun, lighthearted, with a touch of humor',
+  };
 
-    // Determine timing context for the message
-    const isTomorrow = data.daysUntil === 1;
-    const isUpcoming = data.daysUntil !== undefined && data.daysUntil > 1;
+  // Determine timing context for the message
+  const isTomorrow = data.daysUntil === 1;
+  const isUpcoming = data.daysUntil !== undefined && data.daysUntil > 1;
 
-    let timingContext = '';
-    if (isUpcoming) {
-      timingContext = `\n\nIMPORTANT: The ${data.eventType} is in ${data.daysUntil} days, NOT today. Write a message to send ahead of the occasion. For example, "Your birthday is coming up!" or "Just wanted to wish you an early happy birthday!" - NOT "Happy Birthday" as if it were today.`;
-    } else if (isTomorrow) {
-      timingContext = `\n\nNote: The ${data.eventType} is tomorrow. You can write an early message or a day-of message.`;
-    }
+  let timingContext = '';
+  if (isUpcoming) {
+    timingContext = `\n\nIMPORTANT: The ${data.eventType} is in ${data.daysUntil} days, NOT today. Write a message to send ahead of the occasion. For example, "Your birthday is coming up!" or "Just wanted to wish you an early happy birthday!" - NOT "Happy Birthday" as if it were today.`;
+  } else if (isTomorrow) {
+    timingContext = `\n\nNote: The ${data.eventType} is tomorrow. You can write an early message or a day-of message.`;
+  }
 
-    let prompt = `Generate a short, thoughtful ${data.eventType === 'birthday' ? 'birthday' : data.eventType} message for ${data.profileName}.
+  let prompt = `Generate a short, thoughtful ${data.eventType === 'birthday' ? 'birthday' : data.eventType} message for ${data.profileName}.
 
 The tone should be ${toneDescriptions[data.tone]}.
 
@@ -58,75 +56,57 @@ IMPORTANT STYLE RULES:
 - You may use 1-2 emojis if appropriate, but sparingly
 - Write like a real human would text or email a friend${timingContext}`;
 
-    if (data.notes) {
-      prompt += `\n\nHere are some personal notes about ${data.profileName} that might help personalize the message:\n${data.notes}`;
-    }
+  if (data.notes) {
+    prompt += `\n\nHere are some personal notes about ${data.profileName} that might help personalize the message:\n${data.notes}`;
+  }
 
-    if (data.additionalContext) {
-      prompt += `\n\nAdditional context for this message:\n${data.additionalContext}`;
-    }
+  if (data.additionalContext) {
+    prompt += `\n\nAdditional context for this message:\n${data.additionalContext}`;
+  }
 
-    if (data.feedback && data.previousMessage) {
-      prompt += `\n\nPrevious message generated:\n"${data.previousMessage}"\n\nUser feedback for improvement:\n${data.feedback}`;
-    }
+  if (data.feedback && data.previousMessage) {
+    prompt += `\n\nPrevious message generated:\n"${data.previousMessage}"\n\nUser feedback for improvement:\n${data.feedback}`;
+  }
 
-    prompt += `\n\nGenerate ONLY the message text, nothing else. No quotes, no explanation, just the message itself.`;
+  prompt += `\n\nGenerate ONLY the message text, nothing else. No quotes, no explanation, just the message itself.`;
 
-    let message: string;
-    try {
-      const response = await fetch('https://api.moonshot.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'moonshot-v1-auto',
-          max_tokens: 256,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a personal message writer. You write short, authentic messages for special occasions. Always incorporate any personal details provided to make the message feel genuine and specific to the person. Match the requested tone precisely.',
-            },
-            { role: 'user', content: prompt },
-          ],
-        }),
-      });
+  let message: string;
+  try {
+    const response = await fetch('https://api.moonshot.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(10000),
+      body: JSON.stringify({
+        model: 'moonshot-v1-auto',
+        max_tokens: 256,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a personal message writer. You write short, authentic messages for special occasions. Always incorporate any personal details provided to make the message feel genuine and specific to the person. Match the requested tone precisely.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      }),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (result.choices?.[0]?.message?.content) {
-        message = result.choices[0].message.content.trim();
-      } else {
-        console.error('Unexpected Kimi API response:', result);
-        message = generateFallbackMessage(data.profileName, data.eventType, data.tone);
-      }
-    } catch (apiError) {
-      console.error('Kimi API error, using fallback:', apiError);
+    if (result.choices?.[0]?.message?.content) {
+      message = result.choices[0].message.content.trim();
+    } else {
+      console.error('Unexpected Kimi API response:', result);
       message = generateFallbackMessage(data.profileName, data.eventType, data.tone);
     }
-
-    return NextResponse.json({ message });
-  } catch (error) {
-    console.error('Message assist error:', error);
-
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to generate message' },
-      { status: 500 }
-    );
+  } catch (apiError) {
+    console.error('Kimi API error, using fallback:', apiError);
+    message = generateFallbackMessage(data.profileName, data.eventType, data.tone);
   }
-}
+
+  return NextResponse.json({ message });
+}, 'generate message');
 
 function generateFallbackMessage(name: string, eventType: string, tone: string): string {
   const firstName = name.split(' ')[0];

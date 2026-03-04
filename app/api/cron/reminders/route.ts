@@ -224,7 +224,11 @@ export async function GET(request: NextRequest) {
             eventIds: newEventIds,
             channel: 'email',
             status: result.success ? 'sent' : 'failed',
-            errorMessage: result.success ? null : String(result.error),
+            errorMessage: result.success ? null : (
+              result.error instanceof Error ? result.error.message :
+              typeof result.error === 'object' && result.error !== null ? JSON.stringify(result.error) :
+              String(result.error)
+            ),
           });
           
           if (result.success) results.notified++;
@@ -244,7 +248,11 @@ export async function GET(request: NextRequest) {
               eventIds: newEventIds,
               channel: 'sms',
               status: result.success ? 'sent' : 'failed',
-              errorMessage: result.success ? null : String(result.error),
+              errorMessage: result.success ? null : (
+                result.error instanceof Error ? result.error.message :
+                typeof result.error === 'object' && result.error !== null ? JSON.stringify(result.error) :
+                String(result.error)
+              ),
             });
             
             if (result.success && user.notificationChannel === 'sms') {

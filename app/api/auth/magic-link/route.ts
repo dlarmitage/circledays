@@ -2,31 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, magicLinks, users } from '@/lib/db';
 import { sendEmail, generateMagicLinkEmail } from '@/lib/email';
 import { nanoid } from 'nanoid';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, count } from 'drizzle-orm';
 import { z } from 'zod';
 
 const requestSchema = z.object({
   email: z.string().email(),
 });
 
-// Rate limiting: track requests per email (in production, use Redis)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
-function checkRateLimit(email: string): boolean {
-  const now = Date.now();
-  const limit = rateLimitMap.get(email);
-
-  if (!limit || now > limit.resetAt) {
-    rateLimitMap.set(email, { count: 1, resetAt: now + 60 * 60 * 1000 }); // 1 hour
-    return true;
-  }
-
-  if (limit.count >= 5) {
-    return false;
-  }
-
-  limit.count++;
-  return true;
+async function checkRateLimit(email: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const [result] = await db
+    .select({ total: count() })
+    .from(magicLinks)
+    .where(
+      and(
+        eq(magicLinks.email, email),
+        gt(magicLinks.createdAt, windowStart)
+      )
+    );
+  return (result?.total ?? 0) < RATE_LIMIT_MAX;
 }
 
 export async function POST(request: NextRequest) {
@@ -35,7 +32,7 @@ export async function POST(request: NextRequest) {
     const { email } = requestSchema.parse(body);
 
     // Check rate limit
-    if (!checkRateLimit(email.toLowerCase())) {
+    if (!(await checkRateLimit(email.toLowerCase()))) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 }

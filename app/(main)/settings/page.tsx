@@ -2,19 +2,15 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { PhotoUpload } from '@/components/PhotoUpload';
 import { Spinner } from '@/components/ui/Spinner';
-import { EditEventModal } from '@/components/EditEventModal';
-import { AddEventModal } from '@/components/AddEventModal';
-import { COMMON_TIMEZONES, NOTIFICATION_CHANNELS, CREDIT_BUNDLES, STRINGS } from '@/lib/constants';
-import { formatDate, parseLocalDate } from '@/lib/utils';
-import { User, Bell, LogOut, Calendar, Cake, Heart, Star, Pencil, Lock, Plus, Mail, CreditCard, History, Eye } from 'lucide-react';
-import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
-import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { LogOut } from 'lucide-react';
+import { ProfileSection } from '@/components/settings/ProfileSection';
+import { NotificationsSection } from '@/components/settings/NotificationsSection';
+import { PrivacySection } from '@/components/settings/PrivacySection';
+import { EventsSection } from '@/components/settings/EventsSection';
+import { CardPreferencesSection } from '@/components/settings/CardPreferencesSection';
 
 interface UserData {
   id: string;
@@ -31,10 +27,6 @@ interface ProfileData {
   id: string;
   name: string;
   profilePicture: string | null;
-}
-
-interface ReminderPreferences {
-  defaultLeadDays: number[];
 }
 
 interface Event {
@@ -57,14 +49,6 @@ interface CardOrder {
   createdAt: string;
 }
 
-const REMINDER_OPTIONS = [
-  { days: 0, label: 'Day of', emoji: '📅' },
-  { days: 1, label: '1 day', emoji: '1️⃣' },
-  { days: 3, label: '3 days', emoji: '3️⃣' },
-  { days: 7, label: '1 week', emoji: '📆' },
-  { days: 14, label: '2 weeks', emoji: '🗓️' },
-];
-
 export default function SettingsPage() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -74,7 +58,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
   // Event modal state
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -125,7 +109,7 @@ export default function SettingsPage() {
     mobile: '',
     notificationChannel: 'email' as 'email' | 'sms' | 'both',
   });
-  
+
   const fetchEvents = async (profileId: string) => {
     try {
       const res = await fetch(`/api/profiles/${profileId}`);
@@ -135,18 +119,17 @@ export default function SettingsPage() {
       console.error('Failed to fetch events:', err);
     }
   };
-  
+
   useEffect(() => {
     // Check for email confirmation success
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('emailConfirmed') === 'true') {
         setMessage({ type: 'success', text: 'Email confirmed successfully!' });
-        // Remove query param from URL
         window.history.replaceState({}, '', '/settings');
       }
     }
-    
+
     // Check if returning from Stripe after a successful purchase
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -245,7 +228,7 @@ export default function SettingsPage() {
       setLoading(false);
     });
   }, []);
-  
+
   const toggleReminderDay = (days: number) => {
     setReminderPrefs(prev => {
       if (prev.includes(days)) {
@@ -299,9 +282,8 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
-    
+
     try {
-      // Save user settings
       const userRes = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -314,42 +296,36 @@ export default function SettingsPage() {
           shareNewConnections,
         }),
       });
-      
+
       if (!userRes.ok) {
         const errorData = await userRes.json();
         throw new Error(errorData.error || 'Failed to save user settings');
       }
-      
+
       const userResult = await userRes.json();
-      
-      // If email was changed, show confirmation message
+
       if (userResult.user?.pendingEmail) {
-        setMessage({ 
-          type: 'success', 
-          text: `Confirmation email sent to ${userResult.user.pendingEmail}. Please check your inbox to confirm the change.` 
+        setMessage({
+          type: 'success',
+          text: `Confirmation email sent to ${userResult.user.pendingEmail}. Please check your inbox to confirm the change.`
         });
-        // Refresh user data to show pending email
         const authRes = await fetch('/api/auth/me');
         const authData = await authRes.json();
         if (authData.user) {
           setUserData(authData.user);
         }
       }
-      
-      // Save reminder preferences
+
       const prefsRes = await fetch('/api/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          defaultLeadDays: reminderPrefs,
-        }),
+        body: JSON.stringify({ defaultLeadDays: reminderPrefs }),
       });
 
       if (!prefsRes.ok) {
         throw new Error('Failed to save preferences');
       }
 
-      // Save card preferences (font, sign-off, sender address)
       await fetch('/api/card-preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -363,7 +339,6 @@ export default function SettingsPage() {
         }),
       });
 
-      // Update saved state so isDirty resets to false
       setSavedFormData(formData);
       setSavedReminderPrefs(reminderPrefs);
       setSavedShareNewConnections(shareNewConnections);
@@ -395,18 +370,18 @@ export default function SettingsPage() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/');
   };
-  
+
   const handlePhotoChange = (url: string | null) => {
     if (profileData) {
       setProfileData({ ...profileData, profilePicture: url });
     }
   };
-  
+
   const handleEditEvent = (event: Event) => {
     setEditingEvent(event);
     setEditModalOpen(true);
   };
-  
+
   const handleEventUpdated = () => {
     setEditModalOpen(false);
     setEditingEvent(null);
@@ -414,30 +389,14 @@ export default function SettingsPage() {
       fetchEvents(profileData.id);
     }
   };
-  
+
   const handleEventAdded = () => {
     setAddModalOpen(false);
     if (profileData?.id) {
       fetchEvents(profileData.id);
     }
   };
-  
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'birthday': return <Cake className="w-4 h-4 text-coral-500" />;
-      case 'anniversary': return <Heart className="w-4 h-4 text-pink-500" />;
-      default: return <Star className="w-4 h-4 text-amber-500" />;
-    }
-  };
-  
-  const getEventLabel = (event: Event) => {
-    switch (event.type) {
-      case 'birthday': return 'Birthday';
-      case 'anniversary': return 'Anniversary';
-      default: return event.customLabel || 'Custom Event';
-    }
-  };
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -445,7 +404,7 @@ export default function SettingsPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
       {/* Header */}
@@ -457,444 +416,82 @@ export default function SettingsPage() {
           Manage your account and preferences
         </p>
       </div>
-      
-      {/* Profile Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5 text-teal-600" />
-            Profile
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex justify-center">
-            <PhotoUpload
-              currentPhoto={profileData?.profilePicture}
-              name={formData.name}
-              profileId={profileData?.id}
-              onPhotoChange={handlePhotoChange}
-              size="xl"
-            />
-          </div>
-          
-          <Input
-            label="Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          />
-          
-          {userData?.pendingEmail && (
-            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <p className="text-sm text-amber-800">
-                <strong>Email change pending:</strong> A confirmation email has been sent to <strong>{userData.pendingEmail}</strong>. 
-                Please check your inbox and click the confirmation link to complete the change.
-              </p>
-            </div>
-          )}
-          
-          <Input
-            label="Email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            hint={userData?.pendingEmail ? `Current: ${userData.email} • Pending: ${userData.pendingEmail}` : "Used for magic link sign-in and notifications"}
-          />
-          
-          <Select
-            label="Timezone"
-            options={COMMON_TIMEZONES.map(tz => ({ value: tz.value, label: tz.label }))}
-            value={formData.timezone}
-            onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-          />
-        </CardContent>
-      </Card>
-      
-      {/* Notifications Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-teal-600" />
-            Notifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Reminder Timing */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Remind me
-            </label>
-            <p className="text-xs text-gray-500 mb-3">
-              Tap to select when you want to be reminded
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {REMINDER_OPTIONS.map(option => {
-                const isSelected = reminderPrefs.includes(option.days);
-                return (
-                  <button
-                    key={option.days}
-                    type="button"
-                    onClick={() => toggleReminderDay(option.days)}
-                    className={`
-                      flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium
-                      transition-all duration-200 active:scale-95
-                      ${isSelected 
-                        ? 'bg-teal-500 text-white shadow-md' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }
-                    `}
-                  >
-                    <span>{option.emoji}</span>
-                    <span>{option.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              {reminderPrefs.length === 0 
-                ? 'Select at least one reminder time'
-                : `You'll be reminded ${reminderPrefs.map(d => 
-                    d === 0 ? 'on the day' : d === 1 ? '1 day before' : `${d} days before`
-                  ).join(', ')}`
-              }
-            </p>
-          </div>
-          
-          {/* Notification Method */}
-          <Select
-            label="Notification method"
-            options={NOTIFICATION_CHANNELS.map(c => ({ value: c.value, label: c.label }))}
-            value={formData.notificationChannel}
-            onChange={(e) => {
-              const newChannel = e.target.value as typeof formData.notificationChannel;
-              setFormData({ ...formData, notificationChannel: newChannel });
-              // Auto-focus mobile input when switching to SMS/both without a number
-              if ((newChannel === 'sms' || newChannel === 'both') && !formData.mobile) {
-                setTimeout(() => mobileInputRef.current?.focus(), 100);
-              }
-            }}
-          />
 
-          {(formData.notificationChannel === 'sms' || formData.notificationChannel === 'both') && (
-            <>
-              {!formData.mobile && (
-                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                  <p className="text-sm text-amber-800">
-                    Add your mobile number below to start receiving SMS reminders.
-                  </p>
-                </div>
-              )}
-              <Input
-                ref={mobileInputRef}
-                label="Mobile number"
-                type="tel"
-                value={formData.mobile}
-                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                placeholder="+1 (555) 000-0000"
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <ProfileSection
+        formData={{ name: formData.name, email: formData.email, timezone: formData.timezone }}
+        onFormChange={(updates) => setFormData(prev => ({ ...prev, ...updates }))}
+        profileData={profileData}
+        userData={userData ? { email: userData.email, pendingEmail: userData.pendingEmail } : null}
+        onPhotoChange={handlePhotoChange}
+      />
 
-      {/* Privacy Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-teal-600" />
-            {STRINGS.privacy.title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <label className="flex items-start gap-3 cursor-pointer">
-            <div className="relative mt-0.5">
-              <input
-                type="checkbox"
-                checked={shareNewConnections}
-                onChange={(e) => setShareNewConnections(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-10 h-6 bg-gray-200 rounded-full peer-checked:bg-teal-500 transition-colors" />
-              <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900 text-sm">
-                {STRINGS.privacy.shareNewConnections}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {STRINGS.privacy.shareNewConnectionsDescription}
-              </p>
-            </div>
-          </label>
-        </CardContent>
-      </Card>
+      <NotificationsSection
+        reminderPrefs={reminderPrefs}
+        onToggleReminderDay={toggleReminderDay}
+        notificationChannel={formData.notificationChannel}
+        mobile={formData.mobile}
+        onNotificationChannelChange={(channel) => setFormData(prev => ({ ...prev, notificationChannel: channel }))}
+        onMobileChange={(mobile) => setFormData(prev => ({ ...prev, mobile }))}
+        mobileInputRef={mobileInputRef}
+      />
 
-      {/* My Events Section */}
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-600" />
-            My Events
-          </CardTitle>
-          <Button 
-            size="sm" 
-            variant="secondary"
-            onClick={() => setAddModalOpen(true)}
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            Add
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500 mb-4">
-            Events on your profile that others can see and get reminders for
-          </p>
-          
-          {events.length === 0 ? (
-            <div className="text-center py-6">
-              <Cake className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm text-gray-400 mb-3">
-                No events yet
-              </p>
-              <Button 
-                size="sm" 
-                onClick={() => setAddModalOpen(true)}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Your Birthday
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {events.map(event => {
-                const dateObj = parseLocalDate(event.date);
-                const isUnknownYear = dateObj.getFullYear() === 1904;
-                
-                return (
-                  <div
-                    key={event.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="p-2 rounded-full bg-white">
-                      {getEventIcon(event.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900">
-                          {getEventLabel(event)}
-                        </p>
-                        {event.isPrivate && (
-                          <Lock className="w-3 h-3 text-gray-400" />
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {formatDate(dateObj)}
-                        {!event.recurring && (
-                          <span className="ml-2 text-xs text-gray-400">(one-time)</span>
-                        )}
-                        {isUnknownYear && event.type === 'birthday' && (
-                          <span className="ml-2 text-xs text-amber-600">(year unknown)</span>
-                        )}
-                      </p>
-                    </div>
-                    
-                    <button
-                      onClick={() => handleEditEvent(event)}
-                      className="p-2 hover:bg-white rounded-full transition-colors"
-                      title="Edit event"
-                    >
-                      <Pencil className="w-4 h-4 text-gray-400" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      {/* Handwritten Cards Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-teal-600" />
-            Handwritten Cards
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Credit balance */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-teal-600" />
-              <div>
-                <p className="font-medium text-gray-900">
-                  {cardCredits !== null ? `${cardCredits} credit${cardCredits === 1 ? '' : 's'}` : '—'}
-                </p>
-                <p className="text-xs text-gray-500">Each credit sends one card ($5 value)</p>
-              </div>
-            </div>
-          </div>
+      <PrivacySection
+        shareNewConnections={shareNewConnections}
+        onChange={setShareNewConnections}
+      />
 
-          {/* Buy credits */}
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-3">Buy credits</p>
-            <div className="grid grid-cols-3 gap-2">
-              {CREDIT_BUNDLES.map(bundle => (
-                <button
-                  key={bundle.id}
-                  onClick={() => setCheckoutBundleId(bundle.id)}
-                  className="flex flex-col items-center p-3 rounded-xl border-2 border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-center"
-                >
-                  <span className="font-semibold text-gray-900 text-sm">{bundle.label}</span>
-                  <span className="text-xs text-gray-500 mt-0.5">${bundle.priceUsd.toFixed(2)}</span>
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              Secure checkout via Stripe. Credits are added immediately after payment.
-            </p>
-          </div>
+      <EventsSection
+        events={events}
+        profileData={profileData ? { id: profileData.id, name: profileData.name } : null}
+        profileName={formData.name}
+        editingEvent={editingEvent}
+        editModalOpen={editModalOpen}
+        addModalOpen={addModalOpen}
+        onEditEvent={handleEditEvent}
+        onCloseEditModal={() => { setEditModalOpen(false); setEditingEvent(null); }}
+        onOpenAddModal={() => setAddModalOpen(true)}
+        onCloseAddModal={() => setAddModalOpen(false)}
+        onEventUpdated={handleEventUpdated}
+        onEventAdded={handleEventAdded}
+      />
 
-          <StripeCheckoutModal
-            bundleId={checkoutBundleId}
-            onSuccess={handlePurchaseSuccess}
-            onClose={() => setCheckoutBundleId(null)}
-          />
+      <CardPreferencesSection
+        firstName={formData.name.split(' ')[0]}
+        cardCredits={cardCredits}
+        cardOrders={cardOrders}
+        cardSignOff={cardSignOff}
+        cardSignOffCustom={cardSignOffCustom}
+        cardSignOffIsCustom={cardSignOffIsCustom}
+        onSignOffSelect={(signOff) => { setCardSignOff(signOff); setCardSignOffIsCustom(false); }}
+        onSignOffCustomToggle={() => setCardSignOffIsCustom(true)}
+        onSignOffCustomChange={setCardSignOffCustom}
+        senderAddress={{
+          name: cardSenderName,
+          street: cardSenderStreet,
+          city: cardSenderCity,
+          state: cardSenderState,
+          zip: cardSenderZip,
+        }}
+        onSenderAddressChange={(updates) => {
+          if (updates.name !== undefined) setCardSenderName(updates.name);
+          if (updates.street !== undefined) setCardSenderStreet(updates.street);
+          if (updates.city !== undefined) setCardSenderCity(updates.city);
+          if (updates.state !== undefined) setCardSenderState(updates.state);
+          if (updates.zip !== undefined) setCardSenderZip(updates.zip);
+        }}
+        onSenderAddressPlaceSelect={(parsed) => {
+          setCardSenderStreet(parsed.street);
+          if (parsed.city) setCardSenderCity(parsed.city);
+          if (parsed.state) setCardSenderState(parsed.state);
+          if (parsed.zip) setCardSenderZip(parsed.zip);
+        }}
+        checkoutBundleId={checkoutBundleId}
+        onCheckoutBundleSelect={setCheckoutBundleId}
+        onPurchaseSuccess={handlePurchaseSuccess}
+        onCheckoutClose={() => setCheckoutBundleId(null)}
+      />
 
-          {/* Sign-off picker */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Card sign-off
-            </label>
-            <p className="text-xs text-gray-400 mb-2">Used when AI drafts card messages for you</p>
-            <div className="flex gap-2 flex-wrap">
-              {[
-                formData.name.split(' ')[0],
-                `Warmly, ${formData.name.split(' ')[0]}`,
-                `Love, ${formData.name.split(' ')[0]}`,
-                `Cheers, ${formData.name.split(' ')[0]}`,
-              ].map(opt => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => { setCardSignOff(opt); setCardSignOffIsCustom(false); }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    !cardSignOffIsCustom && cardSignOff === opt
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setCardSignOffIsCustom(true)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  cardSignOffIsCustom
-                    ? 'bg-teal-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Custom...
-              </button>
-            </div>
-            {cardSignOffIsCustom && (
-              <Input
-                value={cardSignOffCustom}
-                onChange={e => setCardSignOffCustom(e.target.value)}
-                placeholder={`e.g. Best wishes, ${formData.name.split(' ')[0]}`}
-                className="mt-2"
-              />
-            )}
-          </div>
-
-          {/* Return address */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Return address</label>
-            <p className="text-xs text-gray-400 mb-2">Printed on the back of every card</p>
-            <div className="space-y-3">
-              <Input
-                label="Name"
-                value={cardSenderName}
-                onChange={e => setCardSenderName(e.target.value)}
-                placeholder="Full name"
-                autoComplete="name"
-              />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Street address</label>
-                <AddressAutocomplete
-                  value={cardSenderStreet}
-                  onChange={v => setCardSenderStreet(v)}
-                  onPlaceSelect={parsed => {
-                    setCardSenderStreet(parsed.street);
-                    if (parsed.city) setCardSenderCity(parsed.city);
-                    if (parsed.state) setCardSenderState(parsed.state);
-                    if (parsed.zip) setCardSenderZip(parsed.zip);
-                  }}
-                  placeholder="123 Main St"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="City"
-                  value={cardSenderCity}
-                  onChange={e => setCardSenderCity(e.target.value)}
-                  placeholder="City"
-                  autoComplete="address-level2"
-                />
-                <Input
-                  label="State"
-                  value={cardSenderState}
-                  onChange={e => setCardSenderState(e.target.value)}
-                  placeholder="CA"
-                  autoComplete="address-level1"
-                />
-              </div>
-              <Input
-                label="ZIP code"
-                value={cardSenderZip}
-                onChange={e => setCardSenderZip(e.target.value)}
-                placeholder="12345"
-                maxLength={5}
-                autoComplete="postal-code"
-                inputMode="numeric"
-              />
-            </div>
-          </div>
-
-          {/* Card history */}
-          {cardOrders.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <History className="w-4 h-4 text-gray-500" />
-                <p className="text-sm font-medium text-gray-700">Recent cards sent</p>
-              </div>
-              <div className="space-y-2">
-                {cardOrders.map(order => (
-                  <div key={order.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl text-sm">
-                    <Mail className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{order.recipientName}</p>
-                      <p className="text-xs text-gray-500">{order.recipientCity}, {order.recipientState}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">{order.message}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                      order.status === 'complete' ? 'bg-teal-100 text-teal-700' :
-                      order.status === 'problem' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Save / Discard — only visible when there are unsaved changes */}
+      {/* Save / Discard -- only visible when there are unsaved changes */}
       <div className="flex items-center gap-4 mb-8 min-h-[40px]">
         {isDirty && (
           <>
@@ -912,7 +509,7 @@ export default function SettingsPage() {
           </p>
         )}
       </div>
-      
+
       {/* Danger Zone */}
       <Card className="border-coral-200">
         <CardContent className="flex items-center justify-between py-4">
@@ -926,7 +523,7 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
-      
+
       {/* Legal Links */}
       <div className="text-center mt-8 mb-4">
         <a
@@ -938,31 +535,6 @@ export default function SettingsPage() {
           Terms of Service & Privacy Policy
         </a>
       </div>
-      
-      {/* Edit Event Modal */}
-      {editingEvent && (
-        <EditEventModal
-          isOpen={editModalOpen}
-          onClose={() => {
-            setEditModalOpen(false);
-            setEditingEvent(null);
-          }}
-          event={editingEvent}
-          profileName={formData.name}
-          onEventUpdated={handleEventUpdated}
-        />
-      )}
-      
-      {/* Add Event Modal */}
-      {profileData && (
-        <AddEventModal
-          isOpen={addModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          profileId={profileData.id}
-          profileName={formData.name}
-          onEventAdded={handleEventAdded}
-        />
-      )}
     </div>
   );
 }

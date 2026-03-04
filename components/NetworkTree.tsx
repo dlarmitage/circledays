@@ -217,7 +217,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
     <div className="flex flex-col h-full">
       {/* Search Bar */}
       <div className="p-4 border-b border-gray-100">
-        <div className="relative">
+        <div className="relative max-w-3xl mx-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
@@ -246,7 +246,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-3 max-w-3xl mx-auto"
             >
               <Search className="w-5 h-5 text-teal-600" />
               <div className="flex-1 min-w-0">
@@ -264,7 +264,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-3 max-w-3xl mx-auto"
             >
               <button
                 onClick={handleBack}
@@ -292,7 +292,7 @@ export const NetworkTree = forwardRef<NetworkTreeHandle, NetworkTreeProps>(funct
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="flex items-center gap-3 cursor-pointer group"
+              className="flex items-center gap-3 cursor-pointer group max-w-3xl mx-auto"
               onClick={() => router.push(`/profile/${userProfile.id}/edit`)}
             >
               <Avatar
@@ -409,7 +409,7 @@ function ConnectionRow({
   
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+      className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors max-w-3xl mx-auto ${
         !profile.isConnectedToUser ? 'opacity-60' : ''
       } ${isSelected ? 'bg-teal-50' : ''}`}
     >

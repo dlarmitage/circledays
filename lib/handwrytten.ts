@@ -86,7 +86,7 @@ function authedHeaders(): Record<string, string> {
 
 export async function listCategories(): Promise<HandwryttenCategory[]> {
   const headers = authedHeaders();
-  const res = await fetch(`${BASE_URL}/v2/categories/list`, { headers });
+  const res = await fetch(`${BASE_URL}/v2/categories/list`, { headers, signal: AbortSignal.timeout(10000) });
 
   if (!res.ok) {
     const text = await res.text();
@@ -102,7 +102,7 @@ export async function listCards(categoryId: number): Promise<HandwryttenCard[]> 
   const headers = authedHeaders();
   const res = await fetch(
     `${BASE_URL}/v2/cards/list?category_id=${categoryId}`,
-    { headers }
+    { headers, signal: AbortSignal.timeout(10000) }
   );
 
   if (!res.ok) {
@@ -116,7 +116,7 @@ export async function listCards(categoryId: number): Promise<HandwryttenCard[]> 
 
 export async function listFonts(): Promise<HandwryttenFont[]> {
   const headers = authedHeaders();
-  const res = await fetch(`${BASE_URL}/v2/fonts/list`, { headers });
+  const res = await fetch(`${BASE_URL}/v2/fonts/list`, { headers, signal: AbortSignal.timeout(10000) });
 
   if (!res.ok) {
     const text = await res.text();
@@ -136,6 +136,7 @@ export async function getDefaultCreditCardId(): Promise<number | null> {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!res.ok) return null;
@@ -189,6 +190,7 @@ export async function placeOrder(
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: body.toString(),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
@@ -202,7 +204,7 @@ export async function placeOrder(
 /** Fetch order history from Handwrytten to sync statuses. */
 export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
   const headers = authedHeaders();
-  const res = await fetch(`${BASE_URL}/v2/orders/listGrouped`, { headers });
+  const res = await fetch(`${BASE_URL}/v2/orders/listGrouped`, { headers, signal: AbortSignal.timeout(10000) });
 
   if (!res.ok) {
     const text = await res.text();

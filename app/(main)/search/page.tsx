@@ -11,6 +11,7 @@ import { MergeProfilesModal } from '@/components/MergeProfilesModal';
 import { Search, Users, Merge } from 'lucide-react';
 import { debounce } from '@/lib/debounce';
 import { areNamesSimilar } from '@/lib/utils';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 interface SearchResult {
   id: string;
@@ -26,7 +27,7 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin } = useCurrentUser();
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [selectedProfiles, setSelectedProfiles] = useState<{ profileA: any; profileB: any } | null>(null);
   
@@ -57,14 +58,6 @@ export default function SearchPage() {
     search(query);
   }, [query, search]);
   
-  // Check if user is admin
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        setIsAdmin(data.user?.isPlatformAdmin || false);
-      });
-  }, []);
   
   const handleMergeClick = async (profileId: string) => {
     // Find the other profile with same name

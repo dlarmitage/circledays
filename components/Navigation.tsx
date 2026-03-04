@@ -7,7 +7,7 @@ import { Home, Users, Calendar, Mail, Settings, Shield } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/network', label: 'My Circle', icon: Users },
+  { href: '/mycircle', label: 'My Circle', icon: Users },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/cards', label: 'Cards', icon: Mail },
   { href: '/settings', label: 'Settings', icon: Settings },

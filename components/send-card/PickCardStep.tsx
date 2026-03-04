@@ -3,29 +3,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { X, Check, Image as ImageIcon } from 'lucide-react';
-import type { HandwryttenCategory, HandwryttenCard } from './types';
+import { useSendCard } from './SendCardContext';
+import type { HandwryttenCard } from './types';
 
-interface PickCardStepProps {
-  categories: HandwryttenCategory[];
-  selectedCategory: number | null;
-  onSelectCategory: (id: number) => void;
-  cards: HandwryttenCard[];
-  loadingCards: boolean;
-  selectedCard: HandwryttenCard | null;
-  onSelectCard: (card: HandwryttenCard) => void;
-  onContinue: () => void;
-}
+export function PickCardStep() {
+  const {
+    categories,
+    selectedCategory,
+    setSelectedCategory,
+    cards,
+    loadingCards,
+    selectedCard,
+    setSelectedCard,
+    setStep,
+  } = useSendCard();
 
-export function PickCardStep({
-  categories,
-  selectedCategory,
-  onSelectCategory,
-  cards,
-  loadingCards,
-  selectedCard,
-  onSelectCard,
-  onContinue,
-}: PickCardStepProps) {
   const [previewCard, setPreviewCard] = useState<HandwryttenCard | null>(null);
   const pillRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
@@ -35,6 +27,11 @@ export function PickCardStep({
     const el = pillRefs.current.get(selectedCategory);
     el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [selectedCategory]);
+
+  const handleSelectCategory = (id: number) => {
+    setSelectedCategory(id);
+    setSelectedCard(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -47,7 +44,7 @@ export function PickCardStep({
             <button
               key={cat.id}
               ref={el => { if (el) pillRefs.current.set(cat.id, el); }}
-              onClick={() => onSelectCategory(cat.id)}
+              onClick={() => handleSelectCategory(cat.id)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 selectedCategory === cat.id
                   ? 'bg-teal-600 text-white'
@@ -72,7 +69,7 @@ export function PickCardStep({
           {cards.map(card => (
             <button
               key={card.id}
-              onClick={() => onSelectCard(card)}
+              onClick={() => setSelectedCard(card)}
               className={`relative rounded-lg border-2 overflow-hidden transition-all active:scale-95 ${
                 selectedCard?.id === card.id ? 'border-teal-500 ring-2 ring-teal-200' : 'border-gray-200 hover:border-gray-300'
               }`}
@@ -130,7 +127,7 @@ export function PickCardStep({
             <p className="text-xs text-gray-500">Max {previewCard.characters} characters</p>
             <Button
               className="w-full"
-              onClick={() => { onSelectCard(previewCard); setPreviewCard(null); }}
+              onClick={() => { setSelectedCard(previewCard); setPreviewCard(null); }}
             >
               Select This Card
             </Button>
@@ -151,7 +148,7 @@ export function PickCardStep({
 
       <Button
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
-        onClick={onContinue}
+        onClick={() => setStep('compose')}
         disabled={!selectedCard}
       >
         Continue to Message

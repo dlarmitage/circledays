@@ -2,14 +2,11 @@
 
 import { Button } from '@/components/ui/Button';
 import { Check } from 'lucide-react';
+import { useSendCard } from './SendCardContext';
 
-interface SuccessStepProps {
-  firstName: string;
-  creditBalance: number | null;
-  onClose: () => void;
-}
+export function SuccessStep() {
+  const { firstName, creditBalance, onClose } = useSendCard();
 
-export function SuccessStep({ firstName, creditBalance, onClose }: SuccessStepProps) {
   return (
     <div className="flex flex-col items-center text-center space-y-4 py-6">
       <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center">

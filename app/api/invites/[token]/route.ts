@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, invites, profiles, users } from '@/lib/db';
-import { eq, and, gt } from 'drizzle-orm';
+import { withPublicHandler } from '@/lib/api-handler';
+import { eq } from 'drizzle-orm';
 
 // Get invite details (public endpoint for viewing invite)
+// Note: This is a public route with URL params. Since withPublicHandler doesn't
+// support params, we wrap the outer function manually and delegate error handling.
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
-  try {
+  const handler = withPublicHandler(async () => {
     const { token } = await params;
 
     // Get invite with profile and inviter info
@@ -52,12 +55,7 @@ export async function GET(
       contact: invite.invite.email, // Contains email or phone depending on contactType
       contactType: invite.invite.contactType,
     });
-  } catch (error) {
-    console.error('Get invite error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get invite' },
-      { status: 500 }
-    );
-  }
-}
+  }, 'get invite');
 
+  return handler(request);
+}

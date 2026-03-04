@@ -2,42 +2,33 @@
 
 import { Button } from '@/components/ui/Button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { HandwryttenCard, HandwryttenFont } from './types';
+import { useSendCard } from './SendCardContext';
 
-interface PreviewStepProps {
-  selectedCard: HandwryttenCard;
-  message: string;
-  charLimit: number;
-  fonts: HandwryttenFont[];
-  selectedFont: HandwryttenFont | null;
-  onSelectFont: (font: HandwryttenFont) => void;
-  fontLoaded: boolean;
-  onBack: () => void;
-  onContinue: () => void;
-}
+export function PreviewStep() {
+  const {
+    selectedCard,
+    message,
+    charLimit,
+    fonts,
+    selectedFont,
+    setSelectedFont,
+    fontLoaded,
+    setStep,
+  } = useSendCard();
 
-export function PreviewStep({
-  selectedCard,
-  message,
-  charLimit,
-  fonts,
-  selectedFont,
-  onSelectFont,
-  fontLoaded,
-  onBack,
-  onContinue,
-}: PreviewStepProps) {
   const currentIndex = selectedFont ? fonts.findIndex(f => f.id === selectedFont.id) : 0;
 
   const goToFont = (direction: -1 | 1) => {
     if (fonts.length === 0) return;
     const nextIndex = (currentIndex + direction + fonts.length) % fonts.length;
-    onSelectFont(fonts[nextIndex]);
+    setSelectedFont(fonts[nextIndex]);
   };
+
+  if (!selectedCard) return null;
 
   return (
     <div className="space-y-3">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+      <button onClick={() => setStep('compose')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ChevronLeft className="w-4 h-4" />
         Edit message
       </button>
@@ -94,7 +85,7 @@ export function PreviewStep({
 
       <Button
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
-        onClick={onContinue}
+        onClick={() => setStep('address')}
       >
         Continue
       </Button>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { withAuth } from '@/lib/api-handler';
 import { db } from '@/lib/db';
 import { cardOrders } from '@/lib/db/schema';
 import { eq, and, notInArray } from 'drizzle-orm';
@@ -18,60 +18,51 @@ function mapStatus(hwStatus: string): string | null {
 }
 
 // POST /api/handwritten-cards/sync — sync order statuses from Handwrytten
-export async function POST() {
-  try {
-    const user = await requireAuth();
-    const userId = user.id;
+export const POST = withAuth(async (_req, user) => {
+  const userId = user.id;
 
-    // Get local orders that are still in progress (not terminal states)
-    const localOrders = await db
-      .select()
-      .from(cardOrders)
-      .where(
-        and(
-          eq(cardOrders.userId, userId),
-          notInArray(cardOrders.status, ['complete', 'cancelled'])
-        )
-      );
+  // Get local orders that are still in progress (not terminal states)
+  const localOrders = await db
+    .select()
+    .from(cardOrders)
+    .where(
+      and(
+        eq(cardOrders.userId, userId),
+        notInArray(cardOrders.status, ['complete', 'cancelled'])
+      )
+    );
 
-    if (localOrders.length === 0) {
-      return NextResponse.json({ synced: 0 });
-    }
-
-    // Fetch current statuses from Handwrytten
-    let remoteOrders;
-    try {
-      remoteOrders = await listOrders();
-    } catch (err) {
-      console.warn('Handwrytten order sync failed:', err);
-      return NextResponse.json({ synced: 0 });
-    }
-
-    // Build lookup by Handwrytten order ID
-    const remoteMap = new Map(remoteOrders.map(o => [String(o.id), o]));
-
-    let synced = 0;
-    for (const local of localOrders) {
-      if (!local.handwriteOrderId) continue;
-      const remote = remoteMap.get(local.handwriteOrderId);
-      if (!remote) continue;
-
-      const mappedStatus = mapStatus(remote.status);
-      if (!mappedStatus || mappedStatus === local.status) continue;
-
-      await db
-        .update(cardOrders)
-        .set({ status: mappedStatus as typeof local.status })
-        .where(eq(cardOrders.id, local.id));
-      synced++;
-    }
-
-    return NextResponse.json({ synced });
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('Card sync error:', error);
-    return NextResponse.json({ error: 'Failed to sync orders' }, { status: 500 });
+  if (localOrders.length === 0) {
+    return NextResponse.json({ synced: 0 });
   }
-}
+
+  // Fetch current statuses from Handwrytten
+  let remoteOrders;
+  try {
+    remoteOrders = await listOrders();
+  } catch (err) {
+    console.warn('Handwrytten order sync failed:', err);
+    return NextResponse.json({ synced: 0 });
+  }
+
+  // Build lookup by Handwrytten order ID
+  const remoteMap = new Map(remoteOrders.map(o => [String(o.id), o]));
+
+  let synced = 0;
+  for (const local of localOrders) {
+    if (!local.handwriteOrderId) continue;
+    const remote = remoteMap.get(local.handwriteOrderId);
+    if (!remote) continue;
+
+    const mappedStatus = mapStatus(remote.status);
+    if (!mappedStatus || mappedStatus === local.status) continue;
+
+    await db
+      .update(cardOrders)
+      .set({ status: mappedStatus as typeof local.status })
+      .where(eq(cardOrders.id, local.id));
+    synced++;
+  }
+
+  return NextResponse.json({ synced });
+}, 'sync card orders');

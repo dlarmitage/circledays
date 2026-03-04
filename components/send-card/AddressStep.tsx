@@ -4,55 +4,49 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ChevronLeft, BookUser, MapPin } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import type { AddressData, SenderAddress } from './types';
+import { isValidUSAddress } from '@/lib/validators';
+import { useSendCard } from './SendCardContext';
+import type { AddressData } from './types';
 
-interface AddressStepProps {
-  firstName: string;
-  address: AddressData;
-  onAddressChange: (update: Partial<AddressData>) => void;
-  addressSource: 'stored' | 'picked' | 'manual' | null;
-  loadingAddress: boolean;
-  contactPickerAvailable: boolean;
-  pickingContact: boolean;
-  onPickContact: () => void;
-  saveAddress: boolean;
-  onSaveAddressChange: (val: boolean) => void;
-  senderAddress: SenderAddress;
-  onSenderChange: (update: Partial<SenderAddress>) => void;
-  senderValid: boolean;
-  daysUntil?: number;
-  onBack: () => void;
-  onContinue: () => void;
-}
+export function AddressStep() {
+  const {
+    firstName,
+    address,
+    setAddress,
+    addressSource,
+    loadingAddress,
+    contactPickerAvailable,
+    pickingContact,
+    handlePickContact,
+    saveAddress,
+    setSaveAddress,
+    senderAddress,
+    setSenderAddress,
+    senderValid,
+    daysUntil,
+    setStep,
+    handleContinueToConfirm,
+  } = useSendCard();
 
-export function AddressStep({
-  firstName,
-  address,
-  onAddressChange,
-  addressSource,
-  loadingAddress,
-  contactPickerAvailable,
-  pickingContact,
-  onPickContact,
-  saveAddress,
-  onSaveAddressChange,
-  senderAddress,
-  onSenderChange,
-  senderValid,
-  daysUntil,
-  onBack,
-  onContinue,
-}: AddressStepProps) {
-  const addressValid =
-    address.recipientName.trim().length > 0 &&
-    address.street.trim().length > 0 &&
-    address.city.trim().length > 0 &&
-    address.state.trim().length > 0 &&
-    /^\d{5}$/.test(address.zip.trim());
+  const onAddressChange = (update: Partial<AddressData>) => {
+    setAddress(a => ({ ...a, ...update }));
+  };
+
+  const onSenderChange = (update: Partial<typeof senderAddress>) => {
+    setSenderAddress(a => ({ ...a, ...update }));
+  };
+
+  const addressValid = isValidUSAddress({
+    name: address.recipientName,
+    street: address.street,
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+  });
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+      <button onClick={() => setStep('preview')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ChevronLeft className="w-4 h-4" />
         Back to preview
       </button>
@@ -66,7 +60,7 @@ export function AddressStep({
           <>
             {contactPickerAvailable && (
               <button
-                onClick={onPickContact}
+                onClick={handlePickContact}
                 disabled={pickingContact}
                 className="w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl border-2 border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 font-medium text-sm transition-colors"
               >
@@ -143,7 +137,7 @@ export function AddressStep({
                 <input
                   type="checkbox"
                   checked={saveAddress}
-                  onChange={e => onSaveAddressChange(e.target.checked)}
+                  onChange={e => setSaveAddress(e.target.checked)}
                   className="rounded"
                 />
                 Save this address for {firstName}
@@ -205,7 +199,7 @@ export function AddressStep({
 
       <Button
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
-        onClick={onContinue}
+        onClick={handleContinueToConfirm}
         disabled={!addressValid}
       >
         Review &amp; Send
