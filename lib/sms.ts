@@ -32,6 +32,7 @@ export async function sendSms({ to, body }: SendSmsOptions) {
 }
 
 interface EventReminder {
+  profileId?: string;
   profileName: string;
   eventType: string;
   eventDate: string;

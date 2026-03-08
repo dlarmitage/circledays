@@ -245,6 +245,7 @@ This link will expire in 24 hours.
 }
 
 interface EventReminder {
+  profileId?: string;
   profileName: string;
   profilePhoto?: string | null;
   eventType: string;
@@ -294,7 +295,7 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 12px;">
                   <tr>
                     <td style="padding: 10px 12px; background-color: #fef3c7; border-radius: 8px;">
-                      <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;">&#9993; ${cardNudge} <a href="${appUrl}/cards" style="color: #0d9488; font-weight: 600; text-decoration: none;">Send a card</a></p>
+                      <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;">&#9993; ${cardNudge} <a href="${appUrl}/profile/${event.profileId || ''}" style="color: #0d9488; font-weight: 600; text-decoration: none;">Send a card</a></p>
                     </td>
                   </tr>
                 </table>
@@ -390,7 +391,7 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` (turning ${event.age})` : '';
     const cardNudge = getCardNudgeMessage(event.daysUntil);
-    const cardLine = cardNudge ? `\n  ${cardNudge} Send a card: ${appUrl}/cards` : '';
+    const cardLine = cardNudge ? `\n  ${cardNudge} Send a card: ${appUrl}/profile/${event.profileId || ''}` : '';
     return `${event.profileName}'s ${event.eventType} - ${event.eventDate}${ageText} - ${daysText}${cardLine}`;
   }).join('\n\n');
 

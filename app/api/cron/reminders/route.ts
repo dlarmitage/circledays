@@ -198,6 +198,7 @@ export async function GET(request: NextRequest) {
         
         // Prepare event data
         const eventData = newEventsToNotify.map(({ event, profile }) => ({
+          profileId: profile.id,
           profileName: profile.name,
           profilePhoto: profile.profilePicture,
           eventType: event.type === 'custom' ? (event.customLabel || 'Occasion') : event.type,
