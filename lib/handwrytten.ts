@@ -222,7 +222,8 @@ export async function uploadCustomImage(
   type: 'logo' | 'cover'
 ): Promise<HandwryttenCustomImage> {
   const formData = new FormData();
-  formData.append('file', new Blob([new Uint8Array(imageBuffer)]), filename);
+  const mimeType = filename.endsWith('.png') ? 'image/png' : 'image/jpeg';
+  formData.append('file', new Blob([new Uint8Array(imageBuffer)], { type: mimeType }), filename);
   formData.append('type', type);
   formData.append('uid', getApiKey());
 
