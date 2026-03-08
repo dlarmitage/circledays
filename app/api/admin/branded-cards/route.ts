@@ -4,8 +4,7 @@ import { db, users } from '@/lib/db';
 import { brandedCards } from '@/lib/db/schema';
 import { getSession } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { headers } from 'next/headers';
 import {
   uploadCustomImage,
   checkUploadedImage,
@@ -65,17 +64,21 @@ export const POST = withAuth(async (request, _user) => {
   const { action } = body;
 
   if (action === 'upload-logo') {
-    // Upload the CircleDays QR code / branding image to Handwrytten
-    const imagePath = join(process.cwd(), 'public', 'circledays-qr.jpg');
-    let imageBuffer: Buffer;
-    try {
-      imageBuffer = readFileSync(imagePath);
-    } catch {
+    // Fetch the CircleDays QR image from our own public assets
+    // (can't use readFileSync on Vercel — public/ is served via CDN, not on the serverless filesystem)
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const imageUrl = `${protocol}://${host}/circledays-qr.jpg`;
+
+    const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) });
+    if (!imgRes.ok) {
       return NextResponse.json(
-        { error: 'CircleDays QR image not found at public/circledays-qr.jpg' },
+        { error: `Failed to fetch CircleDays QR image from ${imageUrl}` },
         { status: 404 }
       );
     }
+    const imageBuffer = Buffer.from(await imgRes.arrayBuffer());
 
     const uploaded = await uploadCustomImage(imageBuffer, 'circledays-qr.jpg', 'logo');
     const quality = await checkUploadedImage(uploaded.id).catch(() => null);
