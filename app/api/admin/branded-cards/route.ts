@@ -64,31 +64,36 @@ export const POST = withAuth(async (request, _user) => {
   const { action } = body;
 
   if (action === 'upload-logo') {
-    // Fetch the CircleDays QR image from our own public assets
-    // (can't use readFileSync on Vercel — public/ is served via CDN, not on the serverless filesystem)
-    const headersList = await headers();
-    const host = headersList.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    const imageUrl = `${protocol}://${host}/circledays-qr.jpg`;
+    try {
+      // Fetch the CircleDays QR image from our own public assets
+      // (can't use readFileSync on Vercel — public/ is served via CDN, not on the serverless filesystem)
+      const headersList = await headers();
+      const host = headersList.get('host') || 'localhost:3000';
+      const protocol = host.includes('localhost') ? 'http' : 'https';
+      const imageUrl = `${protocol}://${host}/circledays-qr.jpg`;
 
-    const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) });
-    if (!imgRes.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch CircleDays QR image from ${imageUrl}` },
-        { status: 404 }
-      );
+      const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) });
+      if (!imgRes.ok) {
+        return NextResponse.json(
+          { error: `Failed to fetch CircleDays QR image from ${imageUrl} (${imgRes.status})` },
+          { status: 404 }
+        );
+      }
+      const imageBuffer = Buffer.from(await imgRes.arrayBuffer());
+
+      const uploaded = await uploadCustomImage(imageBuffer, 'circledays-qr.jpg', 'logo');
+      const quality = await checkUploadedImage(uploaded.id).catch(() => null);
+
+      return NextResponse.json({
+        success: true,
+        imageId: uploaded.id,
+        imageUrl: uploaded.image_url,
+        quality,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return NextResponse.json({ error: `Upload failed: ${message}` }, { status: 500 });
     }
-    const imageBuffer = Buffer.from(await imgRes.arrayBuffer());
-
-    const uploaded = await uploadCustomImage(imageBuffer, 'circledays-qr.jpg', 'logo');
-    const quality = await checkUploadedImage(uploaded.id).catch(() => null);
-
-    return NextResponse.json({
-      success: true,
-      imageId: uploaded.id,
-      imageUrl: uploaded.image_url,
-      quality,
-    });
   }
 
   if (action === 'brand-card') {
