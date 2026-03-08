@@ -267,6 +267,16 @@ export const cardOrders = pgTable('card_orders', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Branded Cards - mapping from original Handwrytten card IDs to our branded variants
+export const brandedCards = pgTable('branded_cards', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  originalCardId: text('original_card_id').notNull().unique(), // Handwrytten preset card ID
+  brandedCardId: text('branded_card_id').notNull(),            // Our custom card ID with branding
+  backLogoImageId: text('back_logo_image_id').notNull(),       // Handwrytten uploaded logo image ID
+  cardName: text('card_name').notNull(),                       // For admin reference
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Types
 export type ProfileAddress = typeof profileAddresses.$inferSelect;
 export type NewProfileAddress = typeof profileAddresses.$inferInsert;
@@ -275,3 +285,4 @@ export type CardCredit = typeof cardCredits.$inferSelect;
 export type CardCreditTransaction = typeof cardCreditTransactions.$inferSelect;
 export type CardOrder = typeof cardOrders.$inferSelect;
 export type NewCardOrder = typeof cardOrders.$inferInsert;
+export type BrandedCard = typeof brandedCards.$inferSelect;

@@ -201,6 +201,141 @@ export async function placeOrder(
   return res.json();
 }
 
+// --- Custom Card / Branding Functions ---
+
+export interface HandwryttenCustomImage {
+  id: number;
+  image_url: string;
+  thumbnail_url?: string;
+  type: 'logo' | 'cover';
+}
+
+export interface HandwryttenCustomCardResponse {
+  card_id: number;
+  category_id: number; // Custom cards are category 27
+}
+
+/** Upload a custom image (logo for card back, or cover for card front). */
+export async function uploadCustomImage(
+  imageBuffer: Buffer,
+  filename: string,
+  type: 'logo' | 'cover'
+): Promise<HandwryttenCustomImage> {
+  const formData = new FormData();
+  formData.append('file', new Blob([new Uint8Array(imageBuffer)]), filename);
+  formData.append('type', type);
+  formData.append('uid', getApiKey());
+
+  const res = await fetch(`${BASE_URL}/v1/cards/uploadCustomLogo`, {
+    method: 'POST',
+    body: formData,
+    signal: AbortSignal.timeout(30000), // longer timeout for file upload
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten image upload failed (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
+/** Check print quality of an uploaded custom image. */
+export async function checkUploadedImage(
+  imageId: number,
+  cardId?: number
+): Promise<{ warning?: string; error?: string }> {
+  const body = new URLSearchParams();
+  body.set('uid', getApiKey());
+  body.set('image_id', String(imageId));
+  if (cardId) body.set('card_id', String(cardId));
+
+  const res = await fetch(`${BASE_URL}/v1/cards/checkUploadedCustomLogo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten image check failed (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
+/** List all custom images uploaded to our Handwrytten account. */
+export async function listCustomImages(
+  type?: 'logo' | 'cover'
+): Promise<HandwryttenCustomImage[]> {
+  const headers = authedHeaders();
+  const url = new URL(`${BASE_URL}/v2/cards/listCustomUserImages`);
+  if (type) url.searchParams.set('type', type);
+
+  const res = await fetch(url.toString(), { headers, signal: AbortSignal.timeout(10000) });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten list custom images failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  return data.images ?? data;
+}
+
+/**
+ * Create a branded variant of an existing Handwrytten card.
+ * Uses preset_cover_id (the original card's cover) + back_logo_id (our branding).
+ */
+export async function createCustomCard(params: {
+  name: string;
+  presetCoverId: number;       // Original card ID to use as the cover
+  backLogoId: number;          // Our uploaded logo image ID for the back
+  dimensionId: number;         // Card dimensions (from the original card)
+}): Promise<HandwryttenCustomCardResponse> {
+  const body = new URLSearchParams();
+  body.set('uid', getApiKey());
+  body.set('name', params.name);
+  body.set('preset_cover_id', String(params.presetCoverId));
+  body.set('back_logo_id', String(params.backLogoId));
+  body.set('dimension_id', String(params.dimensionId));
+  body.set('back_type', 'logo');
+
+  const res = await fetch(`${BASE_URL}/v1/cards/createCustomCard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten create custom card failed (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
+/** Delete a custom uploaded image. */
+export async function deleteCustomImage(imageId: number): Promise<void> {
+  const body = new URLSearchParams();
+  body.set('uid', getApiKey());
+  body.set('image_id', String(imageId));
+
+  const res = await fetch(`${BASE_URL}/v1/cards/deleteCustomLogo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten delete image failed (${res.status}): ${text}`);
+  }
+}
+
 /** Fetch order history from Handwrytten to sync statuses. */
 export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
   const headers = authedHeaders();

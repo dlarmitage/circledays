@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
 import { db } from '@/lib/db';
-import { cardOrders, cardCredits, cardCreditTransactions } from '@/lib/db/schema';
+import { cardOrders, cardCredits, cardCreditTransactions, brandedCards } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { placeOrder } from '@/lib/handwrytten';
@@ -85,11 +85,22 @@ export const POST = withAuth(async (request, user) => {
     dateSend = `${mm}/${dd}/${yyyy}`;
   }
 
+  // Check if we have a branded variant of this card (with CircleDays branding on back)
+  let effectiveCardId = parseInt(data.cardId, 10);
+  const [brandedMapping] = await db
+    .select()
+    .from(brandedCards)
+    .where(eq(brandedCards.originalCardId, data.cardId))
+    .limit(1);
+  if (brandedMapping) {
+    effectiveCardId = parseInt(brandedMapping.brandedCardId, 10);
+  }
+
   // Place order with Handwrytten — if this fails, refund the credit
   let orderResponse: Awaited<ReturnType<typeof placeOrder>>;
   try {
     orderResponse = await placeOrder({
-      card_id: parseInt(data.cardId, 10),
+      card_id: effectiveCardId,
       font_label: data.fontId,
       message: data.message,
       sender_name: data.senderName,
