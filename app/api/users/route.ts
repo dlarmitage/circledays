@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, users, profiles, reminderPreferences, events, invites } from '@/lib/db';
+import { db, users, profiles, reminderPreferences, events, invites, cardCredits, cardCreditTransactions } from '@/lib/db';
 import { createSession, logLoginEvent } from '@/lib/auth';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
@@ -87,6 +87,15 @@ export const POST = withPublicHandler(async (req) => {
   await db.insert(reminderPreferences).values({
     userId: newUser.id,
     defaultLeadDays: [0, 1, 3, 7, 14],
+  });
+
+  // Give new user 1 free handwritten card credit
+  await db.insert(cardCredits).values({ userId: newUser.id, balance: 1 });
+  await db.insert(cardCreditTransactions).values({
+    userId: newUser.id,
+    amount: 1,
+    type: 'purchase',
+    description: 'Welcome gift — 1 free handwritten card',
   });
 
   // If birthdate provided and not already on profile, create birthday event
