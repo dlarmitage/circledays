@@ -1,5 +1,7 @@
 export type Step = 'pick-card' | 'compose' | 'preview' | 'address' | 'confirm' | 'success';
 
+export type DeliveryOption = 'send_now' | 'timed' | 'custom';
+
 export interface AddressData {
   recipientName: string;
   street: string;

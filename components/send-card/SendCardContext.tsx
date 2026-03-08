@@ -5,7 +5,7 @@ import { isContactPickerSupported, pickContact } from '@/lib/hooks/useContactPic
 import { DEFAULT_HANDWRYTTEN_CHAR_LIMIT } from '@/lib/constants';
 import { isValidUSAddress } from '@/lib/validators';
 
-import type { Step, AddressData, SenderAddress, HandwryttenCategory, HandwryttenCard, HandwryttenFont } from './types';
+import type { Step, AddressData, SenderAddress, HandwryttenCategory, HandwryttenCard, HandwryttenFont, DeliveryOption } from './types';
 
 // ---------- Context shape ----------
 
@@ -71,6 +71,14 @@ interface SendCardContextValue {
   sendError: string | null;
   signOff: string;
 
+  // Delivery timing
+  deliveryOption: DeliveryOption;
+  setDeliveryOption: (opt: DeliveryOption) => void;
+  customSendDate: string;
+  setCustomSendDate: (date: string) => void;
+  timedSendDate: string | null;
+  eventDate?: string;
+
   // Derived
   charLimit: number;
   firstName: string;
@@ -109,6 +117,7 @@ interface SendCardProviderProps {
   profileName: string;
   eventType: string;
   daysUntil?: number;
+  eventDate?: string;
   eventId?: string;
 }
 
@@ -120,6 +129,7 @@ export function SendCardProvider({
   profileName,
   eventType,
   daysUntil,
+  eventDate,
   eventId,
 }: SendCardProviderProps) {
   const [step, setStep] = useState<Step>('pick-card');
@@ -165,6 +175,26 @@ export function SendCardProvider({
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
+  // Delivery timing
+  const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>('send_now');
+  const [customSendDate, setCustomSendDate] = useState('');
+
+  // Compute the timed send date: event date minus 7 days (for ~4 day Handwrytten production + mailing)
+  const timedSendDate = (() => {
+    if (!eventDate) return null;
+    const event = new Date(eventDate + 'T00:00:00');
+    const today = new Date();
+    // Get this year's or next year's occurrence
+    const thisYear = new Date(today.getFullYear(), event.getMonth(), event.getDate());
+    const upcoming = thisYear >= new Date(today.getFullYear(), today.getMonth(), today.getDate()) ? thisYear : new Date(today.getFullYear() + 1, event.getMonth(), event.getDate());
+    // Send 7 days before the event
+    const sendDate = new Date(upcoming);
+    sendDate.setDate(sendDate.getDate() - 7);
+    // If computed send date is in the past, return null (too late for timed)
+    if (sendDate <= today) return null;
+    return sendDate.toISOString().slice(0, 10); // YYYY-MM-DD
+  })();
+
   const charLimit = selectedCard?.characters ?? DEFAULT_HANDWRYTTEN_CHAR_LIMIT;
 
   const senderValid = isValidUSAddress({
@@ -193,6 +223,9 @@ export function SendCardProvider({
     setSelectedCard(null);
     setSelectedCategory(null);
     setCards([]);
+    setCustomSendDate('');
+    // Default: timed delivery if event is far enough out, otherwise send now
+    setDeliveryOption(daysUntil !== undefined && daysUntil > 7 ? 'timed' : 'send_now');
 
     setContactPickerAvailable(isContactPickerSupported());
 
@@ -356,6 +389,15 @@ export function SendCardProvider({
     setSending(true);
     setSendError(null);
     try {
+      // Compute the sendDate based on delivery option
+      let sendDate: string | undefined;
+      if (deliveryOption === 'timed' && timedSendDate) {
+        sendDate = timedSendDate;
+      } else if (deliveryOption === 'custom' && customSendDate) {
+        sendDate = customSendDate;
+      }
+      // 'send_now' or no valid date → sendDate stays undefined → Handwrytten processes immediately
+
       const res = await fetch('/api/handwritten-cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -368,7 +410,7 @@ export function SendCardProvider({
           cardId: selectedCard ? String(selectedCard.id) : '',
           senderName: senderAddress.senderName, senderAddress1: senderAddress.senderAddress1,
           senderCity: senderAddress.senderCity, senderState: senderAddress.senderState, senderZip: senderAddress.senderZip,
-          daysUntil,
+          sendDate,
         }),
       });
       const data = await res.json();
@@ -430,6 +472,9 @@ export function SendCardProvider({
     senderAddress, setSenderAddress,
     senderValid,
     creditBalance, sending, sendError, signOff,
+    deliveryOption, setDeliveryOption,
+    customSendDate, setCustomSendDate,
+    timedSendDate, eventDate,
     charLimit, firstName, daysUntil,
     handlePickContact, handleSaveNotes, handleGenerateMessage,
     handleSaveSenderAddress, handleContinueToConfirm, handleCreditRefresh, handleSend,

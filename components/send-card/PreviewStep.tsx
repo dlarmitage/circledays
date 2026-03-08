@@ -85,7 +85,17 @@ export function PreviewStep() {
 
       <Button
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
-        onClick={() => setStep('address')}
+        onClick={() => {
+          // Save font preference for next time
+          if (selectedFont) {
+            fetch('/api/card-preferences', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fontId: selectedFont.label }),
+            }).catch(console.error);
+          }
+          setStep('address');
+        }}
       >
         Continue
       </Button>

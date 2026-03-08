@@ -23,8 +23,8 @@ const sendCardSchema = z.object({
   senderCity: z.string().min(1),
   senderState: z.string().min(1),
   senderZip: z.string().regex(/^\d{5}$/, 'ZIP must be 5 digits'),
-  // Delivery timing
-  daysUntil: z.number().optional(),
+  // Delivery timing — YYYY-MM-DD date for Handwrytten to mail the card (omit for immediate)
+  sendDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'sendDate must be YYYY-MM-DD').optional(),
 });
 
 // GET /api/handwritten-cards — list the user's card order history
@@ -78,14 +78,10 @@ export const POST = withAuth(async (request, user) => {
     description: `Handwritten card sent to ${data.recipientName}`,
   });
 
-  // Calculate date_send for timed delivery (send 4 days before the event)
+  // Convert sendDate (YYYY-MM-DD) to Handwrytten's MM/DD/YYYY format
   let dateSend: string | undefined;
-  if (data.daysUntil !== undefined && data.daysUntil > 4) {
-    const sendDate = new Date();
-    sendDate.setDate(sendDate.getDate() + data.daysUntil - 4);
-    const mm = String(sendDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(sendDate.getDate()).padStart(2, '0');
-    const yyyy = sendDate.getFullYear();
+  if (data.sendDate) {
+    const [yyyy, mm, dd] = data.sendDate.split('-');
     dateSend = `${mm}/${dd}/${yyyy}`;
   }
 

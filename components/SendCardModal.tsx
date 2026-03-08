@@ -21,6 +21,7 @@ interface SendCardModalProps {
   profilePicture: string | null;
   eventType: string;
   daysUntil?: number;
+  eventDate?: string;
   eventId?: string;
   userName?: string;
 }
@@ -33,6 +34,7 @@ export function SendCardModal({
   profilePicture,
   eventType,
   daysUntil,
+  eventDate,
   eventId,
   userName = '',
 }: SendCardModalProps) {
@@ -46,6 +48,7 @@ export function SendCardModal({
       profileName={profileName}
       eventType={eventType}
       daysUntil={daysUntil}
+      eventDate={eventDate}
       eventId={eventId}
     >
       <SendCardModalContent

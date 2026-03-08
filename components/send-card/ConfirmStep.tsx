@@ -3,10 +3,22 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ChevronLeft, Send } from 'lucide-react';
+import { ChevronLeft, Send, Clock, Zap, Calendar } from 'lucide-react';
 import { CREDIT_BUNDLES } from '@/lib/constants';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
 import { useSendCard } from './SendCardContext';
+
+function formatDateNice(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function minSendDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 
 export function ConfirmStep() {
   const {
@@ -24,6 +36,12 @@ export function ConfirmStep() {
     handleSend,
     setStep,
     daysUntil,
+    deliveryOption,
+    setDeliveryOption,
+    customSendDate,
+    setCustomSendDate,
+    timedSendDate,
+    eventDate,
   } = useSendCard();
 
   const [editingSender, setEditingSender] = useState(false);
@@ -125,6 +143,97 @@ export function ConfirmStep() {
         )}
       </div>
 
+      {/* Delivery timing */}
+      <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Delivery timing</p>
+        <div className="space-y-2">
+          {/* Send now */}
+          <label
+            className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+              deliveryOption === 'send_now'
+                ? 'border-teal-500 bg-teal-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="delivery"
+              checked={deliveryOption === 'send_now'}
+              onChange={() => setDeliveryOption('send_now')}
+              className="mt-0.5 accent-teal-600"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-teal-600" />
+                <span className="text-sm font-medium text-gray-900">Send now</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">Handwrytten writes and mails it right away (arrives in 3–5 business days)</p>
+            </div>
+          </label>
+
+          {/* Timed delivery — only show if there's a linked event far enough out */}
+          {timedSendDate && (
+            <label
+              className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                deliveryOption === 'timed'
+                  ? 'border-teal-500 bg-teal-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="delivery"
+                checked={deliveryOption === 'timed'}
+                onChange={() => setDeliveryOption('timed')}
+                className="mt-0.5 accent-teal-600"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="text-sm font-medium text-gray-900">Timed delivery</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Mails on {formatDateNice(timedSendDate)} — timed to arrive for their special day
+                </p>
+              </div>
+            </label>
+          )}
+
+          {/* Custom date */}
+          <label
+            className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+              deliveryOption === 'custom'
+                ? 'border-teal-500 bg-teal-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="delivery"
+              checked={deliveryOption === 'custom'}
+              onChange={() => setDeliveryOption('custom')}
+              className="mt-0.5 accent-teal-600"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                <span className="text-sm font-medium text-gray-900">Pick a send date</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">Choose when Handwrytten should mail it</p>
+              {deliveryOption === 'custom' && (
+                <input
+                  type="date"
+                  value={customSendDate}
+                  onChange={e => setCustomSendDate(e.target.value)}
+                  min={minSendDate()}
+                  className="mt-2 w-full text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              )}
+            </div>
+          </label>
+        </div>
+      </div>
+
       {/* Credit cost */}
       <div className="flex items-center justify-between p-3 bg-teal-50 rounded-xl text-sm">
         <span className="text-teal-800">Cost</span>
@@ -166,17 +275,15 @@ export function ConfirmStep() {
         className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700"
         onClick={handleSend}
         loading={sending}
-        disabled={(creditBalance !== null && creditBalance < 1) || !senderValid}
+        disabled={
+          (creditBalance !== null && creditBalance < 1) ||
+          !senderValid ||
+          (deliveryOption === 'custom' && !customSendDate)
+        }
       >
         <Send className="w-4 h-4 mr-2" />
-        Send Card — 1 Credit
+        {deliveryOption === 'send_now' ? 'Send Card Now' : 'Schedule Card'} — 1 Credit
       </Button>
-
-      <p className="text-xs text-center text-gray-400">
-        {daysUntil !== undefined && daysUntil > 5
-          ? 'Your card will be timed to arrive on or about their special day.'
-          : 'Cards are typically delivered within 3\u20134 business days.'}
-      </p>
     </div>
   );
 }

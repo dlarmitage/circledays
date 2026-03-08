@@ -360,6 +360,7 @@ export default function DashboardPage() {
           ? (sendCardEvent?.customLabel || 'event')
           : (sendCardEvent?.type || 'birthday')}
         daysUntil={sendCardEvent?.daysUntil}
+        eventDate={sendCardEvent?.date}
         eventId={sendCardEvent?.id}
         userName={userData?.user?.name || ''}
       />

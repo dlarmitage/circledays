@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
-import { Mail, Send, Palette, Sparkles, Stamp, X } from 'lucide-react';
+import { Mail, Send, Palette, Sparkles, Stamp } from 'lucide-react';
 
 interface CardOrder {
   id: string;
@@ -50,8 +50,6 @@ export default function CardsPage() {
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>('all');
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -78,23 +76,6 @@ export default function CardsPage() {
       })
       .catch(() => {});
   }, []);
-
-  const handleCancel = async (orderId: string) => {
-    setCancellingId(orderId);
-    try {
-      const res = await fetch(`/api/handwritten-cards/${orderId}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' as const } : o));
-        setCreditBalance(b => (b !== null ? b + 1 : null));
-      }
-    } catch (err) {
-      console.error('Cancel error:', err);
-    } finally {
-      setCancellingId(null);
-      setConfirmCancelId(null);
-    }
-  };
 
   const filteredOrders = orders.filter(o => {
     switch (filter) {
@@ -235,17 +216,7 @@ export default function CardsPage() {
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-1">{order.message}</p>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <p className="text-[11px] text-gray-400">{relativeDate(order.createdAt)}</p>
-                      {order.status === 'pending' && (
-                        <button
-                          onClick={() => setConfirmCancelId(order.id)}
-                          className="text-[11px] text-red-400 hover:text-red-600 font-medium transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1.5">{relativeDate(order.createdAt)}</p>
                   </div>
                 </div>
               </Card>
@@ -254,40 +225,6 @@ export default function CardsPage() {
         </div>
       )}
 
-      {/* Cancel confirmation modal */}
-      {confirmCancelId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-sm" padding="none">
-            <div className="p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Cancel this card?</h3>
-                <button onClick={() => setConfirmCancelId(null)} className="p-1 hover:bg-gray-100 rounded-full">
-                  <X className="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
-              <p className="text-sm text-gray-500">
-                The card to <span className="font-medium text-gray-700">{orders.find(o => o.id === confirmCancelId)?.recipientName}</span> will be cancelled and your credit will be refunded.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  variant="secondary"
-                  onClick={() => setConfirmCancelId(null)}
-                >
-                  Keep it
-                </Button>
-                <Button
-                  className="flex-1 bg-red-500 hover:bg-red-600"
-                  onClick={() => handleCancel(confirmCancelId)}
-                  disabled={cancellingId === confirmCancelId}
-                >
-                  {cancellingId === confirmCancelId ? 'Cancelling...' : 'Cancel card'}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
