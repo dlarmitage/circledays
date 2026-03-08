@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ChevronLeft, Send, Clock, Zap, Calendar } from 'lucide-react';
@@ -67,7 +68,7 @@ export function ConfirmStep() {
 
       {/* Card + font summary */}
       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-        <img src={selectedCard.cover} alt={selectedCard.name} className="w-12 h-16 object-cover rounded border border-gray-200" />
+        <Image src={selectedCard.cover} alt={selectedCard.name} width={48} height={64} className="w-12 h-16 object-cover rounded border border-gray-200" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">{selectedCard.name}</p>
           {selectedFont && <p className="text-xs text-gray-500">Font: {selectedFont.label}</p>}

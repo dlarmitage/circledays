@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { X, Check, Image as ImageIcon } from 'lucide-react';
 import { useSendCard } from './SendCardContext';
@@ -75,7 +76,7 @@ export function PickCardStep() {
               }`}
             >
               {card.cover ? (
-                <img src={card.cover} alt={card.name} className="w-full aspect-[3/4] object-cover bg-gray-50" loading="lazy" />
+                <Image src={card.cover} alt={card.name} width={150} height={200} className="w-full aspect-[3/4] object-cover bg-gray-50" />
               ) : (
                 <div className="w-full aspect-[3/4] bg-gray-100 flex items-center justify-center">
                   <ImageIcon className="w-6 h-6 text-gray-300" />
@@ -117,11 +118,11 @@ export function PickCardStep() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-[10px] text-gray-500 mb-1">Cover</p>
-                <img src={previewCard.cover} alt="Cover" className="w-full rounded-lg border border-gray-200" />
+                <Image src={previewCard.cover} alt="Cover" width={300} height={400} className="w-full rounded-lg border border-gray-200" />
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 mb-1">Inside</p>
-                <img src={previewCard.inside_image} alt="Inside" className="w-full rounded-lg border border-gray-200" />
+                <Image src={previewCard.inside_image} alt="Inside" width={300} height={400} className="w-full rounded-lg border border-gray-200" />
               </div>
             </div>
             <p className="text-xs text-gray-500">Max {previewCard.characters} characters</p>
@@ -138,7 +139,7 @@ export function PickCardStep() {
       {/* Selected card summary */}
       {selectedCard && (
         <div className="flex items-center gap-3 p-2 bg-teal-50 rounded-xl border border-teal-200">
-          <img src={selectedCard.cover} alt={selectedCard.name} className="w-10 h-14 object-cover rounded border border-teal-200" />
+          <Image src={selectedCard.cover} alt={selectedCard.name} width={40} height={56} className="w-10 h-14 object-cover rounded border border-teal-200" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-teal-900 truncate">{selectedCard.name}</p>
             <p className="text-xs text-teal-600">Up to {selectedCard.characters} characters</p>

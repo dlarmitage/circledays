@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSendCard } from './SendCardContext';
@@ -41,7 +42,7 @@ export function PreviewStep() {
           style={{ aspectRatio: `${selectedCard.orientation === 'P' ? 4.25 : 5.5} / ${selectedCard.orientation === 'P' ? 5.5 : 4.25}`, containerType: 'inline-size' }}
         >
           {selectedCard.inside_image && (
-            <img src={selectedCard.inside_image} alt="Card inside" className="absolute inset-0 w-full h-full object-cover" />
+            <Image src={selectedCard.inside_image} alt="Card inside" fill className="object-cover" />
           )}
           <div
             className="absolute inset-0 p-[8%] overflow-y-auto"
