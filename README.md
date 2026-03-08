@@ -10,6 +10,10 @@ A progressive web application (PWA) for tracking birthdays and special dates for
 - 🔗 **Connections** - Connect with others and share your network
 - 🔒 **Private Notes** - Add personal notes visible only to you
 - 📱 **PWA** - Install on mobile for a native app experience
+- ✉️ **Handwritten Cards** - Send real pen-and-ink cards via Handwrytten with scheduled delivery
+- 🤖 **AI Message Assist** - Generate thoughtful messages and card content with Claude AI
+- 💳 **Card Credits** - Purchase card credits via Stripe for seamless ordering
+- 💬 **In-App Help** - AI-powered help assistant answers questions about the app
 
 ## Tech Stack
 
@@ -21,6 +25,10 @@ A progressive web application (PWA) for tracking birthdays and special dates for
 - **Email:** Resend
 - **SMS:** Twilio
 - **Authentication:** Magic links (passwordless)
+- **Handwritten Cards:** Handwrytten API
+- **Payments:** Stripe
+- **AI:** Anthropic Claude (message assist, card assist, help chat)
+- **Address Autocomplete:** Google Maps Places API
 
 ## Getting Started
 
@@ -31,6 +39,10 @@ A progressive web application (PWA) for tracking birthdays and special dates for
 - A Neon database
 - Resend account (for email)
 - Twilio account (for SMS, optional)
+- Handwrytten API key (for handwritten cards)
+- Stripe account (for card credit purchases)
+- Anthropic API key (for AI features)
+- Google Maps API key (for address autocomplete)
 
 ### Installation
 

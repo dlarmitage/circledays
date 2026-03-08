@@ -83,6 +83,8 @@ If someone has suggested connections for you, a **Suggested Connections card** a
 - Copy the message to your clipboard
 Notes are automatically saved when you close the modal.
 
+**Send Card**: For upcoming events, you'll see a "Send Card" button that opens the handwritten card ordering flow (see **Handwritten Cards** below). Once you've ordered a card for an event, the button changes to **"Card Ordered"** (green, with a checkmark) and links to the Cards dashboard instead.
+
 ### Connections (Network View)
 The Connections page shows your social graph as a **hierarchical tree**:
 
@@ -208,6 +210,7 @@ The Settings page lets you manage:
 - **Remind me**: Choose when to get reminders (day of, 1 day, 3 days, 1 week, 2 weeks before)
 - **Notification method**: Email, SMS, or both
 - **Mobile number**: Required if using SMS
+- Default settings for new users: Mountain Time timezone, 'both' notification channel (when phone provided), lead days of 0, 1, 3, 7, and 14 days
 
 **My Events**:
 - See and edit events on your own profile
@@ -216,6 +219,12 @@ The Settings page lets you manage:
 - Add new events (birthdays, anniversaries, custom events)
 - Control privacy settings for your events
 
+**Card Preferences**:
+- **Card Credits**: View your current credit balance
+- **Card Sign-off**: Set a default sign-off for your handwritten cards
+- **Sender Address**: Set and edit your default return address for cards
+- **Order History**: View recent card orders with status
+
 **Email Settings**:
 - Update your email address
 - When you change your email, you'll receive a confirmation email to the new address
@@ -223,16 +232,72 @@ The Settings page lets you manage:
 
 **Sign Out**: Log out of your account
 
+### Handwritten Cards
+CircleDays lets you send **real handwritten cards** through a partnership with Handwrytten. Cards are written with pen and ink by robotic hands and mailed with a real stamp.
+
+**Card Ordering Flow** (6 steps):
+
+1. **Pick a Card**: Browse 100+ card designs organized by category (birthday, thank you, thinking of you, etc.). Tap a card to see the inside design.
+
+2. **Compose Your Message**: Write your card message with a character limit based on the card. An **AI Message Assist** feature can generate a message for you — choose a tone (warm, funny, heartfelt, casual, formal) and the AI drafts a message based on the person's name, event type, and your notes. You can edit the AI-generated message before continuing.
+
+3. **Preview**: See how your message looks on the card with the selected handwriting font. Use the arrow buttons to cycle through available fonts. Your font preference is automatically saved for next time.
+
+4. **Recipient Address**: Enter the recipient's mailing address (name, street, city, state, ZIP). If the profile has a saved address, it auto-fills.
+
+5. **Confirm & Send**: Review all details and choose delivery timing:
+   - **Send now**: Handwrytten writes and mails the card immediately (arrives in 3–5 business days)
+   - **Timed delivery**: Available when linked to an event more than 7 days away — the card is mailed 7 days before the event date so it arrives on time
+   - **Pick a send date**: Choose any future date for Handwrytten to mail the card — great for batch card writing sessions or occasions not tracked in CircleDays
+
+   You can also review and edit your return address.
+
+6. **Success**: Confirmation with a link to the Cards dashboard.
+
+**Card Credits**:
+- Each card costs **1 credit**
+- New users receive a **free credit** when they first set up their card preferences
+- Additional credits can be purchased in bundles: 1 card ($5), 5 cards ($25), or 10 cards ($50)
+- Payments are processed securely through **Stripe**
+- If a card send fails, your credit is automatically refunded
+
+**Card Onboarding** (first-time setup):
+The first time you send a card, you'll be guided through a quick setup:
+1. Set your **card sign-off** (e.g., "Love, Sarah" or "Best, John")
+2. Enter your **return address** (used on the back of every card)
+3. Choose your preferred **handwriting font**
+This information is saved and pre-filled for all future cards.
+
+**Cards Dashboard** (`/cards`):
+- View all your card orders with status tracking:
+  - **Queued**: Order received, waiting to be processed
+  - **Printing**: Card is being written by Handwrytten
+  - **Written**: Card has been written, ready for mailing
+  - **Delivered**: Card has been mailed and delivered
+  - **Problem**: An issue occurred with the order
+  - **Cancelled**: Order was cancelled
+- Filter orders by status (All, Scheduled, In Progress, Delivered, Cancelled)
+- Shows recipient name, city/state, message preview, and relative date
+- Credit balance displayed in the header
+
+**Card Nudge in Reminders**:
+When you receive event reminders via email or SMS, you'll see a contextual card nudge:
+- **14+ days out**: "There's still time to send a handwritten card"
+- **7 days out**: "Just enough time to send a handwritten card"
+- **3 days or less**: "It may be too late for a card, but you can still send one"
+The nudge links directly to the person's profile page where you can start the card flow.
+
 ---
 
 ## Notifications & Reminders
 
 ### How Reminders Work
-- Reminders are sent daily at 2 PM UTC
+- Reminders are sent at your preferred notification hour in your local timezone (default: 8 AM)
 - You receive reminders based on your **Remind me** settings (e.g., 7 days before, 1 day before, day of)
 - Only events for people you're connected to trigger reminders
 - Private events only send reminders to the person who created them
 - Unlinked profiles (no account) don't receive reminders - only users with accounts do
+- Email reminders include a **card nudge** with a link to send a handwritten card (see Handwritten Cards above)
 
 ### Notification Channels
 - **Email**: HTML email with event details and links
@@ -295,6 +360,18 @@ Settings → My Events → "+ Add" or "Add Your Birthday"
 ### "What's the lock icon on an event?"
 It means the event is Private - only you can see it and get reminders for it.
 
+### "How do handwritten cards work?"
+You can send a real handwritten card to anyone from their profile page or the dashboard. Pick a card design, write your message (or let AI help), choose a handwriting font, enter their address, and choose when to send it. Each card costs 1 credit ($5 each, or save with bundles). The card is written with real pen and ink by Handwrytten and mailed with a stamp — it arrives in 3–5 business days.
+
+### "Can I schedule a card for later?"
+Yes! When confirming your card order, choose "Pick a send date" to select any future mailing date. If the card is linked to an event more than 7 days away, you'll also see a "Timed delivery" option that automatically mails the card 7 days before the event. This is great for batch card writing sessions.
+
+### "What happens if my card fails to send?"
+Your credit is automatically refunded if there's a problem placing the order with Handwrytten.
+
+### "Can I cancel a card after ordering?"
+Once a card enters Handwrytten's production system, it cannot be cancelled. Cards are processed quickly, so there is no cancellation option.
+
 ### "Can I connect to someone without them knowing?"
 Connections are always instant - there's no approval process. When someone logs in, they'll see a "New Connections" notification on their dashboard showing who connected with them. They can:
 - Keep the connection (dismiss the notification)
@@ -316,6 +393,9 @@ Since email and phone numbers are completely hidden, there's no privacy risk in 
 7. **Use the calendar List view**: Great for planning ahead for the whole year
 8. **Use Message Assist**: For events in the next week, let AI help you craft a thoughtful message
 9. **Auto-save notes**: Your notes are automatically saved as you type (no need to click save)
+10. **Batch card writing**: Use the "Pick a send date" option to write cards for weeks or months ahead in one sitting — Handwrytten will hold and mail them on the dates you choose
+11. **Send cards for any occasion**: You can send a card to anyone with an address, even for occasions not tracked in CircleDays — just use the custom send date
+12. **Card nudge links**: Click the card nudge in your reminder emails to go directly to the person's profile and start a card
 
 ---
 
@@ -323,9 +403,13 @@ Since email and phone numbers are completely hidden, there's no privacy risk in 
 
 - CircleDays is a Progressive Web App (PWA) - you can install it on your phone's home screen
 - Authentication uses magic links - no passwords to remember
-- Data is stored securely in the cloud
+- Data is stored securely in the cloud (Neon PostgreSQL)
 - Photos are stored in Vercel Blob storage
 - The app works on desktop and mobile
+- Handwritten cards are fulfilled by **Handwrytten** — a service that uses robotic pens to write real ink-on-paper cards
+- Card payments are processed through **Stripe** (secure checkout)
+- AI features (Message Assist, Card Message Assist, CircleDays Help) are powered by **Anthropic Claude**
+- Address autocomplete uses **Google Maps Places API**
 
 ---
 
