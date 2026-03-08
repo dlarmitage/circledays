@@ -29,6 +29,7 @@ interface UpcomingEvent {
   daysUntil: number;
   age?: number;
   isPrivate?: boolean;
+  cardOrdered?: boolean;
 }
 
 interface UserData {

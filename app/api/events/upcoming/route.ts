@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, connections, events } from '@/lib/db';
+import { cardOrders } from '@/lib/db/schema';
 import { withAuth } from '@/lib/api-handler';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, daysSinceOccurrence, turningAge } from '@/lib/utils';
@@ -105,8 +106,29 @@ export const GET = withAuth(async (req, user) => {
       .sort((a, b) => b.daysUntil - a.daysUntil); // most recent first (-1 before -5)
   }
 
-  // Strip internal field before sending
+  // Check which events already have a card ordered (non-cancelled)
   const allResults = [...upcomingEvents, ...recentEvents].map(({ _rawDate, ...rest }) => rest);
+  const eventIds = allResults.map(e => e.id);
 
-  return NextResponse.json({ events: allResults });
+  let orderedEventIds = new Set<string>();
+  if (eventIds.length > 0) {
+    const orders = await db
+      .select({ eventId: cardOrders.eventId })
+      .from(cardOrders)
+      .where(
+        and(
+          eq(cardOrders.userId, user.id),
+          sql`${cardOrders.eventId} IN (${sql.join(eventIds.map(id => sql`${id}`), sql`, `)})`,
+          sql`${cardOrders.status} != 'cancelled'`
+        )
+      );
+    orderedEventIds = new Set(orders.map(o => o.eventId).filter((id): id is string => id !== null));
+  }
+
+  const resultsWithCardStatus = allResults.map(e => ({
+    ...e,
+    cardOrdered: orderedEventIds.has(e.id),
+  }));
+
+  return NextResponse.json({ events: resultsWithCardStatus });
 }, 'get upcoming events');

@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
-import { Cake, Heart, Calendar, Lock, Sparkles, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Cake, Heart, Calendar, Lock, Sparkles, Mail, CheckCircle2 } from 'lucide-react';
 
 interface EventCardProps {
   id: string;
@@ -17,6 +18,7 @@ interface EventCardProps {
   daysUntil: number;
   age?: number;
   isPrivate?: boolean;
+  cardOrdered?: boolean;
   onClick?: () => void;
   onMessageAssist?: () => void;
   onSendCard?: () => void;
@@ -31,10 +33,12 @@ export function EventCard({
   daysUntil,
   age,
   isPrivate,
+  cardOrdered,
   onClick,
   onMessageAssist,
   onSendCard,
 }: EventCardProps) {
+  const router = useRouter();
   const daysText = getDaysUntilText(daysUntil);
   const eventLabel = getEventTypeLabel(type, customLabel);
 
@@ -79,7 +83,7 @@ export function EventCard({
           <Badge variant={getBadgeVariant()} size="md">
             {daysText}
           </Badge>
-          {(showMessageAssist || showSendCard) && (
+          {(showMessageAssist || showSendCard || cardOrdered) && (
             <div className="flex items-center gap-1.5">
               {showMessageAssist && (
                 <button
@@ -93,7 +97,18 @@ export function EventCard({
                   Message Assist
                 </button>
               )}
-              {showSendCard && (
+              {cardOrdered ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push('/cards');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-colors"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Card Ordered
+                </button>
+              ) : showSendCard && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
