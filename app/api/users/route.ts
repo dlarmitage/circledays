@@ -28,7 +28,7 @@ export const POST = withPublicHandler(async (req) => {
       name: capitalizeName(data.name),
       timezone: data.timezone,
       mobile: data.mobile || null,
-      notificationChannel: data.notificationChannel,
+      notificationChannel: data.mobile ? 'both' : data.notificationChannel,
     })
     .returning();
 
@@ -86,7 +86,7 @@ export const POST = withPublicHandler(async (req) => {
   // Create default reminder preferences
   await db.insert(reminderPreferences).values({
     userId: newUser.id,
-    defaultLeadDays: [0, 1, 7],
+    defaultLeadDays: [0, 1, 3, 7, 14],
   });
 
   // If birthdate provided and not already on profile, create birthday event

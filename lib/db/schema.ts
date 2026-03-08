@@ -29,7 +29,7 @@ export const users = pgTable('users', {
   pendingEmail: text('pending_email'), // New email awaiting confirmation
   emailConfirmationToken: text('email_confirmation_token'), // Token for email confirmation
   name: text('name').notNull(),
-  timezone: text('timezone').notNull().default('America/New_York'),
+  timezone: text('timezone').notNull().default('America/Denver'),
   mobile: text('mobile'),
   notificationChannel: notificationChannelEnum('notification_channel').notNull().default('email'),
   isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
@@ -113,7 +113,7 @@ export const invites = pgTable('invites', {
 export const reminderPreferences = pgTable('reminder_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
-  defaultLeadDays: integer('default_lead_days').array().notNull().default([0, 1, 7]),
+  defaultLeadDays: integer('default_lead_days').array().notNull().default([0, 1, 3, 7, 14]),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

@@ -39,6 +39,13 @@ interface EventReminder {
   age?: number;
 }
 
+function getCardNudgeSms(daysUntil: number): string | null {
+  if (daysUntil >= 14) return 'Now is a perfect time to schedule a handwritten card, and we\'ll make sure it gets there on time.';
+  if (daysUntil === 7) return 'Today is the last day to send a card and make sure that it will get there on time.';
+  if (daysUntil <= 3) return 'A handwritten card might get there a little late, but it\'s sure to brighten up their day.';
+  return null;
+}
+
 export function generateReminderSms(events: EventReminder[], appUrl?: string): string[] {
   const messages: string[] = [];
   const link = appUrl ? `\n\nSee what's coming up: ${appUrl}/dashboard` : '';
@@ -49,8 +56,10 @@ export function generateReminderSms(events: EventReminder[], appUrl?: string): s
     const emoji = event.eventType.toLowerCase() === 'birthday' ? '🎂' :
       event.eventType.toLowerCase() === 'anniversary' ? '❤️' : '🎉';
 
-    // Clean, readable format with link to app
-    const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}${link}`;
+    const cardNudge = getCardNudgeSms(event.daysUntil);
+    const cardLine = cardNudge ? `\n\n${cardNudge}` : '';
+
+    const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}${cardLine}${link}`;
     messages.push(message);
   }
 

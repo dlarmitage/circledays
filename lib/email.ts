@@ -253,11 +253,19 @@ interface EventReminder {
   daysUntil: number;
 }
 
+function getCardNudgeMessage(daysUntil: number): string | null {
+  if (daysUntil >= 14) return 'Now is a perfect time to schedule a handwritten card, and we\'ll make sure it gets there on time.';
+  if (daysUntil === 7) return 'Today is the last day to send a card and make sure that it will get there on time.';
+  if (daysUntil <= 3) return 'A handwritten card might get there a little late, but it\'s sure to brighten up their day.';
+  return null;
+}
+
 export function generateReminderEmail(userName: string, events: EventReminder[], appUrl: string) {
   const eventItems = events.map(event => {
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` - turning ${event.age}` : '';
     const initial = event.profileName.charAt(0).toUpperCase();
+    const cardNudge = getCardNudgeMessage(event.daysUntil);
 
     return `
       <tr>
@@ -282,6 +290,15 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
                     </td>
                   </tr>
                 </table>
+                ${cardNudge ? `
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 12px;">
+                  <tr>
+                    <td style="padding: 10px 12px; background-color: #fef3c7; border-radius: 8px;">
+                      <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;">&#9993; ${cardNudge} <a href="${appUrl}/cards" style="color: #0d9488; font-weight: 600; text-decoration: none;">Send a card</a></p>
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
               </td>
             </tr>
           </table>
@@ -372,8 +389,10 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
   const text = events.map(event => {
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` (turning ${event.age})` : '';
-    return `${event.profileName}'s ${event.eventType} - ${event.eventDate}${ageText} - ${daysText}`;
-  }).join('\n');
+    const cardNudge = getCardNudgeMessage(event.daysUntil);
+    const cardLine = cardNudge ? `\n  ${cardNudge} Send a card: ${appUrl}/cards` : '';
+    return `${event.profileName}'s ${event.eventType} - ${event.eventDate}${ageText} - ${daysText}${cardLine}`;
+  }).join('\n\n');
 
   return { html, text: `Hi ${userName},\n\nUpcoming celebrations:\n\n${text}\n\nSee what other birthdays and special events are coming up in the weeks ahead:\n${appUrl}/dashboard` };
 }

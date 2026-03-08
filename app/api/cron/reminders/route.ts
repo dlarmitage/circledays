@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
           .where(eq(reminderPreferences.userId, user.id))
           .limit(1);
         
-        const defaultLeadDays = prefs?.defaultLeadDays || [0, 1, 7];
+        const defaultLeadDays = prefs?.defaultLeadDays || [0, 1, 3, 7, 14];
         
         // Get overrides
         const overrides = await db
