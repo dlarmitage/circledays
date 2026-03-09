@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
-import { db, chatSessions, chatMessages } from '@/lib/db';
-import { eq, desc, asc } from 'drizzle-orm';
+import { db, chatSessions, chatMessages, profiles, connections, events, cardOrders } from '@/lib/db';
+import { eq, desc, asc, or, sql, count } from 'drizzle-orm';
 
 // GET /api/chat/sessions — get user's recent chat sessions
 // Query params:
@@ -46,6 +46,33 @@ export const GET = withAuth(async (request, user) => {
     });
   }
 
+  // Get user stats for journey stage
+  const [userProfile] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(eq(profiles.linkedUserId, user.id))
+    .limit(1);
+
+  let userStats = { connectionCount: 0, eventCount: 0, cardOrderCount: 0 };
+  if (userProfile) {
+    const [[connResult], [eventResult], [cardResult]] = await Promise.all([
+      db.select({ count: count() }).from(connections)
+        .where(or(
+          eq(connections.profileAId, userProfile.id),
+          eq(connections.profileBId, userProfile.id),
+        )),
+      db.select({ count: count() }).from(events)
+        .where(eq(events.createdByUserId, user.id)),
+      db.select({ count: count() }).from(cardOrders)
+        .where(eq(cardOrders.userId, user.id)),
+    ]);
+    userStats = {
+      connectionCount: connResult?.count ?? 0,
+      eventCount: eventResult?.count ?? 0,
+      cardOrderCount: cardResult?.count ?? 0,
+    };
+  }
+
   // Default: get recent sessions list + load the most recent one
   const recentSessions = await db
     .select({
@@ -61,7 +88,7 @@ export const GET = withAuth(async (request, user) => {
     .limit(5);
 
   if (recentSessions.length === 0) {
-    return NextResponse.json({ session: null, messages: [], recentSessions: [] });
+    return NextResponse.json({ session: null, messages: [], recentSessions: [], userStats });
   }
 
   // Load messages for the most recent session
@@ -87,5 +114,6 @@ export const GET = withAuth(async (request, user) => {
     },
     messages,
     recentSessions,
+    userStats,
   });
 }, 'get chat sessions');

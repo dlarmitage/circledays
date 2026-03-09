@@ -15,7 +15,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { getPageContext } from '@/lib/help-context';
+import { getPageContext, getSuggestedQuestions, getJourneyStage, type UserStats } from '@/lib/help-context';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -45,6 +45,7 @@ export function HelpChat() {
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([]);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,6 +55,9 @@ export function HelpChat() {
     try {
       const res = await fetch('/api/chat/sessions');
       const data = await res.json();
+      if (data.userStats) {
+        setUserStats(data.userStats);
+      }
       if (data.recentSessions) {
         setRecentSessions(data.recentSessions);
       }
@@ -189,7 +193,8 @@ export function HelpChat() {
     }
   };
 
-  const suggestedQuestions = pageContext.suggestedQuestions;
+  const journeyStage = userStats ? getJourneyStage(userStats) : undefined;
+  const suggestedQuestions = getSuggestedQuestions(pathname, journeyStage);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

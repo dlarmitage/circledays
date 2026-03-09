@@ -13,6 +13,49 @@ export interface PageContext {
   suggestedQuestions: string[];
 }
 
+/** User stats used to determine journey stage */
+export interface UserStats {
+  connectionCount: number;
+  eventCount: number;
+  cardOrderCount: number;
+}
+
+export type JourneyStage = 'new' | 'getting-started' | 'active' | 'power-user';
+
+export function getJourneyStage(stats: UserStats): JourneyStage {
+  if (stats.connectionCount === 0) return 'new';
+  if (stats.connectionCount <= 3 && stats.cardOrderCount === 0) return 'getting-started';
+  if (stats.cardOrderCount > 0) return 'power-user';
+  return 'active';
+}
+
+const journeyQuestions: Record<JourneyStage, string[]> = {
+  'new': [
+    'How do I get started with CircleDays?',
+    'How do I add someone to my circle?',
+    'What can CircleDays do for me?',
+    'How do reminders work?',
+  ],
+  'getting-started': [
+    'How do I expand my circle?',
+    'How do I send a handwritten card?',
+    "What's the difference between shared and private occasions?",
+    'How do I invite someone to join CircleDays?',
+  ],
+  'active': [
+    'How do I send a handwritten card?',
+    'How do I suggest connections to a friend?',
+    'How do I customize my reminder settings?',
+    'How does Message Assist work?',
+  ],
+  'power-user': [
+    'How do I track my card deliveries?',
+    'How do I suggest connections to a friend?',
+    'Can I set up different reminders for different people?',
+    'How do I buy more card credits?',
+  ],
+};
+
 const defaultContext: PageContext = {
   pageName: 'CircleDays',
   description: 'You are using the CircleDays app.',
@@ -182,4 +225,34 @@ export function getPageContext(pathname: string): PageContext {
     }
   }
   return defaultContext;
+}
+
+/**
+ * Get suggested questions based on journey stage.
+ * For new/getting-started users, journey questions take priority.
+ * For active/power users, page-specific questions are used if available,
+ * otherwise journey-level questions.
+ */
+export function getSuggestedQuestions(
+  pathname: string,
+  stage?: JourneyStage
+): string[] {
+  const pageCtx = getPageContext(pathname);
+
+  if (!stage || stage === 'active') {
+    return pageCtx.suggestedQuestions;
+  }
+
+  // For new and getting-started users, always show journey questions
+  // regardless of which page they're on
+  if (stage === 'new' || stage === 'getting-started') {
+    return journeyQuestions[stage];
+  }
+
+  // For power users, use page-specific if on a specific page,
+  // otherwise use power-user journey questions
+  if (pageCtx.pageName === 'CircleDays') {
+    return journeyQuestions[stage];
+  }
+  return pageCtx.suggestedQuestions;
 }
