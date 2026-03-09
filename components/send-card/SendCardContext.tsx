@@ -380,20 +380,12 @@ export function SendCardProvider({
   };
 
   const handleCreditRefresh = useCallback(async () => {
-    // Stripe's onComplete fires before the webhook credits the balance.
-    // Poll a few times with a short delay to wait for the webhook.
-    const startRes = await fetch('/api/card-credits');
-    const startData = await startRes.json();
-    const startBalance = typeof startData.balance === 'number' ? startData.balance : 0;
-
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await new Promise(r => setTimeout(r, 1500));
-      const res = await fetch('/api/card-credits');
-      const data = await res.json();
-      if (typeof data.balance === 'number') {
-        setCreditBalance(data.balance);
-        if (data.balance > startBalance) return; // webhook has landed
-      }
+    // Call our fulfill endpoint which proactively credits the account
+    // by checking the Stripe session directly — no webhook dependency.
+    const res = await fetch('/api/stripe/fulfill', { method: 'POST' });
+    const data = await res.json();
+    if (typeof data.balance === 'number') {
+      setCreditBalance(data.balance);
     }
   }, []);
 
