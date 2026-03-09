@@ -17,19 +17,27 @@ export interface PageContext {
 
 /** User stats used to determine journey stage */
 export interface UserStats {
+  /** Connections created by this user (not connections others created) */
   connectionCount: number;
+  /** Events created by this user */
   eventCount: number;
+  /** Card orders placed by this user */
   cardOrderCount: number;
+  /** Number of times user has logged in */
+  loginCount: number;
 }
 
 export type JourneyStage = 'new' | 'getting-started' | 'active' | 'power-user';
 
 export function getJourneyStage(stats: UserStats): JourneyStage {
+  // Brand new: hasn't created any connections themselves
   if (stats.connectionCount === 0) return 'new';
-  if (stats.cardOrderCount === 0 && stats.connectionCount <= 10 && stats.eventCount <= 5)
-    return 'getting-started';
+  // Has sent cards: power user regardless of other stats
   if (stats.cardOrderCount > 0) return 'power-user';
-  return 'active';
+  // Has been somewhat active but hasn't sent cards yet
+  if (stats.loginCount > 10 && stats.connectionCount > 5) return 'active';
+  // Everyone else is still getting started
+  return 'getting-started';
 }
 
 const journeyQuestions: Record<JourneyStage, string[]> = {
