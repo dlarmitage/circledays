@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.handwrytten.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'd3e924qpzqov0g.cloudfront.net',
+      },
     ],
     minimumCacheTTL: 86400, // 24 hours — card catalog rarely changes
   },
