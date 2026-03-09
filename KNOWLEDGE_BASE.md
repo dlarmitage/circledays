@@ -18,7 +18,7 @@ CircleDays is a **birthday and special occasion reminder app** built around a so
 A **Profile** represents a person in the system. Every profile has:
 - **Name** (required)
 - **Profile Picture** (optional, can be cropped/centered)
-- **Events** (birthdays, anniversaries, custom events)
+- **Occasions** (birthdays, anniversaries, custom occasions)
 - **Notes** (private annotations only you can see)
 
 Profiles can be:
@@ -33,24 +33,24 @@ Profiles can be:
 
 ### Connections
 A **Connection** is a two-way relationship between profiles. If you're connected to someone:
-- You can see their events and get reminders
-- You can add events to their profile
+- You can see their occasions and get reminders
+- You can add occasions to their profile
 - You can view their connections (2nd-order discovery)
 - You can add private notes about them
 
 Connections are **symmetric** - if you're connected to Kerry, Kerry is connected to you.
 
-### Events
-Events are special dates associated with a profile:
+### Occasions
+Occasions are special dates associated with a profile:
 
 1. **Birthday**: The person's birthday (always recurring yearly)
-2. **Anniversary**: A relationship anniversary (always recurring yearly)  
-3. **Custom Event**: Any other special date
+2. **Anniversary**: A relationship anniversary (always recurring yearly)
+3. **Custom Occasion**: Any other special date
    - Can be **recurring** (every year) or **one-time** (like a graduation)
    - Has a custom label (e.g., "Work Anniversary", "First Date")
 
-**Event Visibility**:
-- **Shared**: All connections can see this event and get reminders
+**Occasion Visibility**:
+- **Shared**: All connections can see this occasion and get reminders
 - **Private**: Only you (the creator) can see it and get reminders
 
 **Unknown Birth Year**: If you don't know someone's birth year, you can check "I don't know the birth year" - they'll still get birthday reminders, but no age will be calculated or displayed.
@@ -63,11 +63,11 @@ Notes are **private annotations** you can add to any profile you're connected to
 ## Features & How to Use Them
 
 ### Home / Dashboard
-The dashboard shows your **upcoming events** for the next 30 or 90 days, grouped by:
+The dashboard shows your **upcoming occasions** for the next 30 or 90 days, grouped by:
 - Today
 - Tomorrow
 - This Week
-- Next Four Weeks (events 8-30 days away)
+- Next Four Weeks (occasions 8-30 days away)
 - Later
 
 If someone has suggested connections for you, a **Suggested Connections card** appears at the top where you can accept or decline them.
@@ -76,19 +76,19 @@ If someone has suggested connections for you, a **Suggested Connections card** a
 - Keep the connection (green checkmark)
 - Disconnect if you prefer not to be connected (red minus icon)
 
-**Message Assist**: For events happening within the next week, you'll see a "Message Assist" button. This opens a modal where you can:
+**Message Assist**: For occasions happening within the next week, you'll see a "Message Assist" button. This opens a modal where you can:
 - View and edit your private notes about the person
-- Generate an AI-powered message based on the event type, person's name, and your notes
+- Generate an AI-powered message based on the occasion type, person's name, and your notes
 - Refine the message tone (friendly, casual, formal, warm)
 - Copy the message to your clipboard
 Notes are automatically saved when you close the modal.
 
-**Send Card**: For upcoming events, you'll see a "Send Card" button that opens the handwritten card ordering flow (see **Handwritten Cards** below). Once you've ordered a card for an event, the button changes to **"Card Ordered"** (green, with a checkmark) and links to the Cards dashboard instead.
+**Send Card**: For upcoming occasions, you'll see a "Send Card" button that opens the handwritten card ordering flow (see **Handwritten Cards** below). Once you've ordered a card for an occasion, the button changes to **"Card Ordered"** (green, with a checkmark) and links to the Cards dashboard instead.
 
-### Connections (Network View)
-The Connections page shows your social graph as a **hierarchical tree**:
+### My Circle
+The My Circle page shows your social graph as a **hierarchical tree**:
 
-**Your Connections View**:
+**Your Circle View**:
 - Lists all people you're directly connected to
 - Sorted alphabetically by last name, then first name
 - Shows their profile picture (or initials)
@@ -137,14 +137,14 @@ When viewing a profile:
 - "Edit Profile" button to change name/photo
 
 **For any connection**:
-- "Add Event" button to add birthdays, anniversaries, or custom events
+- "Add Occasion" button to add birthdays, anniversaries, or custom occasions
 - "My Notes" section for your private notes
 - "Invite" button (if unlinked) to invite them to create an account
 
-**Events Section**:
-- Shows all events on this profile
-- Tap an event to edit it (change date, type, visibility, delete)
-- Private events show a 🔒 lock icon
+**Occasions Section**:
+- Shows all occasions on this profile
+- Tap an occasion to edit it (change date, type, visibility, delete)
+- Private occasions show a 🔒 lock icon
 
 **Connections Section**:
 - Shows who this person is connected to
@@ -166,7 +166,7 @@ They'll receive an email with a link to create their account and claim the profi
 ### Suggesting Connections
 If someone already has an account, you can suggest people they might want to connect with:
 
-1. Go to Connections page
+1. Go to My Circle
 2. Tap "Select"
 3. Check the profiles you want to suggest
 4. Tap "Suggest"
@@ -183,18 +183,18 @@ Recipients with accounts will see the suggestions on their dashboard and can Acc
 **Note**: If you've suggested connections and then send an invite, the suggestions are preserved - they won't be overwritten.
 
 ### Calendar
-The Calendar page shows events in two views:
+The Calendar page shows occasions in two views:
 
 **Calendar View** (default):
 - Monthly calendar with navigation arrows
-- Days with events show mini avatars with emoji badges:
+- Days with occasions show mini avatars with emoji badges:
   - 🎂 Birthday
   - ❤️ Anniversary
-  - 🎆 Custom event
-- Tap a day to see event details below
+  - 🎆 Custom occasion
+- Tap a day to see occasion details below
 
 **List View**:
-- Shows all events for the next 12 months
+- Shows all occasions for the next 12 months
 - Grouped by timeframe (This Week, Next Four Weeks, Next 3 Months, Later This Year)
 - Quick way to see everything coming up
 
@@ -212,12 +212,12 @@ The Settings page lets you manage:
 - **Mobile number**: Required if using SMS
 - Default settings for new users: Mountain Time timezone, 'both' notification channel (when phone provided), lead days of 0, 1, 3, 7, and 14 days
 
-**My Events**:
-- See and edit events on your own profile
+**My Occasions**:
+- See and edit occasions on your own profile
 - Add your birthday if it's missing
 - Fix birth year if someone created your profile without it
-- Add new events (birthdays, anniversaries, custom events)
-- Control privacy settings for your events
+- Add new occasions (birthdays, anniversaries, custom occasions)
+- Control privacy settings for your occasions
 
 **Card Preferences**:
 - **Card Credits**: View your current credit balance
@@ -239,7 +239,7 @@ CircleDays lets you send **real handwritten cards** through a partnership with H
 
 1. **Pick a Card**: Browse 100+ card designs organized by category (birthday, thank you, thinking of you, etc.). Tap a card to see the inside design.
 
-2. **Compose Your Message**: Write your card message with a character limit based on the card. An **AI Message Assist** feature can generate a message for you — choose a tone (warm, funny, heartfelt, casual, formal) and the AI drafts a message based on the person's name, event type, and your notes. You can edit the AI-generated message before continuing.
+2. **Compose Your Message**: Write your card message with a character limit based on the card. An **AI Message Assist** feature can generate a message for you — choose a tone (warm, funny, heartfelt, casual, formal) and the AI drafts a message based on the person's name, occasion type, and your notes. You can edit the AI-generated message before continuing.
 
 3. **Preview**: See how your message looks on the card with the selected handwriting font. Use the arrow buttons to cycle through available fonts. Your font preference is automatically saved for next time.
 
@@ -247,7 +247,7 @@ CircleDays lets you send **real handwritten cards** through a partnership with H
 
 5. **Confirm & Send**: Review all details and choose delivery timing:
    - **Send now**: Handwrytten writes and mails the card immediately (arrives in 3–5 business days)
-   - **Timed delivery**: Available when linked to an event more than 7 days away — the card is mailed 7 days before the event date so it arrives on time
+   - **Timed delivery**: Available when linked to an occasion more than 7 days away — the card is mailed 7 days before the occasion date so it arrives on time
    - **Pick a send date**: Choose any future date for Handwrytten to mail the card — great for batch card writing sessions or occasions not tracked in CircleDays
 
    You can also review and edit your return address.
@@ -281,7 +281,7 @@ This information is saved and pre-filled for all future cards.
 - Credit balance displayed in the header
 
 **Card Nudge in Reminders**:
-When you receive event reminders via email or SMS, you'll see a contextual card nudge:
+When you receive occasion reminders via email or SMS, you'll see a contextual card nudge:
 - **14+ days out**: "There's still time to send a handwritten card"
 - **7 days out**: "Just enough time to send a handwritten card"
 - **3 days or less**: "It may be too late for a card, but you can still send one"
@@ -294,14 +294,14 @@ The nudge links directly to the person's profile page where you can start the ca
 ### How Reminders Work
 - Reminders are sent at your preferred notification hour in your local timezone (default: 8 AM)
 - You receive reminders based on your **Remind me** settings (e.g., 7 days before, 1 day before, day of)
-- Only events for people you're connected to trigger reminders
-- Private events only send reminders to the person who created them
+- Only occasions for people you're connected to trigger reminders
+- Private occasions only send reminders to the person who created them
 - Unlinked profiles (no account) don't receive reminders - only users with accounts do
 - Email reminders include a **card nudge** with a link to send a handwritten card (see Handwritten Cards above)
 
 ### Notification Channels
-- **Email**: HTML email with event details and links
-- **SMS**: Text message with event summary
+- **Email**: HTML email with occasion details and links
+- **SMS**: Text message with occasion summary
 - **Both**: Receive both email and SMS
 
 ---
@@ -310,13 +310,13 @@ The nudge links directly to the person's profile page where you can start the ca
 
 ### What Others Can See
 - Your name and profile picture
-- Events marked as "Shared" on your profile
+- Occasions marked as "Shared" on your profile
 - Your connections (when they drill into your profile)
 
 ### What's Private
 - Your email address (only you can see it)
 - Your mobile number (only you can see it)
-- Events marked as "Private"
+- Occasions marked as "Private"
 - Your notes on other profiles
 - Other people's notes about you (you can't see them)
 
@@ -331,22 +331,22 @@ The nudge links directly to the person's profile page where you can start the ca
 ## Common Questions
 
 ### "Why can't I see someone's birthday?"
-- They might not have a birthday event added yet
-- The event might be marked as Private by whoever created it
+- They might not have a birthday occasion added yet
+- The occasion might be marked as Private by whoever created it
 - You might not be connected to them
 
-### "Why is someone grayed out in my connections?"
+### "Why is someone grayed out in My Circle?"
 They're connected to the person you're viewing, but not to you. Tap them to see their profile preview and connect.
 
 ### "How do I fix an incorrect birthday?"
-If it's your own profile: Settings → My Events → tap the event → edit
-If it's someone else's profile: Go to their profile → tap the event → edit (if you created it)
+If it's your own profile: Settings → My Occasions → tap the occasion → edit
+If it's someone else's profile: Go to their profile → tap the occasion → edit (if you created it)
 
 ### "What happens when I delete a profile?"
-All their events, notes, and connections are deleted. If they had an account, they'll need to create a new profile.
+All their occasions, notes, and connections are deleted. If they had an account, they'll need to create a new profile.
 
-### "Can someone see that I added an event to their profile?"
-Shared events are visible to all their connections. The event doesn't show who created it, but it's visible.
+### "Can someone see that I added an occasion to their profile?"
+Shared occasions are visible to all their connections. The occasion doesn't show who created it, but it's visible.
 
 ### "How do I know if someone has an account?"
 In the Suggest modal, only people with accounts appear as possible recipients. When viewing connections, there's no explicit indicator, but you can try inviting them - if they already have an account, they don't need an invite.
@@ -355,16 +355,16 @@ In the Suggest modal, only people with accounts appear as possible recipients. W
 Make sure they have an account (have logged in at least once). Suggestions only work for users with accounts.
 
 ### "How do I add my own birthday?"
-Settings → My Events → "+ Add" or "Add Your Birthday"
+Settings → My Occasions → "+ Add" or "Add Your Birthday"
 
-### "What's the lock icon on an event?"
-It means the event is Private - only you can see it and get reminders for it.
+### "What's the lock icon on an occasion?"
+It means the occasion is Private - only you can see it and get reminders for it.
 
 ### "How do handwritten cards work?"
 You can send a real handwritten card to anyone from their profile page or the dashboard. Pick a card design, write your message (or let AI help), choose a handwriting font, enter their address, and choose when to send it. Each card costs 1 credit ($5 each, or save with bundles). The card is written with real pen and ink by Handwrytten and mailed with a stamp — it arrives in 3–5 business days.
 
 ### "Can I schedule a card for later?"
-Yes! When confirming your card order, choose "Pick a send date" to select any future mailing date. If the card is linked to an event more than 7 days away, you'll also see a "Timed delivery" option that automatically mails the card 7 days before the event. This is great for batch card writing sessions.
+Yes! When confirming your card order, choose "Pick a send date" to select any future mailing date. If the card is linked to an occasion more than 7 days away, you'll also see a "Timed delivery" option that automatically mails the card 7 days before the occasion. This is great for batch card writing sessions.
 
 ### "What happens if my card fails to send?"
 Your credit is automatically refunded if there's a problem placing the order with Handwrytten.
@@ -386,12 +386,12 @@ Since email and phone numbers are completely hidden, there's no privacy risk in 
 1. **Start with family**: Add your immediate family members first, then branch out
 2. **Use the Suggest feature**: When a family member joins, suggest your other family members to them
 3. **Set multiple reminder times**: "1 week before" gives you time to buy a gift, "day of" ensures you don't forget to call
-4. **Use private events for personal milestones**: First date, day you met someone, etc.
+4. **Use private occasions for personal milestones**: First date, day you met someone, etc.
 5. **Check "unknown year" if unsure**: Better to track the date without age than not track at all
 6. **Add photos**: They help you quickly identify people in lists and the calendar
    - You can paste photos directly from your clipboard (Ctrl/Cmd+V)
 7. **Use the calendar List view**: Great for planning ahead for the whole year
-8. **Use Message Assist**: For events in the next week, let AI help you craft a thoughtful message
+8. **Use Message Assist**: For occasions in the next week, let AI help you craft a thoughtful message
 9. **Auto-save notes**: Your notes are automatically saved as you type (no need to click save)
 10. **Batch card writing**: Use the "Pick a send date" option to write cards for weeks or months ahead in one sitting — Handwrytten will hold and mail them on the dates you choose
 11. **Send cards for any occasion**: You can send a card to anyone with an address, even for occasions not tracked in CircleDays — just use the custom send date
@@ -422,20 +422,20 @@ Since email and phone numbers are completely hidden, there's no privacy risk in 
 ### Admin Profile Management
 - **Edit Any Profile**: Admins can edit any profile's name and photo, not just their own
 - **Disconnect Any Connection**: Admins can disconnect any two profiles from each other (useful for fixing incorrect connections)
-- **Show All Profiles**: On the Connections page, admins see a "Show All" button that displays all profiles in the system, not just their connections
+- **Show All Profiles**: On the My Circle page, admins see a "Show All" button that displays all profiles in the system, not just their connections
 - **Merge Duplicate Profiles**: Admins can merge duplicate profiles, consolidating:
-  - Events (with smart duplicate detection for birthdays - matches by month/day, prefers known years)
+  - Occasions (with smart duplicate detection for birthdays - matches by month/day, prefers known years)
   - Connections
   - Notes
   - Profile data (name, photo)
-- **Cleanup Duplicate Birthdays**: Admins can use the cleanup endpoint to remove duplicate birthday events from a profile
+- **Cleanup Duplicate Birthdays**: Admins can use the cleanup endpoint to remove duplicate birthday occasions from a profile
 
 ### Admin Merge Process
-1. Search for profiles on Connections or Search page
+1. Search for profiles on My Circle or Search page
 2. If duplicates are detected (similar names), a "Merge" button appears
 3. Click Merge to open the merge modal
 4. Choose which profile to keep
-5. Select what to merge: name, photo, events, connections, notes
+5. Select what to merge: name, photo, occasions, connections, notes
 6. The merge consolidates all data and deletes the duplicate profile
 
 ### Admin Disconnect
@@ -446,4 +446,3 @@ Since email and phone numbers are completely hidden, there's no privacy risk in 
 ---
 
 *This knowledge base is maintained by the CircleDays team and reflects the current state of the application.*
-

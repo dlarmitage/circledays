@@ -267,6 +267,28 @@ export const cardOrders = pgTable('card_orders', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Chat Sessions - persistent AI assistant conversations per user
+export const chatSessions = pgTable('chat_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title'), // Auto-generated from first message, for listing sessions
+  lastPageContext: text('last_page_context'), // Last page the user was on (pageName)
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Chat Messages - individual messages within a chat session
+export const chatMessageRoleEnum = pgEnum('chat_message_role', ['user', 'assistant']);
+
+export const chatMessages = pgTable('chat_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull().references(() => chatSessions.id, { onDelete: 'cascade' }),
+  role: chatMessageRoleEnum('role').notNull(),
+  content: text('content').notNull(),
+  pageContext: text('page_context'), // Which page the user was on when this message was sent
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Branded Cards - mapping from original Handwrytten card IDs to our branded variants
 export const brandedCards = pgTable('branded_cards', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -286,3 +308,7 @@ export type CardCreditTransaction = typeof cardCreditTransactions.$inferSelect;
 export type CardOrder = typeof cardOrders.$inferSelect;
 export type NewCardOrder = typeof cardOrders.$inferInsert;
 export type BrandedCard = typeof brandedCards.$inferSelect;
+export type ChatSession = typeof chatSessions.$inferSelect;
+export type NewChatSession = typeof chatSessions.$inferInsert;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type NewChatMessage = typeof chatMessages.$inferInsert;
