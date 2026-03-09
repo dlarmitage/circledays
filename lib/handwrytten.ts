@@ -286,19 +286,33 @@ export async function listCustomImages(
 }
 
 /**
+ * Download a card's cover image and upload it to Handwrytten as a custom cover.
+ * Returns the uploaded image ID for use in createCustomCard.
+ */
+export async function uploadCardCoverAsCustom(coverUrl: string): Promise<number> {
+  const imgRes = await fetch(coverUrl, { signal: AbortSignal.timeout(15000) });
+  if (!imgRes.ok) throw new Error(`Failed to fetch cover image from ${coverUrl}`);
+
+  const buffer = Buffer.from(await imgRes.arrayBuffer());
+  const ext = coverUrl.match(/\.(png|jpg|jpeg)$/i)?.[1] || 'jpg';
+  const uploaded = await uploadCustomImage(buffer, `cover.${ext}`, 'cover');
+  return uploaded.id;
+}
+
+/**
  * Create a branded variant of an existing Handwrytten card.
- * Uses preset_cover_id (the original card's cover) + back_logo_id (our branding).
+ * Uses cover_id (re-uploaded cover image) + back_logo_id (our branding).
  */
 export async function createCustomCard(params: {
   name: string;
-  presetCoverId: number;       // Original card ID to use as the cover
+  coverId: number;             // Uploaded cover image ID (from uploadCardCoverAsCustom)
   backLogoId: number;          // Our uploaded logo image ID for the back
   dimensionId: number;         // Card dimensions (from the original card)
 }): Promise<HandwryttenCustomCardResponse> {
   const body = new URLSearchParams();
   body.set('uid', getApiKey());
   body.set('name', params.name);
-  body.set('preset_cover_id', String(params.presetCoverId));
+  body.set('cover_id', String(params.coverId));
   body.set('back_logo_id', String(params.backLogoId));
   body.set('dimension_id', String(params.dimensionId));
   body.set('back_type', 'logo');

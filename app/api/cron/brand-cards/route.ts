@@ -6,6 +6,7 @@ import {
   listCards,
   listCustomImages,
   createCustomCard,
+  uploadCardCoverAsCustom,
 } from '@/lib/handwrytten';
 
 // Called weekly by Vercel Cron to ensure all Handwrytten cards have CircleDays-branded variants.
@@ -56,9 +57,12 @@ export async function GET(request: NextRequest) {
       }
 
       try {
+        // Download cover image and re-upload as custom cover
+        const coverId = await uploadCardCoverAsCustom(card.cover);
+
         const result = await createCustomCard({
           name: `CircleDays - ${card.name}`,
-          presetCoverId: card.id,
+          coverId,
           backLogoId: backLogoId,
           dimensionId: card.dimension_id,
         });

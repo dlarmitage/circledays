@@ -9,6 +9,7 @@ import {
   uploadCustomImage,
   checkUploadedImage,
   createCustomCard,
+  uploadCardCoverAsCustom,
   listCards,
   listCategories,
   listCustomImages,
@@ -97,11 +98,11 @@ export const POST = withAuth(async (request, _user) => {
   }
 
   if (action === 'brand-card') {
-    const { originalCardId, dimensionId, cardName, backLogoImageId } = body;
+    const { originalCardId, dimensionId, cardName, coverUrl, backLogoImageId } = body;
 
-    if (!originalCardId || !dimensionId || !cardName || !backLogoImageId) {
+    if (!originalCardId || !dimensionId || !cardName || !coverUrl || !backLogoImageId) {
       return NextResponse.json(
-        { error: 'Missing required fields: originalCardId, dimensionId, cardName, backLogoImageId' },
+        { error: 'Missing required fields: originalCardId, dimensionId, cardName, coverUrl, backLogoImageId' },
         { status: 400 }
       );
     }
@@ -121,10 +122,13 @@ export const POST = withAuth(async (request, _user) => {
       });
     }
 
+    // Download the card's cover image and re-upload as a custom cover
+    const coverId = await uploadCardCoverAsCustom(coverUrl);
+
     // Create the branded variant on Handwrytten
     const result = await createCustomCard({
       name: `CircleDays - ${cardName}`,
-      presetCoverId: Number(originalCardId),
+      coverId,
       backLogoId: Number(backLogoImageId),
       dimensionId: Number(dimensionId),
     });
@@ -170,9 +174,12 @@ export const POST = withAuth(async (request, _user) => {
       }
 
       try {
+        // Download the card's cover and re-upload as a custom cover image
+        const coverId = await uploadCardCoverAsCustom(card.cover);
+
         const result = await createCustomCard({
           name: `CircleDays - ${card.name}`,
-          presetCoverId: card.id,
+          coverId,
           backLogoId: Number(backLogoImageId),
           dimensionId: card.dimension_id,
         });
