@@ -9,27 +9,28 @@ import { eq } from 'drizzle-orm';
 // POST /api/stripe/fulfill — client calls this after Stripe onComplete to
 // immediately fulfill the purchase without waiting for the webhook.
 export const POST = withAuth(async (_request, user) => {
-  // List the user's recent checkout sessions from Stripe
+  // Find the user's most recent paid checkout session from Stripe.
+  // Only fulfill one session — the webhook handles anything older.
   const sessions = await getStripe().checkout.sessions.list({
-    limit: 5,
+    limit: 10,
   });
 
   let fulfilled = false;
   for (const session of sessions.data) {
-    // Only process sessions belonging to this user
     if (session.metadata?.userId !== user.id) continue;
     if (session.payment_status !== 'paid') continue;
 
+    // Found the most recent paid session for this user — fulfill it and stop
     try {
-      const result = await fulfillCheckoutSession(
+      fulfilled = await fulfillCheckoutSession(
         session.id,
         session.payment_status,
         session.metadata as Record<string, string>
       );
-      if (result) fulfilled = true;
     } catch (err) {
       console.error('Fulfill endpoint: failed for session', session.id, err);
     }
+    break;
   }
 
   // Return current balance
