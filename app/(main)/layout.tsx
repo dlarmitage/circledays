@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser, getSession } from '@/lib/auth';
-import { db, users } from '@/lib/db';
+import { db, users, profiles } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { Navigation } from '@/components/Navigation';
 import { HelpChat } from '@/components/HelpChat';
@@ -16,6 +16,13 @@ export default async function MainLayout({
   if (!user) {
     redirect('/login');
   }
+
+  // Get user's own profile picture
+  const [ownProfile] = await db
+    .select({ profilePicture: profiles.profilePicture })
+    .from(profiles)
+    .where(eq(profiles.linkedUserId, user.id))
+    .limit(1);
 
   // Check impersonation state
   const session = await getSession();
@@ -47,7 +54,7 @@ export default async function MainLayout({
         />
       )}
 
-      <Navigation isAdmin={isAdmin} />
+      <Navigation isAdmin={isAdmin} userName={user.name} profilePicture={ownProfile?.profilePicture} />
 
       {/* Main content - offset for sidebar on desktop, and for banner when impersonating */}
       <main className={`md:ml-64 pb-20 md:pb-0 ${impersonation ? 'pt-10' : ''}`}>

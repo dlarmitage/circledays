@@ -1,15 +1,20 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Users, Calendar, Mail, Settings, Shield } from 'lucide-react';
+import { Avatar } from '@/components/ui/Avatar';
+import { Home, Users, Calendar, Mail, Settings, Shield, LogOut, ChevronDown } from 'lucide-react';
 
-const navItems = [
+const mainNavItems = [
   { href: '/dashboard', label: 'Home', icon: Home },
   { href: '/mycircle', label: 'My Circle', icon: Users },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/cards', label: 'Cards', icon: Mail },
+];
+
+const desktopOnlyItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -17,11 +22,46 @@ const adminItem = { href: '/admin', label: 'Admin', icon: Shield };
 
 interface NavigationProps {
   isAdmin?: boolean;
+  userName?: string;
+  profilePicture?: string | null;
 }
 
-export function Navigation({ isAdmin }: NavigationProps) {
+export function Navigation({ isAdmin, userName, profilePicture }: NavigationProps) {
   const pathname = usePathname();
-  const allItems = isAdmin ? [...navItems, adminItem] : navItems;
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const desktopItems = [
+    ...mainNavItems,
+    ...desktopOnlyItems,
+    ...(isAdmin ? [adminItem] : []),
+  ];
+
+  const mobileBottomItems = mainNavItems;
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [menuOpen]);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  async function handleSignOut() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
+  }
 
   return (
     <>
@@ -38,7 +78,7 @@ export function Navigation({ isAdmin }: NavigationProps) {
 
         <nav className="flex-1">
           <ul className="space-y-1">
-            {allItems.map(({ href, label, icon: Icon }) => {
+            {desktopItems.map(({ href, label, icon: Icon }) => {
               const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
               return (
                 <li key={href}>
@@ -59,12 +99,71 @@ export function Navigation({ isAdmin }: NavigationProps) {
             })}
           </ul>
         </nav>
+
+        {/* Desktop Sign Out */}
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors w-full"
+        >
+          <LogOut className="w-5 h-5" />
+          Sign Out
+        </button>
       </aside>
+
+      {/* Mobile Avatar Menu (top-left) */}
+      <div className="md:hidden fixed top-3 left-3 z-50" ref={menuRef}>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="flex items-center gap-1.5 bg-white rounded-full shadow-md border border-gray-100 pr-2 pl-0.5 py-0.5"
+        >
+          <Avatar src={profilePicture} name={userName || '?'} size="sm" />
+          <ChevronDown className={cn('w-3.5 h-3.5 text-gray-500 transition-transform', menuOpen && 'rotate-180')} />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 overflow-hidden">
+            <Link
+              href="/settings"
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
+                pathname.startsWith('/settings')
+                  ? 'bg-teal-50 text-teal-700'
+                  : 'text-gray-600 hover:bg-gray-50'
+              )}
+            >
+              <Settings className="w-5 h-5" />
+              Settings
+            </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
+                  pathname.startsWith('/admin')
+                    ? 'bg-teal-50 text-teal-700'
+                    : 'text-gray-600 hover:bg-gray-50'
+                )}
+              >
+                <Shield className="w-5 h-5" />
+                Admin
+              </Link>
+            )}
+            <div className="border-t border-gray-100 my-1" />
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors w-full"
+            >
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 pb-safe z-50">
         <ul className="flex justify-around">
-          {allItems.map(({ href, label, icon: Icon }) => {
+          {mobileBottomItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
             return (
               <li key={href} className="flex-1">
