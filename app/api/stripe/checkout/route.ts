@@ -34,6 +34,7 @@ export const POST = withAuth(async (request, user) => {
     ],
     mode: 'payment',
     ui_mode: 'embedded',
+    redirect_on_completion: 'if_required',
     return_url: `${appUrl}${returnPath || '/settings?credits=added'}`,
     metadata: {
       userId: user.id,

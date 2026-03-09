@@ -53,8 +53,8 @@ export function ConfirmStep() {
   };
 
   const handlePurchaseSuccess = async () => {
+    await handleCreditRefresh();
     setCheckoutBundleId(null);
-    handleCreditRefresh();
   };
 
   if (!selectedCard) return null;
