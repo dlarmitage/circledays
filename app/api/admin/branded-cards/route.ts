@@ -161,7 +161,7 @@ export const POST = withAuth(async (request, _user) => {
     const existingMappings = await db.select().from(brandedCards);
     const alreadyBranded = new Set(existingMappings.map(m => m.originalCardId));
 
-    const results: { originalCardId: number; brandedCardId: number; name: string; skipped?: boolean }[] = [];
+    const results: { originalCardId: number; brandedCardId: number; name: string; skipped?: boolean; error?: string }[] = [];
 
     for (const card of cards) {
       if (alreadyBranded.has(String(card.id))) {
@@ -186,8 +186,9 @@ export const POST = withAuth(async (request, _user) => {
 
         results.push({ originalCardId: card.id, brandedCardId: result.card_id, name: card.name });
       } catch (err) {
-        console.error(`Failed to brand card ${card.id} (${card.name}):`, err);
-        results.push({ originalCardId: card.id, brandedCardId: 0, name: card.name, skipped: true });
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`Failed to brand card ${card.id} (${card.name}):`, errMsg);
+        results.push({ originalCardId: card.id, brandedCardId: 0, name: card.name, skipped: true, error: errMsg });
       }
     }
 
