@@ -260,6 +260,7 @@ CircleDays lets you send **real handwritten cards** through a partnership with H
 - Additional credits can be purchased in bundles: 1 card ($5), 5 cards ($25), or 10 cards ($50)
 - Payments are processed securely through **Stripe**
 - If a card send fails, your credit is automatically refunded
+- **If you run out of credits** during the card flow, the Confirm step shows credit bundle options right inline — you can purchase more without leaving the flow, and once the purchase completes the Send button becomes active
 
 **Card Onboarding** (first-time setup):
 The first time you send a card, you'll be guided through a quick setup:
