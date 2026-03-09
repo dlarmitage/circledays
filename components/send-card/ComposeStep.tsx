@@ -51,7 +51,7 @@ export function ComposeStep() {
             onChange={e => setNotes(e.target.value)}
             onBlur={e => handleSaveNotes(e.target.value)}
             placeholder={`e.g. "Loves hiking", "Has two kids", "Big year — just retired"`}
-            rows={2}
+            rows={3}
             className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
           />
         )}
@@ -68,7 +68,7 @@ export function ComposeStep() {
           value={additionalContext}
           onChange={e => setAdditionalContext(e.target.value)}
           placeholder={`e.g. "Mention their new puppy" or "Reference our camping trip"`}
-          rows={2}
+          rows={3}
           className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
         />
       </div>
@@ -108,7 +108,12 @@ export function ComposeStep() {
       </div>
 
       {/* AI generate button */}
-      <Button type="button" className="w-full" variant="secondary" onClick={handleGenerateMessage} loading={generating}>
+      <Button
+        type="button"
+        className="w-full border-2 border-teal-500 text-teal-700 bg-teal-50 hover:bg-teal-100 py-3 font-semibold"
+        onClick={handleGenerateMessage}
+        loading={generating}
+      >
         <Sparkles className="w-4 h-4 mr-2 text-teal-600" />
         {message ? 'Regenerate with AI' : 'Draft with AI'}
       </Button>

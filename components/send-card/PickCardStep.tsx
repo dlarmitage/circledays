@@ -66,7 +66,7 @@ export function PickCardStep() {
           ))}
         </div>
       ) : cards.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto">
+        <div className="grid grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto">
           {cards.map(card => (
             <button
               key={card.id}
