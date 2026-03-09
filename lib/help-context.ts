@@ -119,8 +119,8 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
       beginnerQuestions: [
         'What is My Circle?',
         'How do I add people to my circle?',
-        'What happens when I tap on someone?',
-        'Why is someone grayed out?',
+        'What do the numbers next to each person mean?',
+        'How can I discover new people to add?',
       ],
     },
   },

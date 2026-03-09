@@ -94,12 +94,12 @@ The My Circle page shows your social graph as a **hierarchical tree**:
 - Shows their profile picture (or initials)
 - Shows the count of their connections (tap to drill in)
 
-**Drilling In**:
-- Tap the number badge to see someone's connections
-- Their connections appear in a list
+**Drilling Into Connections** (the number badge on the right):
+- Each person shows a number badge with their connection count — tap it to see who *they* are connected to
+- This is one of the most powerful ways to grow your circle: if you care about someone's birthday, there's a good chance their connections include other people whose birthdays you'd also want to track
 - **Full color** = You're also connected to this person
-- **Grayed out** = They're connected to your friend, but not to you
-- Tap a grayed-out person to see a preview and connect
+- **Grayed out** = They're connected to your friend, but not to you yet
+- Tap a grayed-out person to see a preview and quickly add them to your own circle
 
 **Search**:
 - The search bar searches **everyone** in the system, not just your connections
