@@ -379,12 +379,15 @@ export function SendCardProvider({
     setStep('confirm');
   };
 
-  const handleCreditRefresh = async () => {
+  const handleCreditRefresh = useCallback(async () => {
     // Stripe's onComplete fires before the webhook credits the balance.
     // Poll a few times with a short delay to wait for the webhook.
-    const startBalance = creditBalance ?? 0;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+    const startRes = await fetch('/api/card-credits');
+    const startData = await startRes.json();
+    const startBalance = typeof startData.balance === 'number' ? startData.balance : 0;
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(r => setTimeout(r, 1500));
       const res = await fetch('/api/card-credits');
       const data = await res.json();
       if (typeof data.balance === 'number') {
@@ -392,7 +395,7 @@ export function SendCardProvider({
         if (data.balance > startBalance) return; // webhook has landed
       }
     }
-  };
+  }, []);
 
   const handleSend = async () => {
     setSending(true);

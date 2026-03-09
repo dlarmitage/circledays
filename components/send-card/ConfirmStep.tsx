@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -47,15 +47,36 @@ export function ConfirmStep() {
 
   const [editingSender, setEditingSender] = useState(false);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
+  const [waitingForCredits, setWaitingForCredits] = useState(false);
+  const pollingRef = useRef(false);
 
   const onSenderChange = (update: Partial<typeof senderAddress>) => {
     setSenderAddress(a => ({ ...a, ...update }));
   };
 
-  const handlePurchaseSuccess = async () => {
-    await handleCreditRefresh();
+  // When Stripe onComplete fires, set flag and close Stripe modal.
+  // The polling happens in a useEffect below so it doesn't depend on
+  // Stripe's callback properly handling async functions.
+  const handlePurchaseSuccess = () => {
     setCheckoutBundleId(null);
+    setWaitingForCredits(true);
   };
+
+  // Poll for credit balance after purchase — runs in useEffect so it's
+  // independent of how Stripe invokes the onComplete callback.
+  useEffect(() => {
+    if (!waitingForCredits || pollingRef.current) return;
+    pollingRef.current = true;
+
+    (async () => {
+      try {
+        await handleCreditRefresh();
+      } finally {
+        setWaitingForCredits(false);
+        pollingRef.current = false;
+      }
+    })();
+  }, [waitingForCredits, handleCreditRefresh]);
 
   if (!selectedCard) return null;
 
@@ -242,22 +263,29 @@ export function ConfirmStep() {
       </div>
 
       {creditBalance !== null && creditBalance < 1 && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
-          <p className="text-sm font-medium text-amber-800">You&apos;re out of credits — add some to send this card.</p>
-          <div className="grid grid-cols-3 gap-2">
-            {CREDIT_BUNDLES.map(bundle => (
-              <button
-                key={bundle.id}
-                type="button"
-                onClick={() => setCheckoutBundleId(bundle.id)}
-                className="flex flex-col items-center p-2.5 rounded-xl border-2 border-amber-200 bg-white hover:border-teal-400 hover:bg-teal-50 transition-all text-center"
-              >
-                <span className="font-semibold text-gray-900 text-sm">{bundle.label}</span>
-                <span className="text-xs text-gray-500">${bundle.priceUsd.toFixed(2)}</span>
-              </button>
-            ))}
+        waitingForCredits ? (
+          <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <p className="text-sm font-medium text-teal-800">Payment received — updating your credits...</p>
           </div>
-        </div>
+        ) : (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+            <p className="text-sm font-medium text-amber-800">You&apos;re out of credits — add some to send this card.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {CREDIT_BUNDLES.map(bundle => (
+                <button
+                  key={bundle.id}
+                  type="button"
+                  onClick={() => setCheckoutBundleId(bundle.id)}
+                  className="flex flex-col items-center p-2.5 rounded-xl border-2 border-amber-200 bg-white hover:border-teal-400 hover:bg-teal-50 transition-all text-center"
+                >
+                  <span className="font-semibold text-gray-900 text-sm">{bundle.label}</span>
+                  <span className="text-xs text-gray-500">${bundle.priceUsd.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
       )}
 
       <StripeCheckoutModal
