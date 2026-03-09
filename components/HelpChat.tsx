@@ -358,23 +358,35 @@ export function HelpChat() {
                       <p className="text-gray-600 mb-4">
                         Hi! I&apos;m here to help you with CircleDays.
                       </p>
-                      <p className="text-sm text-gray-500 mb-4">
-                        Try asking:
-                      </p>
-                      <div className="space-y-2">
-                        {suggestedQuestions.map((q, i) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              setInput(q);
-                              inputRef.current?.focus();
-                            }}
-                            className="block w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
-                          >
-                            {q}
-                          </button>
-                        ))}
-                      </div>
+                      {sessionLoaded ? (
+                        <>
+                          <p className="text-sm text-gray-500 mb-4">
+                            Try asking:
+                          </p>
+                          <div className="space-y-2">
+                            {suggestedQuestions.map((q, i) => (
+                              <button
+                                key={i}
+                                onClick={() => {
+                                  setInput(q);
+                                  inputRef.current?.focus();
+                                }}
+                                className="block w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+                              >
+                                {q}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex justify-center py-4">
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     messages.map((msg, i) => (
