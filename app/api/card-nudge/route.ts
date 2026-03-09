@@ -44,7 +44,7 @@ export const POST = withAuth(async (request, _user) => {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 80,
         temperature: 1.0,
-        system: `You write brief, playful, warm one-liner prompts that nudge someone to send a handwritten card to a friend. You never sound salesy or pushy. You sound like a thoughtful friend whispering a suggestion. Keep it to one sentence, under 60 characters if possible. Never use quotes around the output. Always include the person's first name naturally. Never use em-dashes or emojis.`,
+        system: `You write brief, playful, warm one-liner prompts that nudge someone to send a handwritten card to a friend. The card is written by a service using robotic pens that mimic real handwriting — the sender chooses the message but does NOT write it themselves. Never imply the sender writes it by hand or that it's "in their handwriting." You never sound salesy or pushy. You sound like a thoughtful friend whispering a suggestion. Keep it to one sentence, under 60 characters if possible. Never use quotes around the output. Always include the person's first name naturally. Never use em-dashes or emojis.`,
         messages: [
           {
             role: 'user',
