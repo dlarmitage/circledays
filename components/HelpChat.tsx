@@ -83,6 +83,17 @@ export function HelpChat() {
     }
   }, [isOpen, sessionLoaded, loadSession]);
 
+  // Start a fresh conversation when the user navigates to a new page
+  const prevPathname = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== prevPathname.current) {
+      prevPathname.current = pathname;
+      setSessionId(null);
+      setMessages([]);
+      setView('chat');
+    }
+  }, [pathname]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
