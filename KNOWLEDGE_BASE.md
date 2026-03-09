@@ -32,13 +32,13 @@ Profiles can be:
 - You can create Profiles for others (family, friends) who may or may not ever create accounts
 
 ### Connections
-A **Connection** is a two-way relationship between profiles. If you're connected to someone:
+A **Connection** is a relationship between two profiles. If you're connected to someone:
 - You can see their occasions and get reminders
 - You can add occasions to their profile
 - You can view their connections (2nd-order discovery)
 - You can add private notes about them
 
-Connections are **symmetric** - if you're connected to Kerry, Kerry is connected to you.
+Connections are **symmetric in the data model** — if you're connected to Kerry, Kerry is connected to you. However, **adding a connection does not require the other person's approval**. When you add someone to your circle (or connect two existing profiles), the connection is created immediately. There is no friend request or acceptance step. This makes it easy to build out your network without waiting on others.
 
 ### Occasions
 Occasions are special dates associated with a profile:
