@@ -12,6 +12,7 @@ import { SendCardModal } from '@/components/SendCardModal';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { AccountDetails } from '@/components/profile/AccountDetails';
 import { ProfileEvents } from '@/components/profile/ProfileEvents';
+import { ProfileAddress } from '@/components/profile/ProfileAddress';
 import { ProfileNotes } from '@/components/profile/ProfileNotes';
 import { ProfileConnections } from '@/components/profile/ProfileConnections';
 import { useCardNudge } from '@/components/profile/useCardNudge';
@@ -147,6 +148,10 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
 
       {isDirectConnection && (
         <ProfileEvents events={events} onEditEvent={setEditingEvent} onAddEvent={() => setShowAddEventModal(true)} />
+      )}
+
+      {isDirectConnection && !isOwnProfile && (
+        <ProfileAddress profileId={id} profileName={profile.name} />
       )}
 
       {isDirectConnection && !isOwnProfile && (
