@@ -355,15 +355,15 @@ export function HelpChat() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.length === 0 ? (
                     <div className="text-center py-4">
-                      <p className="text-gray-600 mb-4">
+                      <p className={`text-gray-600 mb-4 ${isExpanded ? 'text-lg' : ''}`}>
                         Hi! I&apos;m here to help you with CircleDays.
                       </p>
                       {sessionLoaded ? (
                         <>
-                          <p className="text-sm text-gray-500 mb-4">
+                          <p className={`text-gray-500 mb-4 ${isExpanded ? 'text-base' : 'text-sm'}`}>
                             Try asking:
                           </p>
-                          <div className="space-y-2">
+                          <div className={`space-y-2 ${isExpanded ? 'max-w-xl mx-auto' : ''}`}>
                             {suggestedQuestions.map((q, i) => (
                               <button
                                 key={i}
@@ -371,7 +371,7 @@ export function HelpChat() {
                                   setInput(q);
                                   inputRef.current?.focus();
                                 }}
-                                className="block w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+                                className={`block w-full text-left px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors ${isExpanded ? 'text-base px-4 py-3' : 'text-sm'}`}
                               >
                                 {q}
                               </button>
@@ -401,7 +401,7 @@ export function HelpChat() {
                               : 'bg-gray-100 text-gray-800 rounded-bl-md'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          <p className={`whitespace-pre-wrap ${isExpanded ? 'text-base' : 'text-sm'}`}>{msg.content}</p>
                         </div>
                       </div>
                     ))
@@ -432,7 +432,7 @@ export function HelpChat() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder="Ask me anything..."
-                      className="flex-1 px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className={`flex-1 px-4 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${isExpanded ? 'py-3 text-base' : 'py-2 text-sm'}`}
                       disabled={loading}
                     />
                     <Button
@@ -443,7 +443,7 @@ export function HelpChat() {
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mt-2">
+                  <p className={`text-gray-400 text-center mt-2 ${isExpanded ? 'text-sm' : 'text-xs'}`}>
                     Powered by AI · May not always be accurate
                   </p>
                 </div>
