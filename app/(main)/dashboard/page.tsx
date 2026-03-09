@@ -287,11 +287,13 @@ export default function DashboardPage() {
         <EmptyState
           icon={<Cake className="w-8 h-8" />}
           title={STRINGS.dashboard.nothingUpcoming}
-          description={STRINGS.dashboard.addPeople}
+          description={days === 30
+            ? 'No occasions coming up in the next 4 weeks. Try expanding to 3 months, or add more people to your circle.'
+            : 'No occasions coming up in the next 3 months. Add more people to your circle to stay connected.'}
           action={
             <Button onClick={() => router.push('/add-person')}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Your First Person
+              Add Person
             </Button>
           }
         />

@@ -52,8 +52,9 @@ export const GET = withAuth(async (_req, _user) => {
 
 // POST /api/admin/branded-cards — create branded variants for cards
 // Body: { action: "upload-logo" } — uploads the CircleDays QR/logo image
-// Body: { action: "brand-card", originalCardId, dimensionId, cardName } — creates one branded variant
-// Body: { action: "brand-category", categoryId } — brands all cards in a category
+// Body: { action: "brand-card", originalCardId, dimensionId, cardName, coverUrl, backLogoImageId } — creates one branded variant
+// Body: { action: "brand-category", categoryId, backLogoImageId } — brands all cards in a category
+// Body: { action: "rebrand-all", backLogoImageId } — deletes all mappings, re-brands every card with new logo
 export const POST = withAuth(async (request, _user) => {
   try {
     await requireAdmin();
@@ -205,6 +206,80 @@ export const POST = withAuth(async (request, _user) => {
       branded: results.filter(r => !r.skipped).length,
       skipped: results.filter(r => r.skipped).length,
       results,
+    });
+  }
+
+  if (action === 'rebrand-all') {
+    const { backLogoImageId } = body;
+
+    if (!backLogoImageId) {
+      return NextResponse.json(
+        { error: 'Missing required field: backLogoImageId' },
+        { status: 400 }
+      );
+    }
+
+    // Delete all existing branded card mappings
+    const oldMappings = await db.select().from(brandedCards);
+    await db.delete(brandedCards);
+
+    // Fetch all categories and re-brand every card
+    const categories = await listCategories();
+    let totalNew = 0;
+    let totalFailed = 0;
+    const errors: { cardId: number; name: string; error: string }[] = [];
+
+    for (const category of categories) {
+      if (category.name.toLowerCase() === 'all categories') continue;
+
+      let cards;
+      try {
+        cards = await listCards(category.id);
+      } catch (err) {
+        console.error(`Failed to list cards for category ${category.id} (${category.name}):`, err);
+        continue;
+      }
+
+      // Track cards we've already processed (same card can appear in multiple categories)
+      const processed = new Set<string>();
+
+      for (const card of cards) {
+        if (processed.has(String(card.id))) continue;
+        processed.add(String(card.id));
+
+        try {
+          const coverId = await uploadCardCoverAsCustom(card.cover);
+
+          const result = await createCustomCard({
+            name: `CircleDays - ${card.name}`,
+            coverId,
+            backLogoId: Number(backLogoImageId),
+            dimensionId: card.dimension_id,
+          });
+
+          await db.insert(brandedCards).values({
+            originalCardId: String(card.id),
+            brandedCardId: String(result.card_id),
+            backLogoImageId: String(backLogoImageId),
+            cardName: card.name,
+          });
+
+          totalNew++;
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error(`Failed to rebrand card ${card.id} (${card.name}):`, errMsg);
+          errors.push({ cardId: card.id, name: card.name, error: errMsg });
+          totalFailed++;
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      oldMappingsDeleted: oldMappings.length,
+      newlyBranded: totalNew,
+      failed: totalFailed,
+      errors: errors.length > 0 ? errors : undefined,
     });
   }
 
