@@ -9,8 +9,10 @@ export interface PageContext {
   pageName: string;
   /** Brief description of what the user can do here */
   description: string;
-  /** Suggested questions relevant to this page */
+  /** Suggested questions for experienced users */
   suggestedQuestions: string[];
+  /** Suggested questions for newer users who are still learning the app */
+  beginnerQuestions?: string[];
 }
 
 /** User stats used to determine journey stage */
@@ -24,7 +26,8 @@ export type JourneyStage = 'new' | 'getting-started' | 'active' | 'power-user';
 
 export function getJourneyStage(stats: UserStats): JourneyStage {
   if (stats.connectionCount === 0) return 'new';
-  if (stats.connectionCount <= 3 && stats.cardOrderCount === 0) return 'getting-started';
+  if (stats.cardOrderCount === 0 && stats.connectionCount <= 10 && stats.eventCount <= 5)
+    return 'getting-started';
   if (stats.cardOrderCount > 0) return 'power-user';
   return 'active';
 }
@@ -85,6 +88,12 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'How do I send a handwritten card from here?',
         'What does "Card Ordered" mean?',
       ],
+      beginnerQuestions: [
+        'What is this dashboard showing me?',
+        'What is "People You May Want to Celebrate"?',
+        'What are handwritten cards and how do they work?',
+        'How do I add more people to my circle?',
+      ],
     },
   },
   {
@@ -98,6 +107,12 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'How do I suggest connections to a friend?',
         'How does the search work?',
         'How do I disconnect from someone?',
+      ],
+      beginnerQuestions: [
+        'What is My Circle?',
+        'How do I add people to my circle?',
+        'What happens when I tap on someone?',
+        'Why is someone grayed out?',
       ],
     },
   },
@@ -127,6 +142,12 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'How do I invite this person to CircleDays?',
         'How do I send them a card?',
       ],
+      beginnerQuestions: [
+        'What can I do on this profile page?',
+        'How do I add a birthday or occasion?',
+        'What does it mean to invite someone?',
+        'What are handwritten cards?',
+      ],
     },
   },
   {
@@ -155,6 +176,12 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'Why are some occasions missing from my calendar?',
         'How far ahead does the list view show?',
       ],
+      beginnerQuestions: [
+        'What does this calendar show?',
+        'How do occasions get added to my calendar?',
+        'What do the little photos on the calendar mean?',
+        'Can I see a list instead of a calendar?',
+      ],
     },
   },
   {
@@ -169,6 +196,12 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'Can I cancel a card after ordering?',
         'How long does delivery take?',
       ],
+      beginnerQuestions: [
+        'What are handwritten cards?',
+        'How do I send my first card?',
+        'How much do cards cost?',
+        'What does this page show me?',
+      ],
     },
   },
   {
@@ -182,6 +215,12 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'How do I add my own birthday?',
         'How do I update my email address?',
         'How do I set up my card preferences?',
+      ],
+      beginnerQuestions: [
+        'What settings should I set up first?',
+        'How do reminders work?',
+        'How do I add my own birthday?',
+        'What are card preferences?',
       ],
     },
   },
@@ -228,10 +267,13 @@ export function getPageContext(pathname: string): PageContext {
 }
 
 /**
- * Get suggested questions based on journey stage.
- * For new/getting-started users, journey questions take priority.
- * For active/power users, page-specific questions are used if available,
- * otherwise journey-level questions.
+ * Get suggested questions based on journey stage and current page.
+ *
+ * - New users on a specific page: page beginnerQuestions → journey questions fallback
+ * - New users on unknown page: journey questions
+ * - Getting-started users: same as new (page beginner → journey fallback)
+ * - Active users: page-specific experienced questions
+ * - Power users: page-specific experienced questions, or power-user journey questions
  */
 export function getSuggestedQuestions(
   pathname: string,
@@ -239,18 +281,18 @@ export function getSuggestedQuestions(
 ): string[] {
   const pageCtx = getPageContext(pathname);
 
+  // No stats yet or active users: use page-specific experienced questions
   if (!stage || stage === 'active') {
     return pageCtx.suggestedQuestions;
   }
 
-  // For new and getting-started users, always show journey questions
-  // regardless of which page they're on
+  // New and getting-started users: prefer page-level beginner questions,
+  // fall back to journey-level questions
   if (stage === 'new' || stage === 'getting-started') {
-    return journeyQuestions[stage];
+    return pageCtx.beginnerQuestions || journeyQuestions[stage];
   }
 
-  // For power users, use page-specific if on a specific page,
-  // otherwise use power-user journey questions
+  // Power users: page-specific if on a recognized page, otherwise journey questions
   if (pageCtx.pageName === 'CircleDays') {
     return journeyQuestions[stage];
   }
