@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, connections, invites } from '@/lib/db';
+import { events } from '@/lib/db/schema';
 import { withAuth } from '@/lib/api-handler';
-import { eq, or, and, ilike, sql } from 'drizzle-orm';
+import { eq, or, and, ilike, sql, inArray } from 'drizzle-orm';
 
 // Check for potential duplicate profiles before creating a new one
 export const POST = withAuth(async (req, user) => {
@@ -42,12 +43,41 @@ export const POST = withAuth(async (req, user) => {
     searchConditions.push(ilike(profiles.name, `%${firstName}%${lastName}%`));
   }
 
+  // Also search by first name alone (catches "John Smith" vs "John Michael Smith")
+  if (nameParts.length >= 1 && nameParts[0].length >= 2) {
+    searchConditions.push(ilike(profiles.name, `${nameParts[0]}%`));
+  }
+
   // Search for similar profiles
   const similarProfiles = await db
     .select()
     .from(profiles)
     .where(or(...searchConditions))
-    .limit(10);
+    .limit(20);
+
+  // If a birthday was provided, look up birthday events for all candidate profiles
+  // so we can boost score for birthday matches
+  const birthdayMonthDay = birthday ? birthday.slice(5) : null; // "MM-DD"
+  const candidateIds = similarProfiles.map(p => p.id);
+  const birthdayMatchIds = new Set<string>();
+
+  if (birthdayMonthDay && candidateIds.length > 0) {
+    const birthdayEvents = await db
+      .select({ profileId: events.profileId, date: events.date })
+      .from(events)
+      .where(
+        and(
+          inArray(events.profileId, candidateIds),
+          eq(events.type, 'birthday')
+        )
+      );
+
+    for (const evt of birthdayEvents) {
+      if (evt.date.slice(5) === birthdayMonthDay) {
+        birthdayMatchIds.add(evt.profileId);
+      }
+    }
+  }
 
   // Get user's existing connections to check if already connected
   const userConnections = await db
@@ -90,10 +120,10 @@ export const POST = withAuth(async (req, user) => {
         reasons.push('Partial name match');
       }
 
-      // Birthday match (strong signal)
-      if (birthday && profile.createdAt) {
-        // We don't have birthday on profile directly, but we can check events
-        // For now, just flag as potential match
+      // Birthday match (strong signal — same month/day)
+      if (birthdayMatchIds.has(profile.id)) {
+        score += 60;
+        reasons.push('Same birthday');
       }
 
       // Already connected?

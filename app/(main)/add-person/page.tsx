@@ -199,6 +199,8 @@ export default function AddPersonPage() {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             autoFocus
             required
+            autoComplete="off"
+            data-1p-ignore
           />
           
           <div className="space-y-2">
