@@ -351,10 +351,17 @@ export async function deleteCustomImage(imageId: number): Promise<void> {
   }
 }
 
-/** Fetch order history from Handwrytten to sync statuses. */
+/** Fetch order history from Handwrytten to sync statuses. Uses v1 endpoint (v2 sessions expire). */
 export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
-  const headers = authedHeaders();
-  const res = await fetch(`${BASE_URL}/v2/orders/listGrouped`, { headers, signal: AbortSignal.timeout(10000) });
+  const body = new URLSearchParams();
+  body.set('uid', getApiKey());
+
+  const res = await fetch(`${BASE_URL}/v1/orders/list`, {
+    method: 'POST',
+    body,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    signal: AbortSignal.timeout(10000),
+  });
 
   if (!res.ok) {
     const text = await res.text();
@@ -362,12 +369,10 @@ export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
   }
 
   const data = await res.json();
-  const orders = data.orders ?? data;
+  const orders = data.orders ?? [];
   if (!Array.isArray(orders)) return [];
   return orders.map((o: Record<string, unknown>) => ({
     id: o.id as number,
     status: (o.status as string) ?? 'unknown',
-    date_send: o.date_send as string | undefined,
-    date_fulfilled: o.date_fulfilled as string | undefined,
   }));
 }
