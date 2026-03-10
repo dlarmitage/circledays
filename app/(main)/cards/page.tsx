@@ -16,6 +16,8 @@ interface CardOrder {
   status: 'pending' | 'processing' | 'written' | 'complete' | 'problem' | 'cancelled';
   sendDate: string | null;
   createdAt: string;
+  eventType: 'birthday' | 'anniversary' | 'custom' | null;
+  eventCustomLabel: string | null;
 }
 
 type FilterTab = 'all' | 'scheduled' | 'active' | 'mailed';
@@ -40,20 +42,42 @@ function getDisplayStatus(order: CardOrder): DisplayStatus {
   return 'in_progress';
 }
 
-function relativeDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+function occasionLabel(order: CardOrder): string | null {
+  if (!order.eventType) return null;
+  if (order.eventType === 'birthday') return 'Birthday';
+  if (order.eventType === 'anniversary') return order.eventCustomLabel || 'Anniversary';
+  return order.eventCustomLabel || 'Custom';
+}
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7);
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+function cardDateLabel(order: CardOrder): string {
+  const ds = getDisplayStatus(order);
+
+  // Scheduled cards: show when it will be mailed
+  if (ds === 'scheduled' && order.sendDate) {
+    const send = new Date(order.sendDate + 'T00:00:00');
+    const today = new Date();
+    const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diffDays = Math.round((send.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) return 'Mailing tomorrow';
+    if (diffDays <= 7) return `Mailing in ${diffDays} days`;
+    return `Mailing ${send.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   }
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  // All other cards: show when it was ordered
+  const date = new Date(order.createdAt);
+  const now = new Date();
+  const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const daysAgo = Math.round((today.getTime() - dateDay.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysAgo === 0) return 'Ordered today';
+  if (daysAgo === 1) return 'Ordered yesterday';
+  if (daysAgo < 7) return `Ordered ${daysAgo} days ago`;
+  if (daysAgo < 30) {
+    const weeks = Math.floor(daysAgo / 7);
+    return `Ordered ${weeks} week${weeks > 1 ? 's' : ''} ago`;
+  }
+  return `Ordered ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 }
 
 export default function CardsPage() {
@@ -221,14 +245,17 @@ export default function CardsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{order.recipientName}</p>
-                        <p className="text-xs text-gray-500">{order.recipientCity}, {order.recipientState}</p>
+                        <p className="text-xs text-gray-500">
+                          {order.recipientCity}, {order.recipientState}
+                          {occasionLabel(order) && <span className="text-gray-400"> · {occasionLabel(order)}</span>}
+                        </p>
                       </div>
                       <span className={`flex-shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full ${config.bg} ${config.text}`}>
                         {config.label}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-1">{order.message}</p>
-                    <p className="text-[11px] text-gray-400 mt-1.5">{relativeDate(order.createdAt)}</p>
+                    <p className="text-[11px] text-gray-400 mt-1.5">{cardDateLabel(order)}</p>
                   </div>
                 </div>
               </Card>

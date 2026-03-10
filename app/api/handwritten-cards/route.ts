@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
 import { db } from '@/lib/db';
-import { cardOrders, cardCredits, cardCreditTransactions, brandedCards } from '@/lib/db/schema';
+import { cardOrders, cardCredits, cardCreditTransactions, brandedCards, events } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { placeOrder } from '@/lib/handwrytten';
@@ -31,13 +31,24 @@ const sendCardSchema = z.object({
 export const GET = withAuth(async (_req, user) => {
   const userId = user.id;
 
-  const orders = await db
-    .select()
+  const rows = await db
+    .select({
+      order: cardOrders,
+      eventType: events.type,
+      eventCustomLabel: events.customLabel,
+    })
     .from(cardOrders)
+    .leftJoin(events, eq(cardOrders.eventId, events.id))
     .where(eq(cardOrders.userId, userId))
     .orderBy(cardOrders.createdAt);
 
-  return NextResponse.json({ orders: orders.reverse() });
+  const orders = rows.reverse().map(r => ({
+    ...r.order,
+    eventType: r.eventType ?? null,
+    eventCustomLabel: r.eventCustomLabel ?? null,
+  }));
+
+  return NextResponse.json({ orders });
 }, 'fetch card orders');
 
 // POST /api/handwritten-cards — send a handwritten card via Handwrytten
