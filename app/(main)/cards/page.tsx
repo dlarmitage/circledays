@@ -17,12 +17,12 @@ interface CardOrder {
   createdAt: string;
 }
 
-type FilterTab = 'all' | 'scheduled' | 'active' | 'delivered' | 'cancelled';
+type FilterTab = 'all' | 'active' | 'delivered';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  pending: { label: 'Queued', bg: 'bg-amber-100', text: 'text-amber-700' },
-  processing: { label: 'Printing', bg: 'bg-blue-100', text: 'text-blue-700' },
-  written: { label: 'Written', bg: 'bg-indigo-100', text: 'text-indigo-700' },
+  pending: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
+  processing: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
+  written: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
   complete: { label: 'Delivered', bg: 'bg-teal-100', text: 'text-teal-700' },
   problem: { label: 'Problem', bg: 'bg-red-100', text: 'text-red-700' },
   cancelled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-500' },
@@ -79,20 +79,16 @@ export default function CardsPage() {
 
   const filteredOrders = orders.filter(o => {
     switch (filter) {
-      case 'scheduled': return o.status === 'pending';
-      case 'active': return o.status === 'processing' || o.status === 'written';
+      case 'active': return o.status === 'pending' || o.status === 'processing' || o.status === 'written';
       case 'delivered': return o.status === 'complete';
-      case 'cancelled': return o.status === 'cancelled' || o.status === 'problem';
       default: return true;
     }
   });
 
   const filterTabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: 'All' },
-    { key: 'scheduled', label: 'Scheduled' },
     { key: 'active', label: 'In Progress' },
     { key: 'delivered', label: 'Delivered' },
-    { key: 'cancelled', label: 'Cancelled' },
   ];
 
   if (loading) {
