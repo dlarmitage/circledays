@@ -51,6 +51,7 @@ export const GET = withPublicHandler(async () => {
       notificationChannel: user.notificationChannel,
       isPlatformAdmin: user.isPlatformAdmin,
       shareNewConnections: user.shareNewConnections,
+      hasSeenWelcome: user.hasSeenWelcome,
     },
     profile: profile || null,
     impersonation,

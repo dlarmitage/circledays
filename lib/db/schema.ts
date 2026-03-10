@@ -35,6 +35,7 @@ export const users = pgTable('users', {
   isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
   shareNewConnections: boolean('share_new_connections').notNull().default(true),
   nudgeOptedOut: boolean('nudge_opted_out').notNull().default(false),
+  hasSeenWelcome: boolean('has_seen_welcome').notNull().default(false),
   lastNudgeSentAt: timestamp('last_nudge_sent_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });

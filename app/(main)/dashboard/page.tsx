@@ -105,6 +105,11 @@ export default function DashboardPage() {
       fetch('/api/connections?includeNew=true').then(res => res.json()),
       fetch('/api/discoveries').then(res => res.json()),
     ]).then(([userRes, eventsRes, connectionsRes, discoveriesRes]) => {
+      // Redirect to welcome screen if user hasn't seen it yet
+      if (userRes.user && !userRes.user.hasSeenWelcome) {
+        router.push('/welcome');
+        return;
+      }
       setUserData(userRes);
       setEvents(eventsRes.events || []);
       setNewConnections(connectionsRes.newConnections || []);
