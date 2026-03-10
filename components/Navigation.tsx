@@ -110,8 +110,8 @@ export function Navigation({ isAdmin, userName, profilePicture }: NavigationProp
         </button>
       </aside>
 
-      {/* Mobile Avatar Menu (top-left) */}
-      <div className="md:hidden fixed top-3 left-3 z-50" ref={menuRef}>
+      {/* Mobile Avatar Menu (top-right) */}
+      <div className="md:hidden fixed top-3 right-3 z-50" ref={menuRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center gap-1.5 bg-white rounded-full shadow-md border border-gray-100 pr-2 pl-0.5 py-0.5"
@@ -121,7 +121,7 @@ export function Navigation({ isAdmin, userName, profilePicture }: NavigationProp
         </button>
 
         {menuOpen && (
-          <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 overflow-hidden">
+          <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 overflow-hidden">
             <Link
               href="/settings"
               className={cn(
