@@ -145,6 +145,7 @@ export const POST = withAuth(async (request, user) => {
     cardId: data.cardId,
     handwriteOrderId: String(orderResponse.order_id),
     status: 'pending',
+    sendDate: data.sendDate ?? null,
   });
 
   return NextResponse.json({

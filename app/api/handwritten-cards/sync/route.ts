@@ -55,11 +55,28 @@ export const POST = withAuth(async (_req, user) => {
     if (!remote) continue;
 
     const mappedStatus = mapStatus(remote.status);
-    if (!mappedStatus || mappedStatus === local.status) continue;
+
+    // Convert Handwrytten date_send (MM/DD/YYYY) to YYYY-MM-DD
+    let sendDate: string | null = null;
+    if (remote.date_send) {
+      const parts = remote.date_send.split('/');
+      if (parts.length === 3) {
+        sendDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+      }
+    }
+
+    const statusChanged = mappedStatus && mappedStatus !== local.status;
+    const sendDateChanged = sendDate && sendDate !== local.sendDate;
+
+    if (!statusChanged && !sendDateChanged) continue;
+
+    const updates: Record<string, unknown> = {};
+    if (statusChanged) updates.status = mappedStatus;
+    if (sendDateChanged) updates.sendDate = sendDate;
 
     await db
       .update(cardOrders)
-      .set({ status: mappedStatus as typeof local.status })
+      .set(updates as Partial<typeof local>)
       .where(eq(cardOrders.id, local.id));
     synced++;
   }

@@ -265,6 +265,7 @@ export const cardOrders = pgTable('card_orders', {
   cardId: text('card_id').notNull(),
   handwriteOrderId: text('handwrite_order_id'), // external order ID (Handwrytten order_id)
   status: cardOrderStatusEnum('status').notNull().default('pending'),
+  sendDate: text('send_date'), // YYYY-MM-DD date Handwrytten will mail the card (null = immediate)
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

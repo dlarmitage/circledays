@@ -14,19 +14,31 @@ interface CardOrder {
   recipientState: string;
   message: string;
   status: 'pending' | 'processing' | 'written' | 'complete' | 'problem' | 'cancelled';
+  sendDate: string | null;
   createdAt: string;
 }
 
-type FilterTab = 'all' | 'active' | 'delivered';
+type FilterTab = 'all' | 'scheduled' | 'active' | 'mailed';
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  pending: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
-  processing: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
-  written: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
-  complete: { label: 'Delivered', bg: 'bg-teal-100', text: 'text-teal-700' },
+type DisplayStatus = 'scheduled' | 'in_progress' | 'mailed' | 'problem';
+
+const DISPLAY_CONFIG: Record<DisplayStatus, { label: string; bg: string; text: string }> = {
+  scheduled: { label: 'Scheduled', bg: 'bg-amber-100', text: 'text-amber-700' },
+  in_progress: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
+  mailed: { label: 'Mailed', bg: 'bg-teal-100', text: 'text-teal-700' },
   problem: { label: 'Problem', bg: 'bg-red-100', text: 'text-red-700' },
-  cancelled: { label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-500' },
 };
+
+function getDisplayStatus(order: CardOrder): DisplayStatus {
+  if (order.status === 'complete') return 'mailed';
+  if (order.status === 'problem') return 'problem';
+  // If sendDate is in the future, it's scheduled
+  if (order.sendDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (order.sendDate > today) return 'scheduled';
+  }
+  return 'in_progress';
+}
 
 function relativeDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -78,17 +90,20 @@ export default function CardsPage() {
   }, []);
 
   const filteredOrders = orders.filter(o => {
+    const ds = getDisplayStatus(o);
     switch (filter) {
-      case 'active': return o.status === 'pending' || o.status === 'processing' || o.status === 'written';
-      case 'delivered': return o.status === 'complete';
+      case 'scheduled': return ds === 'scheduled';
+      case 'active': return ds === 'in_progress';
+      case 'mailed': return ds === 'mailed';
       default: return true;
     }
   });
 
   const filterTabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: 'All' },
+    { key: 'scheduled', label: 'Scheduled' },
     { key: 'active', label: 'In Progress' },
-    { key: 'delivered', label: 'Delivered' },
+    { key: 'mailed', label: 'Mailed' },
   ];
 
   if (loading) {
@@ -194,7 +209,8 @@ export default function CardsPage() {
       ) : (
         <div className="space-y-2">
           {filteredOrders.map(order => {
-            const config = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
+            const ds = getDisplayStatus(order);
+            const config = DISPLAY_CONFIG[ds];
             return (
               <Card key={order.id} padding="none">
                 <div className="flex items-start gap-3 p-3">
