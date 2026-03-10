@@ -5,17 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { StripeCheckoutModal } from '@/components/StripeCheckoutModal';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { CREDIT_BUNDLES } from '@/lib/constants';
-import { Mail, CreditCard, History } from 'lucide-react';
-
-interface CardOrder {
-  id: string;
-  recipientName: string;
-  recipientCity: string;
-  recipientState: string;
-  message: string;
-  status: string;
-  createdAt: string;
-}
+import { Mail, CreditCard } from 'lucide-react';
 
 interface SenderAddress {
   name: string;
@@ -28,7 +18,6 @@ interface SenderAddress {
 interface CardPreferencesSectionProps {
   firstName: string;
   cardCredits: number | null;
-  cardOrders: CardOrder[];
   cardSignOff: string;
   cardSignOffCustom: string;
   cardSignOffIsCustom: boolean;
@@ -47,7 +36,6 @@ interface CardPreferencesSectionProps {
 export function CardPreferencesSection({
   firstName,
   cardCredits,
-  cardOrders,
   cardSignOff,
   cardSignOffCustom,
   cardSignOffIsCustom,
@@ -208,35 +196,6 @@ export function CardPreferencesSection({
             />
           </div>
         </div>
-
-        {/* Card history */}
-        {cardOrders.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <History className="w-4 h-4 text-gray-500" />
-              <p className="text-sm font-medium text-gray-700">Recent cards sent</p>
-            </div>
-            <div className="space-y-2">
-              {cardOrders.map(order => (
-                <div key={order.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl text-sm">
-                  <Mail className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{order.recipientName}</p>
-                    <p className="text-xs text-gray-500">{order.recipientCity}, {order.recipientState}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{order.message}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    order.status === 'complete' ? 'bg-teal-100 text-teal-700' :
-                    order.status === 'problem' ? 'bg-red-100 text-red-700' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    {order.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

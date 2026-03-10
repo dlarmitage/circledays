@@ -39,16 +39,6 @@ interface Event {
   createdByUserId: string | null;
 }
 
-interface CardOrder {
-  id: string;
-  recipientName: string;
-  recipientCity: string;
-  recipientState: string;
-  message: string;
-  status: string;
-  createdAt: string;
-}
-
 export default function SettingsPage() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -66,7 +56,6 @@ export default function SettingsPage() {
 
   // Card prefs state
   const [cardCredits, setCardCredits] = useState<number | null>(null);
-  const [cardOrders, setCardOrders] = useState<CardOrder[]>([]);
   const [checkoutBundleId, setCheckoutBundleId] = useState<string | null>(null);
 
   // Sign-off state
@@ -153,8 +142,7 @@ export default function SettingsPage() {
       fetch('/api/preferences').then(res => res.json()),
       fetch('/api/card-preferences').then(res => res.json()),
       fetch('/api/card-credits').then(res => res.json()),
-      fetch('/api/handwritten-cards').then(res => res.json()),
-    ]).then(async ([authData, prefsData, cardPrefsData, cardCreditsData, cardOrdersData]) => {
+    ]).then(async ([authData, prefsData, cardPrefsData, cardCreditsData]) => {
       if (authData.user) {
         setUserData(authData.user);
         setProfileData(authData.profile);
@@ -221,9 +209,6 @@ export default function SettingsPage() {
       }
       if (typeof cardCreditsData.balance === 'number') {
         setCardCredits(cardCreditsData.balance);
-      }
-      if (cardOrdersData.orders) {
-        setCardOrders(cardOrdersData.orders.slice(0, 10));
       }
       setLoading(false);
     });
@@ -458,7 +443,6 @@ export default function SettingsPage() {
       <CardPreferencesSection
         firstName={formData.name.split(' ')[0]}
         cardCredits={cardCredits}
-        cardOrders={cardOrders}
         cardSignOff={cardSignOff}
         cardSignOffCustom={cardSignOffCustom}
         cardSignOffIsCustom={cardSignOffIsCustom}
