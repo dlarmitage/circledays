@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
 import { db } from '@/lib/db';
 import { cardOrders } from '@/lib/db/schema';
-import { eq, and, notInArray } from 'drizzle-orm';
+import { eq, and, or, notInArray, isNull } from 'drizzle-orm';
 import { listOrders } from '@/lib/handwrytten';
 
 // Map Handwrytten status strings to our enum values
@@ -21,14 +21,17 @@ function mapStatus(hwStatus: string): string | null {
 export const POST = withAuth(async (_req, user) => {
   const userId = user.id;
 
-  // Get local orders that are still in progress (not terminal states)
+  // Get orders that need syncing: either not in terminal state, or missing sendDate
   const localOrders = await db
     .select()
     .from(cardOrders)
     .where(
       and(
         eq(cardOrders.userId, userId),
-        notInArray(cardOrders.status, ['complete', 'cancelled'])
+        or(
+          notInArray(cardOrders.status, ['complete', 'cancelled']),
+          isNull(cardOrders.sendDate)
+        )
       )
     );
 
