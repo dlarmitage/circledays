@@ -79,12 +79,12 @@ export function EventCard({
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <div className="flex flex-col items-end gap-1.5 shrink-0 max-w-[50%]">
           <Badge variant={getBadgeVariant()} size="md">
             {daysText}
           </Badge>
           {(showMessageAssist || showSendCard || cardOrdered) && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
               {showMessageAssist && (
                 <button
                   onClick={(e) => {
