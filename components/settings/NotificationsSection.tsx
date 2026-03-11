@@ -126,38 +126,105 @@ export function NotificationsSection({
         )}
         {/* Push Notifications (native app only) */}
         {isNativeApp() && onPushEnabledChange && (
-          <div className="pt-2 border-t border-gray-100 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center">
-                  <Smartphone className="w-4 h-4 text-teal-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Push notifications</p>
-                  <p className="text-xs text-gray-500">Get reminders on your lock screen</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onPushEnabledChange(!pushEnabled)}
-                className={`
-                  relative w-11 h-6 rounded-full transition-colors duration-200
-                  ${pushEnabled ? 'bg-teal-500' : 'bg-gray-300'}
-                `}
-              >
-                <span
-                  className={`
-                    absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
-                    ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}
-                  `}
-                />
-              </button>
-            </div>
-            {pushEnabled && <TestPushButton />}
-          </div>
+          <PushNotificationToggle
+            pushEnabled={pushEnabled}
+            onPushEnabledChange={onPushEnabledChange}
+          />
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function PushNotificationToggle({
+  pushEnabled,
+  onPushEnabledChange,
+}: {
+  pushEnabled?: boolean;
+  onPushEnabledChange: (enabled: boolean) => void;
+}) {
+  const [registering, setRegistering] = useState(false);
+
+  const handleToggle = async () => {
+    if (!pushEnabled) {
+      // Turning ON — request permission and register token
+      setRegistering(true);
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+
+        const permission = await PushNotifications.requestPermissions();
+        if (permission.receive !== 'granted') {
+          setRegistering(false);
+          return; // User denied — don't enable
+        }
+
+        // Listen for registration success
+        await PushNotifications.addListener('registration', async (token) => {
+          try {
+            await fetch('/api/push/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: token.value, platform: 'ios' }),
+            });
+          } catch (error) {
+            console.error('Failed to register push token:', error);
+          }
+        });
+
+        await PushNotifications.register();
+        onPushEnabledChange(true);
+      } catch (error) {
+        console.error('Push setup failed:', error);
+      } finally {
+        setRegistering(false);
+      }
+    } else {
+      // Turning OFF — unregister token
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        await PushNotifications.removeAllListeners();
+        await fetch('/api/push/unregister', { method: 'POST' });
+      } catch (error) {
+        console.error('Push unregister failed:', error);
+      }
+      onPushEnabledChange(false);
+    }
+  };
+
+  return (
+    <div className="pt-2 border-t border-gray-100 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center">
+            <Smartphone className="w-4 h-4 text-teal-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700">Push notifications</p>
+            <p className="text-xs text-gray-500">
+              {registering ? 'Requesting permission...' : 'Get reminders on your lock screen'}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={registering}
+          className={`
+            relative w-11 h-6 rounded-full transition-colors duration-200
+            ${pushEnabled ? 'bg-teal-500' : 'bg-gray-300'}
+            ${registering ? 'opacity-50' : ''}
+          `}
+        >
+          <span
+            className={`
+              absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
+              ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}
+            `}
+          />
+        </button>
+      </div>
+      {pushEnabled && <TestPushButton />}
+    </div>
   );
 }
 
