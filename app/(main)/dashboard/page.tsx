@@ -209,21 +209,25 @@ export default function DashboardPage() {
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-900">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-gray-900 truncate">
             {userData?.user?.name ? `Hey, ${userData.user.name.split(' ')[0]}!` : 'Dashboard'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-sm md:text-base">
             {view === 'past'
               ? `${pastEvents.length} recently passed`
               : `${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'occasion' : 'occasions'}`}
           </p>
         </div>
-        <Button onClick={() => router.push('/add-person')}>
-          <Plus className="w-4 h-4 md:mr-2" />
-          <span className="hidden md:inline">Add Person</span>
-          <span className="md:hidden">Person</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button onClick={() => router.push('/add-person')}>
+            <Plus className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Add Person</span>
+            <span className="md:hidden">Person</span>
+          </Button>
+          {/* Spacer for mobile avatar menu (absolutely positioned from layout) */}
+          <div className="w-16 md:hidden" />
+        </div>
       </div>
 
       {/* New Connections Card */}
