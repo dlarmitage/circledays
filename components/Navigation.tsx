@@ -30,7 +30,7 @@ export function Navigation({ isAdmin, userName, profilePicture }: NavigationProp
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLLIElement>(null);
 
   const desktopItems = [
     ...mainNavItems,
