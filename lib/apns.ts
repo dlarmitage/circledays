@@ -56,7 +56,7 @@ export async function sendPushNotification(
   body: string,
   data?: Record<string, string>
 ): Promise<PushResult> {
-  const bundleId = 'technology.ambient.circledays';
+  const bundleId = 'com.circledays.app';
 
   return new Promise((resolve) => {
     const client = http2.connect(`https://${getApnsHost()}`);
