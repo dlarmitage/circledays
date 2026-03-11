@@ -46,7 +46,7 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-cream pt-safe">
       {/* Impersonation Banner */}
       {impersonation && (
         <ImpersonationBanner
