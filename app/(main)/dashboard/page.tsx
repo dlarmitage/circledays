@@ -219,15 +219,11 @@ export default function DashboardPage() {
               : `${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'occasion' : 'occasions'}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button onClick={() => router.push('/add-person')}>
-            <Plus className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Add Person</span>
-            <span className="md:hidden">Person</span>
-          </Button>
-          {/* Spacer for mobile avatar menu (absolutely positioned from layout) */}
-          <div className="w-14 md:hidden" />
-        </div>
+        <Button onClick={() => router.push('/add-person')} className="shrink-0">
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden md:inline">Add Person</span>
+          <span className="md:hidden">Person</span>
+        </Button>
       </div>
 
       {/* New Connections Card */}

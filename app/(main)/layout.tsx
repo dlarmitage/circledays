@@ -3,7 +3,6 @@ import { getCurrentUser, getSession } from '@/lib/auth';
 import { db, users, profiles } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { Navigation } from '@/components/Navigation';
-import { MobileHeader } from '@/components/MobileHeader';
 import { HelpChat } from '@/components/HelpChat';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { CapacitorPushHandler } from '@/components/CapacitorPushHandler';
@@ -56,11 +55,10 @@ export default async function MainLayout({
         />
       )}
 
-      <Navigation isAdmin={isAdmin} />
+      <Navigation isAdmin={isAdmin} userName={user.name} profilePicture={ownProfile?.profilePicture} />
 
       {/* Main content - offset for sidebar on desktop, and for banner when impersonating */}
-      <main className={`md:ml-64 pb-20 md:pb-0 relative pt-safe ${impersonation ? 'pt-10' : ''}`}>
-        <MobileHeader isAdmin={isAdmin} userName={user.name} profilePicture={ownProfile?.profilePicture} />
+      <main className={`md:ml-64 pb-20 md:pb-0 pt-safe ${impersonation ? 'pt-10' : ''}`}>
         {children}
       </main>
 

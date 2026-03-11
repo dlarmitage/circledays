@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Avatar } from '@/components/ui/Avatar';
 import { Home, Users, Calendar, Mail, Settings, Shield, LogOut } from 'lucide-react';
 
 const mainNavItems = [
@@ -20,11 +22,15 @@ const adminItem = { href: '/admin', label: 'Admin', icon: Shield };
 
 interface NavigationProps {
   isAdmin?: boolean;
+  userName?: string;
+  profilePicture?: string | null;
 }
 
-export function Navigation({ isAdmin }: NavigationProps) {
+export function Navigation({ isAdmin, userName, profilePicture }: NavigationProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const desktopItems = [
     ...mainNavItems,
@@ -33,6 +39,22 @@ export function Navigation({ isAdmin }: NavigationProps) {
   ];
 
   const mobileBottomItems = mainNavItems;
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [menuOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   async function handleSignOut() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -108,6 +130,68 @@ export function Navigation({ isAdmin }: NavigationProps) {
               </li>
             );
           })}
+
+          {/* Avatar / Account tab */}
+          <li className="flex-1" ref={menuRef}>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className={cn(
+                  'flex flex-col items-center py-3 text-xs font-medium transition-colors w-full',
+                  (pathname.startsWith('/settings') || pathname.startsWith('/admin'))
+                    ? 'text-teal-600'
+                    : 'text-gray-500'
+                )}
+              >
+                <Avatar
+                  src={profilePicture}
+                  name={userName || '?'}
+                  size="xs"
+                  className="mb-1 !w-6 !h-6"
+                />
+                Me
+              </button>
+
+              {menuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 overflow-hidden">
+                  <Link
+                    href="/settings"
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
+                      pathname.startsWith('/settings')
+                        ? 'bg-teal-50 text-teal-700'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    )}
+                  >
+                    <Settings className="w-5 h-5" />
+                    Settings
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors',
+                        pathname.startsWith('/admin')
+                          ? 'bg-teal-50 text-teal-700'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      )}
+                    >
+                      <Shield className="w-5 h-5" />
+                      Admin
+                    </Link>
+                  )}
+                  <div className="border-t border-gray-100 my-1" />
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors w-full"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </li>
         </ul>
       </nav>
     </>
