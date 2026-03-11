@@ -47,7 +47,7 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="min-h-screen bg-cream pt-safe">
+    <div className="min-h-screen bg-cream">
       {/* Impersonation Banner */}
       {impersonation && (
         <ImpersonationBanner
@@ -59,7 +59,7 @@ export default async function MainLayout({
       <Navigation isAdmin={isAdmin} />
 
       {/* Main content - offset for sidebar on desktop, and for banner when impersonating */}
-      <main className={`md:ml-64 pb-20 md:pb-0 relative ${impersonation ? 'pt-10' : ''}`}>
+      <main className={`md:ml-64 pb-20 md:pb-0 relative pt-safe ${impersonation ? 'pt-10' : ''}`}>
         <MobileHeader isAdmin={isAdmin} userName={user.name} profilePicture={ownProfile?.profilePicture} />
         {children}
       </main>
