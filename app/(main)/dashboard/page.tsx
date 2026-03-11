@@ -226,7 +226,7 @@ export default function DashboardPage() {
             <span className="md:hidden">Person</span>
           </Button>
           {/* Spacer for mobile avatar menu (absolutely positioned from layout) */}
-          <div className="w-16 md:hidden" />
+          <div className="w-14 md:hidden" />
         </div>
       </div>
 

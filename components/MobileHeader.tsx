@@ -41,7 +41,7 @@ export function MobileHeader({ isAdmin, userName, profilePicture }: MobileHeader
   }
 
   return (
-    <div className="md:hidden absolute top-2 right-4 z-40">
+    <div className="md:hidden absolute top-4 right-4 z-40">
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
