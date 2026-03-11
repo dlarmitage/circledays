@@ -160,26 +160,22 @@ function PushNotificationToggle({
 
         // Listen for registration success and errors
         await PushNotifications.addListener('registration', async (token) => {
-          console.log('Push token received:', token.value.substring(0, 20) + '...');
           try {
-            const res = await fetch('/api/push/register', {
+            await fetch('/api/push/register', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token: token.value, platform: 'ios' }),
             });
-            console.log('Push register response:', res.status);
           } catch (error) {
             console.error('Failed to register push token:', error);
           }
         });
 
         await PushNotifications.addListener('registrationError', (error) => {
-          console.error('Push registration error:', JSON.stringify(error));
+          console.error('Push registration error:', error);
         });
 
-        console.log('Calling PushNotifications.register()...');
         await PushNotifications.register();
-        console.log('PushNotifications.register() completed');
         onPushEnabledChange(true);
       } catch (error) {
         console.error('Push setup failed:', error);
