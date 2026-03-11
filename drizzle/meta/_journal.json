@@ -57,6 +57,20 @@
       "when": 1772617600000,
       "tag": "0007_add-card-signoff",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773079016214,
+      "tag": "0008_add-branded-cards",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773189577534,
+      "tag": "0009_common_selene",
+      "breakpoints": true
     }
   ]
 }

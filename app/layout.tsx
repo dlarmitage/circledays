@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next';
+import { CapacitorServiceWorkerGuard } from '@/components/CapacitorServiceWorkerGuard';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { CapacitorSplashScreen } from '@/components/CapacitorSplashScreen';
+import { CapacitorAuthHandler } from '@/components/CapacitorAuthHandler';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -80,7 +83,10 @@ export default function RootLayout({
         <meta name="msapplication-TileImage" content="/icons/touch-icon-144x144.png" />
       </head>
       <body>
+        <CapacitorServiceWorkerGuard />
         <ServiceWorkerRegistration />
+        <CapacitorSplashScreen />
+        <CapacitorAuthHandler />
         {children}
       </body>
     </html>

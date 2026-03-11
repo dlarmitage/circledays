@@ -14,6 +14,7 @@ const updateUserSchema = z.object({
   mobile: z.string().nullable().optional(),
   notificationChannel: z.enum(['email', 'sms', 'both']).optional(),
   shareNewConnections: z.boolean().optional(),
+  pushEnabled: z.boolean().optional(),
 });
 
 export const PATCH = withAuth(async (req, user) => {
@@ -61,6 +62,7 @@ export const PATCH = withAuth(async (req, user) => {
     if (data.mobile !== undefined) updateData.mobile = data.mobile;
     if (data.notificationChannel) updateData.notificationChannel = data.notificationChannel;
     if (data.shareNewConnections !== undefined) updateData.shareNewConnections = data.shareNewConnections;
+    if (data.pushEnabled !== undefined) updateData.pushEnabled = data.pushEnabled;
 
     // If user upgrades to 'both' channels, clear nudge state — they've done what we asked
     if (data.notificationChannel === 'both') {

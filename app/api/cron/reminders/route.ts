@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, users, profiles, connections, events, reminderPreferences, reminderOverrides, notificationLogs } from '@/lib/db';
+import { db, users, profiles, connections, events, reminderPreferences, reminderOverrides, notificationLogs, pushTokens } from '@/lib/db';
 import { sendEmail, generateReminderEmail } from '@/lib/email';
 import { sendSms, generateReminderSms } from '@/lib/sms';
+import { sendPushNotification } from '@/lib/apns';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, turningAge, formatDate } from '@/lib/utils';
 
@@ -262,6 +263,43 @@ export async function GET(request: NextRequest) {
           }
         }
         
+        // Send push notifications if enabled
+        if (user.pushEnabled) {
+          const tokens = await db
+            .select()
+            .from(pushTokens)
+            .where(eq(pushTokens.userId, user.id));
+
+          if (tokens.length > 0) {
+            const title = '🎂 Upcoming occasions';
+            const body = eventData.length === 1
+              ? `${eventData[0].profileName}'s ${eventData[0].eventType}${eventData[0].daysUntil === 0 ? ' is today!' : eventData[0].daysUntil === 1 ? ' is tomorrow!' : ` is in ${eventData[0].daysUntil} days`}`
+              : `You have ${eventData.length} upcoming occasions`;
+
+            for (const { token } of tokens) {
+              const result = await sendPushNotification(token, title, body, {
+                profileId: eventData[0]?.profileId || '',
+              });
+
+              await db.insert(notificationLogs).values({
+                userId: user.id,
+                eventIds: newEventIds,
+                channel: 'push',
+                status: result.success ? 'sent' : 'failed',
+                errorMessage: result.success ? null : (result.error || null),
+              });
+
+              // Update lastUsedAt on successful send
+              if (result.success) {
+                await db
+                  .update(pushTokens)
+                  .set({ lastUsedAt: new Date() })
+                  .where(eq(pushTokens.token, token));
+              }
+            }
+          }
+        }
+
       } catch (error) {
         console.error(`Error processing user ${user.id}:`, error);
         results.errors++;

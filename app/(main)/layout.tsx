@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { Navigation } from '@/components/Navigation';
 import { HelpChat } from '@/components/HelpChat';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import { CapacitorPushHandler } from '@/components/CapacitorPushHandler';
 
 export default async function MainLayout({
   children,
@@ -60,6 +61,9 @@ export default async function MainLayout({
       <main className={`md:ml-64 pb-20 md:pb-0 ${impersonation ? 'pt-10' : ''}`}>
         {children}
       </main>
+
+      {/* Push Notification Handler (native only) */}
+      <CapacitorPushHandler userId={user.id} pushEnabled={user.pushEnabled} />
 
       {/* Help Chat Assistant */}
       <HelpChat />

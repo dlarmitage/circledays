@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { Mail, ArrowLeft, CheckCircle, KeyRound } from 'lucide-react';
+import { isNativeApp } from '@/lib/capacitor';
 
 const LAST_EMAIL_KEY = 'circledays_last_email';
 
@@ -51,10 +52,13 @@ function LoginContent() {
     setErrorMessage(null);
 
     try {
+      const payload: { email: string; platform?: string } = { email };
+      if (isNativeApp()) payload.platform = 'ios';
+
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -112,10 +116,13 @@ function LoginContent() {
     setLoading(true);
 
     try {
+      const payload: { email: string; platform?: string } = { email };
+      if (isNativeApp()) payload.platform = 'ios';
+
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -177,7 +184,9 @@ function LoginContent() {
                     <CheckCircle className="w-8 h-8 text-teal-600" />
                   </div>
                   <p className="text-sm text-gray-600">
-                    Click the link in your email, or enter the 6-digit code below.
+                    {isNativeApp()
+                      ? 'Enter the 6-digit code from your email below.'
+                      : 'Click the link in your email, or enter the 6-digit code below.'}
                   </p>
                 </div>
 

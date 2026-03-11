@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
-import { Bell } from 'lucide-react';
+import { Bell, Smartphone } from 'lucide-react';
+import { isNativeApp } from '@/lib/capacitor';
 
 const REMINDER_OPTIONS = [
   { days: 0, label: 'Day of', emoji: '📅' },
@@ -23,6 +24,8 @@ interface NotificationsSectionProps {
   onNotificationChannelChange: (channel: 'email' | 'sms' | 'both') => void;
   onMobileChange: (mobile: string) => void;
   mobileInputRef: RefObject<HTMLInputElement | null>;
+  pushEnabled?: boolean;
+  onPushEnabledChange?: (enabled: boolean) => void;
 }
 
 export function NotificationsSection({
@@ -33,6 +36,8 @@ export function NotificationsSection({
   onNotificationChannelChange,
   onMobileChange,
   mobileInputRef,
+  pushEnabled,
+  onPushEnabledChange,
 }: NotificationsSectionProps) {
   return (
     <Card className="mb-6">
@@ -117,6 +122,35 @@ export function NotificationsSection({
               placeholder="+1 (555) 000-0000"
             />
           </>
+        )}
+        {/* Push Notifications (native app only) */}
+        {isNativeApp() && onPushEnabledChange && (
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center">
+                <Smartphone className="w-4 h-4 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Push notifications</p>
+                <p className="text-xs text-gray-500">Get reminders on your lock screen</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onPushEnabledChange(!pushEnabled)}
+              className={`
+                relative w-11 h-6 rounded-full transition-colors duration-200
+                ${pushEnabled ? 'bg-teal-500' : 'bg-gray-300'}
+              `}
+            >
+              <span
+                className={`
+                  absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
+                  ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}
+                `}
+              />
+            </button>
+          </div>
         )}
       </CardContent>
     </Card>

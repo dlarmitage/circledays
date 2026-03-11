@@ -15,7 +15,7 @@ export const cardOrderStatusEnum = pgEnum('card_order_status', ['pending', 'proc
 export const cardCreditTransactionTypeEnum = pgEnum('card_credit_transaction_type', ['purchase', 'use', 'refund']);
 
 // Enums
-export const notificationChannelEnum = pgEnum('notification_channel', ['email', 'sms', 'both']);
+export const notificationChannelEnum = pgEnum('notification_channel', ['email', 'sms', 'both', 'push']);
 export const eventTypeEnum = pgEnum('event_type', ['birthday', 'anniversary', 'custom']);
 export const connectionRequestStatusEnum = pgEnum('connection_request_status', ['pending', 'accepted', 'declined']);
 export const inviteStatusEnum = pgEnum('invite_status', ['pending', 'accepted', 'expired']);
@@ -36,6 +36,7 @@ export const users = pgTable('users', {
   shareNewConnections: boolean('share_new_connections').notNull().default(true),
   nudgeOptedOut: boolean('nudge_opted_out').notNull().default(false),
   hasSeenWelcome: boolean('has_seen_welcome').notNull().default(false),
+  pushEnabled: boolean('push_enabled').notNull().default(false),
   lastNudgeSentAt: timestamp('last_nudge_sent_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
@@ -152,6 +153,28 @@ export const magicLinks = pgTable('magic_links', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Exchange Tokens - short-lived tokens for native app auth (Safari → WKWebView handoff)
+export const exchangeTokens = pgTable('exchange_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  isNewUser: boolean('is_new_user').notNull().default(false),
+  expiresAt: timestamp('expires_at').notNull(),
+  used: boolean('used').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Push Tokens - APNs device tokens for push notifications (multiple devices per user)
+export const pushTokens = pgTable('push_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  platform: text('platform').notNull().default('ios'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at').notNull().defaultNow(),
+});
+
 // Connection Suggestions - recommend profiles to other users
 export const connectionSuggestions = pgTable('connection_suggestions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -179,6 +202,8 @@ export type ReminderPreference = typeof reminderPreferences.$inferSelect;
 export type ReminderOverride = typeof reminderOverrides.$inferSelect;
 export type NotificationLog = typeof notificationLogs.$inferSelect;
 export type MagicLink = typeof magicLinks.$inferSelect;
+export type ExchangeToken = typeof exchangeTokens.$inferSelect;
+export type PushToken = typeof pushTokens.$inferSelect;
 export type ConnectionSuggestion = typeof connectionSuggestions.$inferSelect;
 
 // Login Analytics
@@ -186,7 +211,8 @@ export const loginMethodEnum = pgEnum('login_method', [
   'magic_link',
   'verification_code',
   'invite_accept',
-  'onboarding'
+  'onboarding',
+  'exchange_token'
 ]);
 
 export const loginEvents = pgTable('login_events', {

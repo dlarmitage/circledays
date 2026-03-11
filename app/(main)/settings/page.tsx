@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { LogOut } from 'lucide-react';
 import { ProfileSection } from '@/components/settings/ProfileSection';
 import { NotificationsSection } from '@/components/settings/NotificationsSection';
+import { isNativeApp } from '@/lib/capacitor';
 import { PrivacySection } from '@/components/settings/PrivacySection';
 import { EventsSection } from '@/components/settings/EventsSection';
 import { CardPreferencesSection } from '@/components/settings/CardPreferencesSection';
@@ -21,6 +22,7 @@ interface UserData {
   mobile: string | null;
   notificationChannel: 'email' | 'sms' | 'both';
   shareNewConnections: boolean;
+  pushEnabled: boolean;
 }
 
 interface ProfileData {
@@ -69,6 +71,9 @@ export default function SettingsPage() {
   const [cardSenderCity, setCardSenderCity] = useState('');
   const [cardSenderState, setCardSenderState] = useState('');
   const [cardSenderZip, setCardSenderZip] = useState('');
+
+  // Push notification state
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   // Ref for mobile input auto-focus
   const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -155,6 +160,9 @@ export default function SettingsPage() {
         };
         setFormData(loadedForm);
         setSavedFormData(loadedForm);
+
+        // Load push notification setting
+        setPushEnabled(authData.user.pushEnabled || false);
 
         // Load privacy setting
         const loadedShareNewConnections = authData.user.shareNewConnections !== false;
@@ -356,6 +364,20 @@ export default function SettingsPage() {
     router.push('/');
   };
 
+  const handlePushEnabledChange = async (enabled: boolean) => {
+    setPushEnabled(enabled);
+    try {
+      await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pushEnabled: enabled }),
+      });
+    } catch (error) {
+      console.error('Failed to update push setting:', error);
+      setPushEnabled(!enabled); // Revert on failure
+    }
+  };
+
   const handlePhotoChange = (url: string | null) => {
     if (profileData) {
       setProfileData({ ...profileData, profilePicture: url });
@@ -418,6 +440,8 @@ export default function SettingsPage() {
         onNotificationChannelChange={(channel) => setFormData(prev => ({ ...prev, notificationChannel: channel }))}
         onMobileChange={(mobile) => setFormData(prev => ({ ...prev, mobile }))}
         mobileInputRef={mobileInputRef}
+        pushEnabled={pushEnabled}
+        onPushEnabledChange={handlePushEnabledChange}
       />
 
       <PrivacySection

@@ -87,7 +87,7 @@ export async function isImpersonating(): Promise<boolean> {
   return !!session.originalUserId;
 }
 
-export type LoginMethod = 'magic_link' | 'verification_code' | 'invite_accept' | 'onboarding';
+export type LoginMethod = 'magic_link' | 'verification_code' | 'invite_accept' | 'onboarding' | 'exchange_token';
 
 export async function logLoginEvent(
   userId: string,

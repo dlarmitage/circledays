@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 const requestSchema = z.object({
   email: z.string().email(),
+  platform: z.string().optional(),
 });
 
 const RATE_LIMIT_MAX = 5;
@@ -29,7 +30,7 @@ async function checkRateLimit(email: string): Promise<boolean> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email } = requestSchema.parse(body);
+    const { email, platform } = requestSchema.parse(body);
 
     // Check rate limit
     if (!(await checkRateLimit(email.toLowerCase()))) {
@@ -74,7 +75,8 @@ export async function POST(request: NextRequest) {
 
     // Send email
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://circledays.ambient.technology';
-    const magicLinkUrl = `${appUrl}/api/auth/verify?token=${token}`;
+    const nativeParam = platform === 'ios' ? '&native=1' : '';
+    const magicLinkUrl = `${appUrl}/api/auth/verify?token=${token}${nativeParam}`;
 
     const { html, text } = generateMagicLinkEmail(userName, magicLinkUrl, code);
 
