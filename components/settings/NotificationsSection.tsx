@@ -5,8 +5,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
-import { Bell, Smartphone } from 'lucide-react';
+import { Bell, Smartphone, Send } from 'lucide-react';
 import { isNativeApp } from '@/lib/capacitor';
+import { useState } from 'react';
 
 const REMINDER_OPTIONS = [
   { days: 0, label: 'Day of', emoji: '📅' },
@@ -125,34 +126,78 @@ export function NotificationsSection({
         )}
         {/* Push Notifications (native app only) */}
         {isNativeApp() && onPushEnabledChange && (
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center">
-                <Smartphone className="w-4 h-4 text-teal-600" />
+          <div className="pt-2 border-t border-gray-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center">
+                  <Smartphone className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Push notifications</p>
+                  <p className="text-xs text-gray-500">Get reminders on your lock screen</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700">Push notifications</p>
-                <p className="text-xs text-gray-500">Get reminders on your lock screen</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onPushEnabledChange(!pushEnabled)}
-              className={`
-                relative w-11 h-6 rounded-full transition-colors duration-200
-                ${pushEnabled ? 'bg-teal-500' : 'bg-gray-300'}
-              `}
-            >
-              <span
+              <button
+                type="button"
+                onClick={() => onPushEnabledChange(!pushEnabled)}
                 className={`
-                  absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
-                  ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}
+                  relative w-11 h-6 rounded-full transition-colors duration-200
+                  ${pushEnabled ? 'bg-teal-500' : 'bg-gray-300'}
                 `}
-              />
-            </button>
+              >
+                <span
+                  className={`
+                    absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
+                    ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}
+                  `}
+                />
+              </button>
+            </div>
+            {pushEnabled && <TestPushButton />}
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function TestPushButton() {
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const sendTest = async () => {
+    setStatus('sending');
+    try {
+      const res = await fetch('/api/push/test', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus('error');
+        setErrorMsg(data.error || 'Failed to send');
+      } else if (data.results?.some((r: { success: boolean }) => r.success)) {
+        setStatus('success');
+      } else {
+        setStatus('error');
+        setErrorMsg(data.results?.[0]?.error || 'Push failed');
+      }
+    } catch {
+      setStatus('error');
+      setErrorMsg('Network error');
+    }
+    setTimeout(() => setStatus('idle'), 3000);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={sendTest}
+      disabled={status === 'sending'}
+      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-full transition-colors disabled:opacity-50"
+    >
+      <Send className="w-3 h-3" />
+      {status === 'idle' && 'Send test notification'}
+      {status === 'sending' && 'Sending...'}
+      {status === 'success' && 'Sent! Check your notifications'}
+      {status === 'error' && errorMsg}
+    </button>
   );
 }
