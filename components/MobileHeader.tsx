@@ -45,9 +45,9 @@ export function MobileHeader({ isAdmin, userName, profilePicture }: MobileHeader
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex items-center gap-1.5 bg-white rounded-full shadow-md border border-gray-100 pr-2 pl-0.5 py-0.5"
+          className="flex items-center gap-1.5 h-11 bg-white rounded-full shadow-md border border-gray-100 pr-2.5 pl-1"
         >
-          <Avatar src={profilePicture} name={userName || '?'} size="sm" />
+          <Avatar src={profilePicture} name={userName || '?'} size="md" />
           <ChevronDown className={cn('w-3.5 h-3.5 text-gray-500 transition-transform', menuOpen && 'rotate-180')} />
         </button>
 
