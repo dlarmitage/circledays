@@ -111,7 +111,7 @@ export function Navigation({ isAdmin, userName, profilePicture }: NavigationProp
       </aside>
 
       {/* Mobile Avatar Menu (top-right) */}
-      <div className="md:hidden fixed top-3 right-3 z-50" ref={menuRef}>
+      <div className="md:hidden fixed right-3 z-50" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }} ref={menuRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center gap-1.5 bg-white rounded-full shadow-md border border-gray-100 pr-2 pl-0.5 py-0.5"
