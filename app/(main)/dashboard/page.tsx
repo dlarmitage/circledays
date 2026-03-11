@@ -220,8 +220,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <Button onClick={() => router.push('/add-person')}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Person
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden md:inline">Add Person</span>
+          <span className="md:hidden">Person</span>
         </Button>
       </div>
 
