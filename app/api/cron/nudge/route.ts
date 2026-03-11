@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
           // Email-only user (or SMS user without mobile) — nudge via email
           const { html, text } = generateNudgeEmail(
             user.name,
-            user.notificationChannel,
+            user.notificationChannel as 'email' | 'sms' | 'both',
             !!user.mobile,
             settingsUrl,
             optOutUrl,
