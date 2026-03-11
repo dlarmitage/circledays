@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'technology.ambient.circledays',
+  appId: 'com.circledays.app',
   appName: 'CircleDays',
   webDir: 'public',
 
@@ -21,8 +21,12 @@ const config: CapacitorConfig = {
   },
 
   plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
     SplashScreen: {
-      launchAutoHide: false,
+      launchAutoHide: true,
+      launchShowDuration: 2000,
       backgroundColor: '#0d9488',
       showSpinner: false,
       launchFadeOutDuration: 300,
