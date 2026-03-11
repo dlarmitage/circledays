@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { NOTIFICATION_CHANNELS } from '@/lib/constants';
-import { Bell, Smartphone, Send } from 'lucide-react';
+import { Bell, Smartphone } from 'lucide-react';
 import { isNativeApp } from '@/lib/capacitor';
 import { useState } from 'react';
 
@@ -227,48 +227,6 @@ function PushNotificationToggle({
           />
         </button>
       </div>
-      {pushEnabled && <TestPushButton />}
     </div>
-  );
-}
-
-function TestPushButton() {
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const sendTest = async () => {
-    setStatus('sending');
-    try {
-      const res = await fetch('/api/push/test', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) {
-        setStatus('error');
-        setErrorMsg(data.error || 'Failed to send');
-      } else if (data.results?.some((r: { success: boolean }) => r.success)) {
-        setStatus('success');
-      } else {
-        setStatus('error');
-        setErrorMsg(data.results?.[0]?.error || 'Push failed');
-      }
-    } catch {
-      setStatus('error');
-      setErrorMsg('Network error');
-    }
-    setTimeout(() => setStatus('idle'), 3000);
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={sendTest}
-      disabled={status === 'sending'}
-      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-full transition-colors disabled:opacity-50"
-    >
-      <Send className="w-3 h-3" />
-      {status === 'idle' && 'Send test notification'}
-      {status === 'sending' && 'Sending...'}
-      {status === 'success' && 'Sent! Check your notifications'}
-      {status === 'error' && errorMsg}
-    </button>
   );
 }
