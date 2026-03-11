@@ -22,8 +22,7 @@ export function CapacitorPushHandler({ userId, pushEnabled }: CapacitorPushHandl
       const permission = await PushNotifications.requestPermissions();
       if (permission.receive !== 'granted') return;
 
-      await PushNotifications.register();
-
+      // Set up listeners BEFORE calling register() — token event fires immediately
       await PushNotifications.addListener('registration', async (token) => {
         try {
           await fetch('/api/push/register', {
@@ -48,6 +47,9 @@ export function CapacitorPushHandler({ userId, pushEnabled }: CapacitorPushHandl
           router.push('/dashboard');
         }
       });
+
+      // Now register — the listeners above will catch the token
+      await PushNotifications.register();
     };
 
     setup();
