@@ -34,7 +34,7 @@
     "iron-session": "^8.0.4",
     "lucide-react": "^0.555.0",
     "nanoid": "^5.1.6",
-    "next": "16.0.7",
+    "next": "16.0.10",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-easy-crop": "^5.5.6",
