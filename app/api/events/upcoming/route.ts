@@ -68,7 +68,7 @@ export const GET = withAuth(async (req, user) => {
 
   // Calculate days until each event and filter
   const enrichedEvents = allEvents.map(({ event, profile }) => {
-    const daysUntilEvent = daysUntil(event.date);
+    const daysUntilEvent = daysUntil(event.date, true, user.timezone);
     const age = event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined;
 
     return {
@@ -96,7 +96,7 @@ export const GET = withAuth(async (req, user) => {
   if (pastDays > 0) {
     recentEvents = enrichedEvents
       .map(e => {
-        const daysSince = daysSinceOccurrence(e._rawDate);
+        const daysSince = daysSinceOccurrence(e._rawDate, user.timezone);
         if (daysSince > 0 && daysSince <= pastDays) {
           return { ...e, daysUntil: -daysSince };
         }

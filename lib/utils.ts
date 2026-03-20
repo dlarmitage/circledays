@@ -176,25 +176,48 @@ export function turningAge(birthDate: Date | string): number | null {
   return currentAge + 1;
 }
 
-export function daysUntil(date: Date | string, recurring: boolean = true): number {
+/**
+ * Get today's date in a specific timezone as a plain {year, month, day} object.
+ * Falls back to UTC if the timezone is invalid.
+ */
+function todayInTimezone(timezone?: string): { year: number; month: number; day: number } {
+  const now = new Date();
+  if (timezone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(now); // "2026-03-19"
+      const [year, month, day] = parts.split('-').map(Number);
+      return { year, month: month - 1, day }; // month is 0-indexed
+    } catch {
+      // invalid timezone — fall through
+    }
+  }
+  return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
+}
+
+export function daysUntil(date: Date | string, recurring: boolean = true, timezone?: string): number {
   const target = typeof date === 'string' ? parseLocalDate(date) : date;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
+  const { year, month, day } = todayInTimezone(timezone);
+  const today = new Date(year, month, day);
+
   if (!recurring) {
     // One-time event: just calculate days until the exact date
     const diffTime = target.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
-  
+
   // Recurring event: get this year's occurrence
   const thisYear = new Date(today.getFullYear(), target.getMonth(), target.getDate());
-  
+
   // If it's already passed this year, get next year's occurrence
   if (thisYear < today) {
     thisYear.setFullYear(thisYear.getFullYear() + 1);
   }
-  
+
   const diffTime = thisYear.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
@@ -203,10 +226,10 @@ export function daysUntil(date: Date | string, recurring: boolean = true): numbe
  * For recurring events, returns how many days ago this year's occurrence was.
  * Returns 0 if today is the day, -1 if it hasn't happened yet this year.
  */
-export function daysSinceOccurrence(date: Date | string): number {
+export function daysSinceOccurrence(date: Date | string, timezone?: string): number {
   const target = typeof date === 'string' ? parseLocalDate(date) : date;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const { year, month, day } = todayInTimezone(timezone);
+  const today = new Date(year, month, day);
 
   const thisYear = new Date(today.getFullYear(), target.getMonth(), target.getDate());
   const diffTime = today.getTime() - thisYear.getTime();

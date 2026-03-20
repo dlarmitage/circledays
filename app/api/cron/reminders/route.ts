@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
           if (override?.muted) return false;
           
           const leadDays = override?.customLeadDays || defaultLeadDays;
-          const days = daysUntil(event.date);
+          const days = daysUntil(event.date, true, user.timezone);
           
           return leadDays.includes(days);
         });
@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
           profilePhoto: profile.profilePicture,
           eventType: event.type === 'custom' ? (event.customLabel || 'Occasion') : event.type,
           eventDate: formatDate(event.date, { month: 'long', day: 'numeric' }),
-          daysUntil: daysUntil(event.date),
+          daysUntil: daysUntil(event.date, true, user.timezone),
           age: event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined,
         }));
         
