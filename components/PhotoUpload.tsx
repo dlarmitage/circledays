@@ -31,29 +31,48 @@ export function PhotoUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Handle paste from clipboard
-  const handlePaste = async (e: ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (file) {
-          processImageFile(file);
+  // Handle paste from clipboard via keyboard shortcut
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            processImageFile(file);
+          }
+          return;
         }
-        return;
       }
+    };
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('paste', handler);
+      return () => container.removeEventListener('paste', handler);
+    }
+  }, []);
+
+  // Handle click on "paste from clipboard" using Clipboard API
+  const handleClipboardClick = async () => {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        const imageType = item.types.find(t => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const file = new File([blob], 'clipboard.png', { type: imageType });
+          processImageFile(file);
+          return;
+        }
+      }
+      setError('No image found in clipboard');
+    } catch {
+      setError('Could not access clipboard. Try Cmd+V instead.');
     }
   };
-  
-  // Listen for paste events when component is mounted
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => handlePaste(e);
-    document.addEventListener('paste', handler);
-    return () => document.removeEventListener('paste', handler);
-  }, []);
   
   const processImageFile = (file: File) => {
     // Validate on client side
@@ -186,10 +205,14 @@ export function PhotoUpload({
           {photo ? 'Change Photo' : 'Add Photo'}
         </Button>
         
-        <p className="text-xs text-gray-400 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={handleClipboardClick}
+          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
+        >
           <Clipboard className="w-3 h-3" />
           or paste from clipboard
-        </p>
+        </button>
         
         {error && (
           <p className="text-xs text-coral-600">{error}</p>

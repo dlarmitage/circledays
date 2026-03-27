@@ -43,8 +43,11 @@ export function capitalizeName(name: string): string {
     .split(/\s+/) // Split on whitespace
     .map(word => {
       if (word.length === 0) return word;
-      // Capitalize first letter, lowercase the rest
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      // Handle hyphenated names (e.g., "kechriotis-nelson" → "Kechriotis-Nelson")
+      return word
+        .split('-')
+        .map(part => part.length > 0 ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part)
+        .join('-');
     })
     .join(' ');
 }
