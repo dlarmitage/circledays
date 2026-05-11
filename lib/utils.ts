@@ -172,11 +172,16 @@ export function calculateAge(birthDate: Date | string): number | null {
  * - If birthday is upcoming: they'll turn currentAge + 1 this year
  */
 export function turningAge(birthDate: Date | string): number | null {
-  const currentAge = calculateAge(birthDate);
+  const birth = typeof birthDate === 'string' ? parseLocalDate(birthDate) : birthDate;
+  const currentAge = calculateAge(birth);
   if (currentAge === null) return null;
-  
-  // Always return the age they'll turn on their next birthday
-  return currentAge + 1;
+
+  const today = new Date();
+  const isBirthdayToday =
+    today.getMonth() === birth.getMonth() && today.getDate() === birth.getDate();
+
+  // On the birthday itself, calculateAge already returns the age being turned
+  return isBirthdayToday ? currentAge : currentAge + 1;
 }
 
 /**
