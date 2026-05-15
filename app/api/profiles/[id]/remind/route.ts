@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db, magicLinks, profiles, users } from '@/lib/db';
-import { withAuth } from '@/lib/api-handler';
+import { withAuthParams } from '@/lib/api-handler';
 import { sendEmail } from '@/lib/email';
 import { nanoid } from 'nanoid';
 import { eq, and } from 'drizzle-orm';
 
-export const POST = withAuth(async (req, user, { params }: { params: Promise<{ id: string }> }) => {
+export const POST = withAuthParams(async (req, user, params: { id: string }) => {
   if (!user.isPlatformAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const [profile] = await db
     .select()
@@ -99,4 +99,4 @@ export const POST = withAuth(async (req, user, { params }: { params: Promise<{ i
   });
 
   return NextResponse.json({ success: true });
-}, 'send reminder');
+});
