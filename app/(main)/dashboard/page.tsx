@@ -254,16 +254,17 @@ export default function DashboardPage() {
             <Bell className="w-4 h-4 text-amber-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900">You won't get reminders yet</p>
-            <p className="text-sm text-amber-700 mt-0.5">
-              Add a mobile number or turn on email notifications in{' '}
+            <p className="text-sm font-semibold text-amber-900">Turn on reminders — it's the best part</p>
+            <p className="text-sm text-amber-700 mt-1">
+              CircleDays will text or email you a few days before every birthday and occasion in your circle —
+              enough time to send a message, make a call, or mail a card. Add your number in{' '}
               <button
                 onClick={() => router.push('/settings')}
                 className="underline font-medium hover:text-amber-900 transition-colors"
               >
                 Settings
               </button>{' '}
-              so CircleDays can remind you about upcoming occasions.
+              and never miss a moment that matters.
             </p>
           </div>
           <button
