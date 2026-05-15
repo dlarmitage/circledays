@@ -44,6 +44,7 @@ export function ProfileHeader({
   profile,
   isCreator,
   isDirectConnection,
+  isPlatformAdmin,
   hopDistance,
   canEdit,
   canDelete,
