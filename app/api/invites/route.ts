@@ -59,8 +59,8 @@ export const POST = withAuth(async (req, user) => {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
-  // Check permission - must be creator of an unlinked profile
-  if (profile.createdByUserId !== user.id) {
+  // Check permission - must be creator or platform admin
+  if (profile.createdByUserId !== user.id && !user.isPlatformAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

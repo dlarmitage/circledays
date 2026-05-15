@@ -78,7 +78,7 @@ export function ProfileHeader({
             </Badge>
           )}
 
-          {!profile.linkedUserId && isCreator && (
+          {!profile.linkedUserId && (isCreator || isPlatformAdmin) && (
             <Badge variant="default" className="mb-4">
               Not on CircleDays yet
             </Badge>
@@ -108,7 +108,7 @@ export function ProfileHeader({
               </Button>
             ) : null}
 
-            {isCreator && !profile.linkedUserId && (
+            {(isCreator || isPlatformAdmin) && !profile.linkedUserId && (
               <Button
                 variant="secondary"
                 size="sm"
