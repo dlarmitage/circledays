@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { STRINGS } from '@/lib/constants';
-import { Plus, Cake } from 'lucide-react';
+import { Plus, Cake, Bell, X } from 'lucide-react';
 
 const DISMISSED_CONNECTIONS_KEY = 'circledays_dismissed_connections';
 const DISMISSED_DISCOVERIES_KEY = 'circledays_dismissed_discoveries';
 const DISCOVERIES_BANNER_DISMISSED_KEY = 'circledays_discoveries_banner_dismissed';
+const NOTIFICATIONS_NUDGE_DISMISSED_KEY = 'circledays_notifications_nudge_dismissed';
 
 interface UpcomingEvent {
   id: string;
@@ -37,6 +38,8 @@ interface UserData {
     id: string;
     name: string;
     email: string;
+    mobile: string | null;
+    notificationChannel: string | null;
     isPlatformAdmin?: boolean;
   };
 }
@@ -72,6 +75,7 @@ export default function DashboardPage() {
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [dismissedDiscoveryIds, setDismissedDiscoveryIds] = useState<Set<string>>(new Set());
   const [discoveryBannerDismissed, setDiscoveryBannerDismissed] = useState(false);
+  const [notificationsNudgeDismissed, setNotificationsNudgeDismissed] = useState(false);
   const [discoveriesModalOpen, setDiscoveriesModalOpen] = useState(false);
 
   // Load dismissed state from localStorage
@@ -95,6 +99,10 @@ export default function DashboardPage() {
     const bannerDismissed = localStorage.getItem(DISCOVERIES_BANNER_DISMISSED_KEY);
     if (bannerDismissed) {
       setDiscoveryBannerDismissed(true);
+    }
+    const nudgeDismissed = localStorage.getItem(NOTIFICATIONS_NUDGE_DISMISSED_KEY);
+    if (nudgeDismissed) {
+      setNotificationsNudgeDismissed(true);
     }
   }, []);
 
@@ -158,6 +166,11 @@ export default function DashboardPage() {
   const handleDismissDiscoveryBanner = () => {
     setDiscoveryBannerDismissed(true);
     localStorage.setItem(DISCOVERIES_BANNER_DISMISSED_KEY, 'true');
+  };
+
+  const handleDismissNotificationsNudge = () => {
+    setNotificationsNudgeDismissed(true);
+    localStorage.setItem(NOTIFICATIONS_NUDGE_DISMISSED_KEY, 'true');
   };
 
   const handleAddDiscovery = async (profileId: string) => {
@@ -233,6 +246,35 @@ export default function DashboardPage() {
         onDisconnect={handleDisconnect}
         onDismissAll={handleDismissAllConnections}
       />
+
+      {/* Notifications setup nudge */}
+      {!notificationsNudgeDismissed && userData?.user && !userData.user.mobile && !userData.user.notificationChannel && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 flex items-start gap-3">
+          <div className="shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center mt-0.5">
+            <Bell className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">You won't get reminders yet</p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              Add a mobile number or turn on email notifications in{' '}
+              <button
+                onClick={() => router.push('/settings')}
+                className="underline font-medium hover:text-amber-900 transition-colors"
+              >
+                Settings
+              </button>{' '}
+              so CircleDays can remind you about upcoming occasions.
+            </p>
+          </div>
+          <button
+            onClick={handleDismissNotificationsNudge}
+            className="shrink-0 text-amber-400 hover:text-amber-600 transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Connection Discoveries Banner */}
       {!discoveryBannerDismissed && (
