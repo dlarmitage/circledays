@@ -71,12 +71,12 @@ export const POST = withAuth(async (req, user) => {
     );
   }
 
-  // Check for existing pending invite
+  // Check for existing pending, non-expired invite
   const [existingInvite] = await db
     .select()
     .from(invites)
     .where(
-      sql`${invites.profileId} = ${data.profileId} AND ${invites.status} = 'pending'`
+      sql`${invites.profileId} = ${data.profileId} AND ${invites.status} = 'pending' AND ${invites.expiresAt} > NOW()`
     )
     .limit(1);
 
