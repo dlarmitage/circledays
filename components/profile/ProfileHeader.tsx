@@ -34,6 +34,7 @@ interface ProfileHeaderProps {
   onDisconnect: () => void;
   onDelete: () => void;
   onInvite: () => void;
+  onRemind?: () => void;
   // Card nudge
   showCardNudge: boolean;
   nudgeText: string | null;
@@ -42,6 +43,7 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({
   profile,
+  isOwnProfile,
   isCreator,
   isDirectConnection,
   isPlatformAdmin,
@@ -54,6 +56,7 @@ export function ProfileHeader({
   onDisconnect,
   onDelete,
   onInvite,
+  onRemind,
   showCardNudge,
   nudgeText,
   onSendCard,
@@ -117,6 +120,17 @@ export function ProfileHeader({
               >
                 <Mail className="w-4 h-4 mr-2" />
                 Invite
+              </Button>
+            )}
+
+            {isPlatformAdmin && !!profile.linkedUserId && !isOwnProfile && onRemind && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onRemind}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Send Login Reminder
               </Button>
             )}
 

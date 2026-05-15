@@ -33,6 +33,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [disconnectingConnection, setDisconnectingConnection] = useState<{ profileId: string; name: string } | null>(null);
   const [showAllConnections, setShowAllConnections] = useState(false);
   const [showSendCardModal, setShowSendCardModal] = useState(false);
+  const [reminderSent, setReminderSent] = useState(false);
   const nudgeText = useCardNudge(data);
 
   useEffect(() => { fetchProfileData(); }, [id]);
@@ -85,6 +86,11 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     } finally { setActionLoading(false); }
   };
 
+  const handleSendReminder = async () => {
+    const res = await fetch(`/api/profiles/${id}/remind`, { method: 'POST' });
+    if (res.ok) setReminderSent(true);
+  };
+
   const handleSaveAccountField = async (field: 'email' | 'mobile', value: string) => {
     const res = await fetch('/api/users/me', {
       method: 'PATCH',
@@ -122,6 +128,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         </Button>
       </div>
 
+      {reminderSent && (
+        <div className="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+          Login reminder sent to {profile.name}.
+        </div>
+      )}
+
       <ProfileHeader
         profile={profile}
         isOwnProfile={isOwnProfile}
@@ -137,6 +149,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         onDisconnect={() => setShowDisconnectModal(true)}
         onDelete={() => setShowDeleteModal(true)}
         onInvite={() => setShowInviteModal(true)}
+        onRemind={handleSendReminder}
         showCardNudge={showCardNudge}
         nudgeText={nudgeText}
         onSendCard={() => setShowSendCardModal(true)}
