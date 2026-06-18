@@ -42,6 +42,9 @@ self.addEventListener('fetch', (event) => {
   
   // Skip API requests and auth
   if (event.request.url.includes('/api/')) return;
+
+  // Only cache http(s) requests — browser extensions use unsupported schemes
+  if (!event.request.url.startsWith('http')) return;
   
   event.respondWith(
     fetch(event.request)
