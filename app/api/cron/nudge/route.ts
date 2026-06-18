@@ -19,7 +19,7 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Called by GitHub Actions (hourly, but nudge logic is idempotent)
+// Called hourly by Vercel Cron (nudge logic is idempotent)
 // Sends nudge emails to users who haven't enabled both email + SMS
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');

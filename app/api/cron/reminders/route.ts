@@ -22,7 +22,7 @@ function getCurrentHourInTimezone(timezone: string): number {
   }
 }
 
-// This endpoint is called hourly by GitHub Actions
+// This endpoint is called hourly by Vercel Cron
 // It sends reminders to users who are currently at 7 AM in their timezone
 // Add ?test=true&email=user@example.com to test for a specific user (bypasses timezone)
 export async function GET(request: NextRequest) {
@@ -64,10 +64,12 @@ export async function GET(request: NextRequest) {
       usersToNotify = allUsers;
       console.log(`[Reminders] TEST MODE - Targeting all ${allUsers.length} users`);
     } else {
-      // Production mode: filter by timezone
+      // Production mode: filter by timezone.
+      // Include the following hour as a fallback so a missed 7 AM run still delivers
+      // reminders; idempotency below prevents duplicate sends.
       usersToNotify = allUsers.filter(user => {
         const userHour = getCurrentHourInTimezone(user.timezone);
-        return userHour === targetHour;
+        return userHour === targetHour || userHour === targetHour + 1;
       });
     }
     
