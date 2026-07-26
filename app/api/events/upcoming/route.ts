@@ -4,6 +4,7 @@ import { cardOrders } from '@/lib/db/schema';
 import { withAuth } from '@/lib/api-handler';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, daysSinceOccurrence, turningAge } from '@/lib/utils';
+import { eventIdsWithCardOrdered } from '@/lib/card-order-status';
 
 export const GET = withAuth(async (req, user) => {
   const { searchParams } = new URL(req.url);
@@ -106,23 +107,35 @@ export const GET = withAuth(async (req, user) => {
       .sort((a, b) => b.daysUntil - a.daysUntil); // most recent first (-1 before -5)
   }
 
-  // Check which events already have a card ordered (non-cancelled)
+  // Check which events already have a card ordered (non-cancelled).
+  // Match by eventId, or by profileId within the occasion window (covers
+  // orders placed from the profile page / email links without an eventId).
   const allResults = [...upcomingEvents, ...recentEvents].map(({ _rawDate, ...rest }) => rest);
-  const eventIds = allResults.map(e => e.id);
+  const profileIds = [...new Set(allResults.map(e => e.profileId))];
 
   let orderedEventIds = new Set<string>();
-  if (eventIds.length > 0) {
+  if (profileIds.length > 0) {
     const orders = await db
-      .select({ eventId: cardOrders.eventId })
+      .select({
+        eventId: cardOrders.eventId,
+        profileId: cardOrders.profileId,
+        createdAt: cardOrders.createdAt,
+      })
       .from(cardOrders)
       .where(
         and(
           eq(cardOrders.userId, user.id),
-          sql`${cardOrders.eventId} IN (${sql.join(eventIds.map(id => sql`${id}`), sql`, `)})`,
-          sql`${cardOrders.status} != 'cancelled'`
+          sql`${cardOrders.status} != 'cancelled'`,
+          or(
+            sql`${cardOrders.eventId} IN (${sql.join(allResults.map(e => sql`${e.id}`), sql`, `)})`,
+            sql`${cardOrders.profileId} IN (${sql.join(profileIds.map(id => sql`${id}`), sql`, `)})`
+          )
         )
       );
-    orderedEventIds = new Set(orders.map(o => o.eventId).filter((id): id is string => id !== null));
+    orderedEventIds = eventIdsWithCardOrdered(
+      allResults.map(e => ({ id: e.id, profileId: e.profileId, daysUntil: e.daysUntil })),
+      orders,
+    );
   }
 
   const resultsWithCardStatus = allResults.map(e => ({

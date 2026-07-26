@@ -24,6 +24,8 @@ interface SendCardModalProps {
   eventDate?: string;
   eventId?: string;
   userName?: string;
+  /** Called after a card is successfully ordered (before the user dismisses success) */
+  onOrdered?: () => void;
 }
 
 export function SendCardModal({
@@ -37,6 +39,7 @@ export function SendCardModal({
   eventDate,
   eventId,
   userName = '',
+  onOrdered,
 }: SendCardModalProps) {
   if (!isOpen) return null;
 
@@ -50,6 +53,7 @@ export function SendCardModal({
       daysUntil={daysUntil}
       eventDate={eventDate}
       eventId={eventId}
+      onOrdered={onOrdered}
     >
       <SendCardModalContent
         onClose={onClose}

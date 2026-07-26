@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, users, profiles, connections, events, reminderPreferences, reminderOverrides, notificationLogs, pushTokens } from '@/lib/db';
+import { cardOrders } from '@/lib/db/schema';
 import { sendEmail, generateReminderEmail } from '@/lib/email';
 import { sendSms, generateReminderSms } from '@/lib/sms';
 import { sendPushNotification } from '@/lib/apns';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, turningAge, formatDate } from '@/lib/utils';
+import { eventIdsWithCardOrdered } from '@/lib/card-order-status';
 
 // Helper to get current hour in a timezone
 function getCurrentHourInTimezone(timezone: string): number {
@@ -198,7 +200,37 @@ export async function GET(request: NextRequest) {
         );
         
         if (newEventsToNotify.length === 0) continue;
-        
+
+        // Which of these events already have a card ordered?
+        const notifyProfileIds = [...new Set(newEventsToNotify.map(e => e.profile.id))];
+        const notifyEventIds = newEventsToNotify.map(e => e.event.id);
+        const cardOrderRows = await db
+          .select({
+            eventId: cardOrders.eventId,
+            profileId: cardOrders.profileId,
+            createdAt: cardOrders.createdAt,
+          })
+          .from(cardOrders)
+          .where(
+            and(
+              eq(cardOrders.userId, user.id),
+              sql`${cardOrders.status} != 'cancelled'`,
+              or(
+                sql`${cardOrders.eventId} IN (${sql.join(notifyEventIds.map(id => sql`${id}`), sql`, `)})`,
+                sql`${cardOrders.profileId} IN (${sql.join(notifyProfileIds.map(id => sql`${id}`), sql`, `)})`
+              )
+            )
+          );
+
+        const orderedEventIds = eventIdsWithCardOrdered(
+          newEventsToNotify.map(({ event, profile }) => ({
+            id: event.id,
+            profileId: profile.id,
+            daysUntil: daysUntil(event.date, true, user.timezone),
+          })),
+          cardOrderRows,
+        );
+
         // Prepare event data
         const eventData = newEventsToNotify.map(({ event, profile }) => ({
           profileId: profile.id,
@@ -208,6 +240,7 @@ export async function GET(request: NextRequest) {
           eventDate: formatDate(event.date, { month: 'long', day: 'numeric' }),
           daysUntil: daysUntil(event.date, true, user.timezone),
           age: event.type === 'birthday' ? turningAge(event.date) ?? undefined : undefined,
+          cardOrdered: orderedEventIds.has(event.id),
         }));
         
         const newEventIds = newEventsToNotify.map(e => e.event.id);

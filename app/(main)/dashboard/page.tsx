@@ -124,6 +124,11 @@ export default function DashboardPage() {
       setDiscoveries(discoveriesRes.discoveries || []);
       setLoading(false);
     });
+  }, [days, router]);
+
+  const refreshEvents = useCallback(async () => {
+    const eventsRes = await fetch(`/api/events/upcoming?days=${days}&pastDays=7`).then(res => res.json());
+    setEvents(eventsRes.events || []);
   }, [days]);
 
   // Handle dismissing a new connection notification
@@ -415,6 +420,7 @@ export default function DashboardPage() {
         eventDate={sendCardEvent?.date}
         eventId={sendCardEvent?.id}
         userName={userData?.user?.name || ''}
+        onOrdered={refreshEvents}
       />
     </div>
   );

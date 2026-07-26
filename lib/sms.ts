@@ -38,6 +38,7 @@ interface EventReminder {
   eventDate: string;
   daysUntil: number;
   age?: number;
+  cardOrdered?: boolean;
 }
 
 function getCardNudgeSms(daysUntil: number): string | null {
@@ -57,7 +58,7 @@ export function generateReminderSms(events: EventReminder[], appUrl?: string): s
     const emoji = event.eventType.toLowerCase() === 'birthday' ? '🎂' :
       event.eventType.toLowerCase() === 'anniversary' ? '❤️' : '🎉';
 
-    const cardNudge = getCardNudgeSms(event.daysUntil);
+    const cardNudge = event.cardOrdered ? null : getCardNudgeSms(event.daysUntil);
     const cardLine = cardNudge ? `\n\n${cardNudge}` : '';
 
     const message = `${emoji} ${event.profileName}'s ${event.eventType}${ageText} is ${daysText} - ${event.eventDate}${cardLine}${link}`;

@@ -252,6 +252,7 @@ interface EventReminder {
   eventDate: string;
   age?: number;
   daysUntil: number;
+  cardOrdered?: boolean;
 }
 
 function getCardNudgeMessage(daysUntil: number): string | null {
@@ -266,7 +267,7 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` - turning ${event.age}` : '';
     const initial = event.profileName.charAt(0).toUpperCase();
-    const cardNudge = getCardNudgeMessage(event.daysUntil);
+    const cardNudge = event.cardOrdered ? null : getCardNudgeMessage(event.daysUntil);
 
     return `
       <tr>
@@ -390,7 +391,7 @@ export function generateReminderEmail(userName: string, events: EventReminder[],
   const text = events.map(event => {
     const daysText = event.daysUntil === 0 ? 'Today' : event.daysUntil === 1 ? 'Tomorrow' : `In ${event.daysUntil} days`;
     const ageText = event.age ? ` (turning ${event.age})` : '';
-    const cardNudge = getCardNudgeMessage(event.daysUntil);
+    const cardNudge = event.cardOrdered ? null : getCardNudgeMessage(event.daysUntil);
     const cardLine = cardNudge ? `\n  ${cardNudge} Send a card: ${appUrl}/profile/${event.profileId || ''}` : '';
     return `${event.profileName}'s ${event.eventType} - ${event.eventDate}${ageText} - ${daysText}${cardLine}`;
   }).join('\n\n');

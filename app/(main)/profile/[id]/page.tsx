@@ -18,6 +18,7 @@ import { ProfileConnections } from '@/components/profile/ProfileConnections';
 import { useCardNudge } from '@/components/profile/useCardNudge';
 import type { ProfileData, ProfileEvent } from '@/components/profile/types';
 import { ArrowLeft, UserPlus } from 'lucide-react';
+import { daysUntil } from '@/lib/utils';
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -114,6 +115,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const canDelete = (isCreator && !profile.linkedUserId) || isOwnProfile;
   const canDisconnect = isDirectConnection && !isOwnProfile;
   const showCardNudge = isDirectConnection && !isOwnProfile && !!data.isPlatformAdmin;
+
+  // Prefer the nearest upcoming occasion so the order is linked to an eventId
+  const nearestUpcoming = events
+    .map(e => ({ ...e, days: daysUntil(e.date, e.recurring ?? true) }))
+    .filter(e => e.days >= 0 && e.days <= 90)
+    .sort((a, b) => a.days - b.days)[0] ?? null;
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
@@ -242,7 +249,14 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         profileId={profile.id}
         profileName={profile.name}
         profilePicture={profile.profilePicture}
-        eventType="thinking of you"
+        eventType={nearestUpcoming
+          ? (nearestUpcoming.type === 'custom'
+            ? (nearestUpcoming.customLabel || 'event')
+            : nearestUpcoming.type)
+          : 'thinking of you'}
+        daysUntil={nearestUpcoming?.days}
+        eventDate={nearestUpcoming?.date}
+        eventId={nearestUpcoming?.id}
       />
     </div>
   );

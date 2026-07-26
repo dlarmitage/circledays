@@ -119,6 +119,7 @@ interface SendCardProviderProps {
   daysUntil?: number;
   eventDate?: string;
   eventId?: string;
+  onOrdered?: () => void;
 }
 
 export function SendCardProvider({
@@ -131,6 +132,7 @@ export function SendCardProvider({
   daysUntil,
   eventDate,
   eventId,
+  onOrdered,
 }: SendCardProviderProps) {
   const [step, setStep] = useState<Step>('pick-card');
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
@@ -424,6 +426,7 @@ export function SendCardProvider({
       }
       setStep('success');
       setCreditBalance(b => (b !== null ? b - 1 : null));
+      onOrdered?.();
     } catch (err) {
       console.error('Send card error:', err);
       setSendError('Failed to send card. Please try again.');
