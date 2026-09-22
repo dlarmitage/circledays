@@ -30,24 +30,41 @@ export function getInitials(name: string): string {
 }
 
 /**
- * Capitalize the first letter of each word in a name
- * Handles names like "john smith" -> "John Smith"
- * Preserves existing capitalization for names like "McDonald" or "O'Brien"
- * but capitalizes the first letter of each word
+ * Capitalize the first letter of each word in a name.
+ * Title-cases all-lowercase input ("john smith" → "John Smith") and long
+ * all-caps words (likely Caps Lock). Preserves intentional mixed case
+ * ("McDonald", "MCfoo", "O'Brien") and short all-caps tokens ("DJ", "MC").
  */
+function capitalizeNamePart(part: string): string {
+  if (part.length === 0) return part;
+
+  const first = part.charAt(0).toUpperCase();
+  const rest = part.slice(1);
+
+  // User typed all lowercase — apply standard title case
+  if (part === part.toLowerCase()) {
+    return first + rest;
+  }
+
+  // Long all-caps — treat as Caps Lock and title-case
+  if (part.length > 2 && part === part.toUpperCase()) {
+    return first + rest.toLowerCase();
+  }
+
+  // Mixed case or short all-caps (DJ, MC) — keep the user's casing
+  return first + rest;
+}
+
 export function capitalizeName(name: string): string {
   if (!name || name.trim().length === 0) return name;
-  
+
   return name
     .trim()
     .split(/\s+/) // Split on whitespace
     .map(word => {
       if (word.length === 0) return word;
       // Handle hyphenated names (e.g., "kechriotis-nelson" → "Kechriotis-Nelson")
-      return word
-        .split('-')
-        .map(part => part.length > 0 ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part)
-        .join('-');
+      return word.split('-').map(capitalizeNamePart).join('-');
     })
     .join(' ');
 }
