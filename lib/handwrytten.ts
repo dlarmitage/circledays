@@ -352,7 +352,7 @@ export async function deleteCustomImage(imageId: number): Promise<void> {
 }
 
 function parseOrderStatus(o: Record<string, unknown>): HandwryttenOrderStatus | null {
-  // listGrouped / details use `id`; older list/past responses use `order_id`
+  // list responses use `id`; older past responses use `order_id`
   const rawId = o.id ?? o.order_id;
   if (rawId == null) return null;
   const id = typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10);
@@ -368,74 +368,42 @@ function parseOrderStatus(o: Record<string, unknown>): HandwryttenOrderStatus | 
 
 /**
  * Fetch order history from Handwrytten to sync statuses.
- * Prefer listGrouped (current); fall back to deprecated /orders/list.
- * Official API is GET with uid header — POST was silently failing to refresh statuses.
+ *
+ * Auth note: v1 order endpoints expect `uid` in the form body (same as
+ * singleStepOrder / creditCards). Passing uid as a header is treated as a
+ * login session and returns 440 "Session has expired."
  */
 export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
-  const headers = {
-    ...authedHeaders(),
-    Accept: 'application/json',
-  };
+  const body = new URLSearchParams();
+  body.set('uid', getApiKey());
 
-  const endpoints = [
-    `${BASE_URL}/v1/orders/listGrouped`,
-    `${BASE_URL}/v1/orders/list?page=1&per_page=100`,
-  ];
+  const res = await fetch(`${BASE_URL}/v1/orders/list`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+    signal: AbortSignal.timeout(15000),
+  });
 
-  let lastError: Error | null = null;
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, {
-        method: 'GET',
-        headers,
-        signal: AbortSignal.timeout(15000),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        lastError = new Error(`Handwrytten orders list failed (${res.status}): ${text}`);
-        continue;
-      }
-      const data = await res.json();
-      const raw = data.orders ?? data.results ?? [];
-      if (!Array.isArray(raw)) continue;
-      return raw
-        .map((o: Record<string, unknown>) => parseOrderStatus(o))
-        .filter((o: HandwryttenOrderStatus | null): o is HandwryttenOrderStatus => o != null);
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-    }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Handwrytten orders list failed (${res.status}): ${text}`);
   }
 
-  throw lastError ?? new Error('Handwrytten orders list failed');
+  const data = await res.json();
+  const raw = data.orders ?? data.results ?? [];
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((o: Record<string, unknown>) => parseOrderStatus(o))
+    .filter((o: HandwryttenOrderStatus | null): o is HandwryttenOrderStatus => o != null);
 }
 
-/** Fetch a single order's current status from Handwrytten. */
+/** Fetch a single order's current status from Handwrytten via the list endpoint. */
 export async function getOrder(orderId: string): Promise<HandwryttenOrderStatus | null> {
-  const headers = {
-    ...authedHeaders(),
-    Accept: 'application/json',
-  };
-
-  // Try details (query) then get/{id} (SDK path)
-  const urls = [
-    `${BASE_URL}/v1/orders/details?id=${encodeURIComponent(orderId)}`,
-    `${BASE_URL}/v1/orders/get/${encodeURIComponent(orderId)}`,
-  ];
-
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, {
-        method: 'GET',
-        headers,
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const raw = (data.order ?? data) as Record<string, unknown>;
-      return parseOrderStatus(raw);
-    } catch {
-      // try next endpoint
-    }
+  try {
+    const orders = await listOrders();
+    return orders.find(o => String(o.id) === String(orderId)) ?? null;
+  } catch (err) {
+    console.warn('Handwrytten getOrder failed:', err);
+    return null;
   }
-  return null;
 }
