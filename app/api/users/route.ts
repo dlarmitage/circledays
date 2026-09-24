@@ -4,6 +4,7 @@ import { createSession, logLoginEvent } from '@/lib/auth';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { capitalizeName } from '@/lib/utils';
+import { normalizePhone } from '@/lib/phone';
 import { withPublicHandler } from '@/lib/api-handler';
 
 const createUserSchema = z.object({
@@ -19,6 +20,7 @@ const createUserSchema = z.object({
 export const POST = withPublicHandler(async (req) => {
   const body = await req.json();
   const data = createUserSchema.parse(body);
+  const mobile = data.mobile ? normalizePhone(data.mobile) : null;
 
   // Create user
   const [newUser] = await db
@@ -27,8 +29,8 @@ export const POST = withPublicHandler(async (req) => {
       email: data.email.toLowerCase(),
       name: capitalizeName(data.name),
       timezone: data.timezone,
-      mobile: data.mobile || null,
-      notificationChannel: data.mobile ? 'both' : data.notificationChannel,
+      mobile,
+      notificationChannel: mobile ? 'both' : data.notificationChannel,
     })
     .returning();
 

@@ -1,4 +1,4 @@
-import { getIronSession, IronSession } from 'iron-session';
+import { getIronSession, IronSession, SessionOptions } from 'iron-session';
 import { cookies } from 'next/headers';
 import { db, users, loginEvents } from './db';
 import { eq } from 'drizzle-orm';
@@ -9,20 +9,49 @@ export interface SessionData {
   originalUserId?: string; // Set when an admin is impersonating another user
 }
 
-const sessionOptions = {
-  password: process.env.SESSION_SECRET!,
-  cookieName: 'circledays-session',
-  cookieOptions: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'lax' as const,
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  },
-};
+interface TrustedDevice {
+  email?: string;
+}
+
+function requireSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('SESSION_SECRET must be set and at least 32 characters');
+  }
+  return secret;
+}
+
+function getSessionOptions(): SessionOptions {
+  return {
+    password: requireSessionSecret(),
+    cookieName: 'circledays-session',
+    cookieOptions: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    },
+  };
+}
+
+function getTrustedDeviceOptions(): SessionOptions {
+  return {
+    password: requireSessionSecret(),
+    cookieName: 'circledays-trusted',
+    cookieOptions: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 90, // 90 days
+    },
+  };
+}
 
 export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
-  return getIronSession<SessionData>(cookieStore, sessionOptions);
+  return getIronSession<SessionData>(cookieStore, getSessionOptions());
 }
 
 export async function getCurrentUser() {
@@ -61,6 +90,20 @@ export async function createSession(userId: string) {
 export async function destroySession() {
   const session = await getSession();
   session.destroy();
+}
+
+/** Trusted device — survives logout; skips OTP when same email re-entered on this browser. */
+export async function setTrustedDevice(email: string) {
+  const cookieStore = await cookies();
+  const trusted = await getIronSession<TrustedDevice>(cookieStore, getTrustedDeviceOptions());
+  trusted.email = email.toLowerCase().trim();
+  await trusted.save();
+}
+
+export async function getTrustedDevice(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const trusted = await getIronSession<TrustedDevice>(cookieStore, getTrustedDeviceOptions());
+  return trusted.email || null;
 }
 
 export async function startImpersonation(targetUserId: string) {

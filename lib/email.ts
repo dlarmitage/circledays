@@ -48,7 +48,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
   }
 }
 
-export function generateMagicLinkEmail(name: string, magicLink: string, code: string) {
+export function generateMagicLinkEmail(name: string, code: string) {
   const html = `
 <!DOCTYPE html>
 <html>
@@ -56,127 +56,56 @@ export function generateMagicLinkEmail(name: string, magicLink: string, code: st
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf9f7; padding: 40px 20px; margin: 0;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td align="center">
-        <table width="480" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; background: #ffffff; border-radius: 16px;">
-          <tr>
-            <td style="padding: 40px;">
-              <!-- Logo -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="padding-bottom: 32px;">
-                    <h1 style="color: #0d9488; font-size: 28px; margin: 0; font-weight: 700;">CircleDays</h1>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Greeting -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 24px;">
-                    Hi${name ? ` ${name}` : ''},
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Message -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="color: #333333; font-size: 16px; line-height: 1.6; padding-bottom: 32px;">
-                    Click the button below to sign in to CircleDays. This link will expire in 15 minutes.
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Button -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="padding-bottom: 32px;">
-                    <table cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td align="center" bgcolor="#0d9488" style="background-color: #0d9488; border-radius: 8px;">
-                          <a href="${magicLink}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">Sign In to CircleDays</a>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Verification Code Section -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="padding: 24px; background-color: #f5f5f4; border-radius: 12px; margin-bottom: 24px;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td align="center" style="color: #666666; font-size: 14px; padding-bottom: 12px;">
-                          Using the app on your phone? Enter this code:
-                        </td>
-                      </tr>
-                      <tr>
-                        <td align="center">
-                          <table cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #0d9488; border-radius: 8px; background-color: #ffffff;">
-                            <tr>
-                              <td style="padding: 12px 24px;">
-                                <span style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 28px; font-weight: 700; color: #0d9488; letter-spacing: 6px;">${code}</span>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Alt link text -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="color: #666666; font-size: 14px; line-height: 1.6; padding-top: 24px; padding-bottom: 16px;">
-                    Or copy and paste this link into your browser:
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Link -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="padding-bottom: 32px;">
-                    <a href="${magicLink}" style="color: #0d9488; font-size: 14px; word-break: break-all; text-decoration: none;">${magicLink}</a>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Footer -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="color: #999999; font-size: 12px;">
-                    If you didn't request this email, you can safely ignore it.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+<body style="margin: 0; padding: 0; background-color: #faf9f7;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <tr><td align="center" style="padding: 20px 0;">
+      <table cellpadding="0" cellspacing="0" border="0" width="480" style="max-width: 480px;">
+        <!-- Header -->
+        <tr>
+          <td bgcolor="#0f766e" style="padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <span style="color: #ffffff; font-size: 22px; font-weight: 700;">CircleDays</span>
+            <span style="color: #99f6e4; font-size: 13px; display: block; margin-top: 4px;">Never miss a day that matters</span>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td bgcolor="#ffffff" style="padding: 40px 32px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 8px 0;">Hi${name ? ` ${name}` : ' there'},</p>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0;">Use the code below to sign in to CircleDays. Copy it into the verification field.</p>
+            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td bgcolor="#f0fdfa" align="center" style="padding: 28px 24px; border: 2px dashed #0d9488; border-radius: 12px;">
+                  <p style="color: #6b7280; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">Verification Code</p>
+                  <p style="font-size: 42px; font-weight: 800; letter-spacing: 10px; color: #0f766e; margin: 0; font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;">${code}</p>
+                </td>
+              </tr>
+            </table>
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.5; text-align: center; margin: 24px 0 0 0;">
+              This code expires in <strong style="color: #374151;">15 minutes</strong>.
+            </p>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td bgcolor="#f9fafb" style="padding: 20px 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">If you didn't request this code, you can safely ignore this email.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>
   `.trim();
 
   const text = `
-Hi${name ? ` ${name}` : ''},
+Hi${name ? ` ${name}` : ' there'},
 
-Click the link below to sign in to CircleDays. This link will expire in 15 minutes.
+Your CircleDays login code is: ${code}
 
-${magicLink}
+It expires in 15 minutes.
 
-Or enter this verification code in the app: ${code}
-
-If you didn't request this email, you can safely ignore it.
+If you didn't request this code, you can safely ignore this email.
   `.trim();
 
   return { html, text };

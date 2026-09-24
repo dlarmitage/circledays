@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { sendEmail, generateEmailConfirmationEmail } from '@/lib/email';
 import { capitalizeName } from '@/lib/utils';
+import { normalizePhone } from '@/lib/phone';
 
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -59,7 +60,9 @@ export const PATCH = withAuth(async (req, user) => {
     // For other fields, update directly
     if (data.name) updateData.name = capitalizeName(data.name);
     if (data.timezone) updateData.timezone = data.timezone;
-    if (data.mobile !== undefined) updateData.mobile = data.mobile;
+    if (data.mobile !== undefined) {
+      updateData.mobile = data.mobile ? normalizePhone(data.mobile) : null;
+    }
     if (data.notificationChannel) updateData.notificationChannel = data.notificationChannel;
     if (data.shareNewConnections !== undefined) updateData.shareNewConnections = data.shareNewConnections;
     if (data.pushEnabled !== undefined) updateData.pushEnabled = data.pushEnabled;

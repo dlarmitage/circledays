@@ -148,6 +148,7 @@ export const magicLinks = pgTable('magic_links', {
   email: text('email').notNull(),
   token: text('token').notNull().unique(),
   code: text('code').notNull().default('000000'), // 6-digit verification code for PWA fallback
+  attempts: integer('attempts').notNull().default(0), // verify guesses; lock out at 5
   expiresAt: timestamp('expires_at').notNull(),
   used: boolean('used').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),

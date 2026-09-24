@@ -4,6 +4,7 @@ import { createSession, logLoginEvent } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { withPublicHandler } from '@/lib/api-handler';
+import { normalizePhone } from '@/lib/phone';
 
 const acceptInviteSchema = z.object({
   name: z.string().min(1).max(100),
@@ -63,13 +64,21 @@ export async function POST(
     }
 
     // Create user with provided email and mobile
+    const mobile = normalizePhone(data.mobile);
+    if (!mobile) {
+      return NextResponse.json(
+        { error: 'Please enter a valid phone number' },
+        { status: 400 }
+      );
+    }
+
     const [newUser] = await db
       .insert(users)
       .values({
         email: data.email.toLowerCase(),
         name: data.name,
         timezone: data.timezone,
-        mobile: data.mobile,
+        mobile,
         notificationChannel: data.notificationChannel,
       })
       .returning();
