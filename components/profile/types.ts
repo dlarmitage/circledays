@@ -6,6 +6,9 @@ export interface ProfileEvent {
   recurring?: boolean;
   isPrivate?: boolean;
   createdByUserId?: string | null;
+  cardOrdered?: boolean;
+  cardStatus?: 'pending' | 'processing' | 'written' | 'complete' | 'problem' | 'cancelled' | null;
+  cardSendDate?: string | null;
 }
 
 export interface ProfileConnection {

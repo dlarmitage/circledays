@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, profiles, events, notes, connections, users } from '@/lib/db';
+import { cardOrders } from '@/lib/db/schema';
 import { withAuthParams } from '@/lib/api-handler';
-import { eq, or, and } from 'drizzle-orm';
+import { eq, or, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { capitalizeName } from '@/lib/utils';
+import { capitalizeName, daysUntil } from '@/lib/utils';
+import { cardOrdersByEventId } from '@/lib/card-order-status';
 
 // Get profile by ID (respects visibility rules)
 export const GET = withAuthParams(async (req, user, params: { id: string }) => {
@@ -75,6 +77,49 @@ export const GET = withAuthParams(async (req, user, params: { id: string }) => {
   const profileEvents = allProfileEvents.filter(event =>
     !event.isPrivate || event.createdByUserId === user.id
   );
+
+  // Card orders the current user has placed for this profile / its events
+  const eventIds = profileEvents.map(e => e.id);
+  const orders = await db
+    .select({
+      eventId: cardOrders.eventId,
+      profileId: cardOrders.profileId,
+      createdAt: cardOrders.createdAt,
+      status: cardOrders.status,
+      sendDate: cardOrders.sendDate,
+    })
+    .from(cardOrders)
+    .where(
+      and(
+        eq(cardOrders.userId, user.id),
+        sql`${cardOrders.status} != 'cancelled'`,
+        or(
+          eq(cardOrders.profileId, profile.id),
+          eventIds.length > 0
+            ? sql`${cardOrders.eventId} IN (${sql.join(eventIds.map(eid => sql`${eid}`), sql`, `)})`
+            : sql`false`
+        )
+      )
+    );
+
+  const orderByEvent = cardOrdersByEventId(
+    profileEvents.map(e => ({
+      id: e.id,
+      profileId: profile.id,
+      daysUntil: daysUntil(e.date, e.recurring ?? true, user.timezone),
+    })),
+    orders,
+  );
+
+  const eventsWithCardStatus = profileEvents.map(e => {
+    const order = orderByEvent.get(e.id);
+    return {
+      ...e,
+      cardOrdered: !!order,
+      cardStatus: order?.status ?? null,
+      cardSendDate: order?.sendDate ?? null,
+    };
+  });
 
   // Get user's notes for this profile
   const [userNote] = await db
@@ -159,7 +204,7 @@ export const GET = withAuthParams(async (req, user, params: { id: string }) => {
 
   return NextResponse.json({
     profile,
-    events: profileEvents,
+    events: eventsWithCardStatus,
     note: userNote || null,
     connections: profileConnections
       .map(c => c.profile)

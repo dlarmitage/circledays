@@ -94,7 +94,7 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
         'What do the different timeframes mean?',
         'How does Message Assist work?',
         'How do I send a handwritten card from here?',
-        'What does "Card Ordered" mean?',
+        'What do the card status badges mean?',
       ],
       beginnerQuestions: [
         'What is this dashboard showing me?',
@@ -197,7 +197,7 @@ const routeContextMap: { pattern: RegExp; context: PageContext }[] = [
     context: {
       pageName: 'Cards Dashboard',
       description:
-        'The cards dashboard shows all handwritten card orders with status tracking (queued, printing, written, delivered, cancelled). Users can also see their credit balance.',
+        'The cards dashboard shows all handwritten card orders with status tracking (scheduled, ordered, in production, mailed, cancelled). Users can also see their credit balance.',
       suggestedQuestions: [
         'What do the card statuses mean?',
         'How do I buy more card credits?',

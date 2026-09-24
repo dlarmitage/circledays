@@ -11,7 +11,9 @@ import {
   UserMinus,
   Trash2,
   Lock,
+  CheckCircle2,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ProfileHeaderProps {
   profile: {
@@ -35,9 +37,11 @@ interface ProfileHeaderProps {
   onDelete: () => void;
   onInvite: () => void;
   onRemind?: () => void;
-  // Card nudge
+  // Card nudge / ordered status
   showCardNudge: boolean;
   nudgeText: string | null;
+  cardAlreadyOrdered: boolean;
+  cardStatusLabel: string | null;
   onSendCard: () => void;
 }
 
@@ -59,8 +63,12 @@ export function ProfileHeader({
   onRemind,
   showCardNudge,
   nudgeText,
+  cardAlreadyOrdered,
+  cardStatusLabel,
   onSendCard,
 }: ProfileHeaderProps) {
+  const router = useRouter();
+
   return (
     <>
       {/* Profile Header Card */}
@@ -159,8 +167,28 @@ export function ProfileHeader({
         </CardContent>
       </Card>
 
-      {/* Card Sending Nudge */}
-      {showCardNudge && nudgeText && (
+      {/* Card already ordered — replace the send nudge */}
+      {showCardNudge && cardAlreadyOrdered && cardStatusLabel && (
+        <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-100 p-5 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-gray-700 font-medium text-sm leading-relaxed">
+              {cardStatusLabel} for {profile.name.split(' ')[0]}
+            </p>
+            <button
+              onClick={() => router.push('/cards')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-emerald-700 text-sm font-semibold border border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm"
+            >
+              View Card Order
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Card Sending Nudge — only when no card ordered yet */}
+      {showCardNudge && !cardAlreadyOrdered && nudgeText && (
         <div className="mb-6 rounded-2xl bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 border border-teal-100 p-5 text-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">

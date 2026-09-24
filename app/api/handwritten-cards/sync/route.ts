@@ -1,68 +1,14 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
-import { db } from '@/lib/db';
-import { cardOrders } from '@/lib/db/schema';
-import { eq, and, notInArray } from 'drizzle-orm';
-import { listOrders } from '@/lib/handwrytten';
-
-// Map Handwrytten status strings to our enum values
-function mapStatus(hwStatus: string): string | null {
-  const s = hwStatus.toLowerCase();
-  if (s === 'pending' || s === 'queued' || s === 'suspended') return 'pending';
-  if (s === 'processing' || s === 'in progress' || s === 'in_progress' || s === 'in_work' || s === 'mm_in_work') return 'processing';
-  if (s === 'written' || s === 'writing') return 'written';
-  if (s === 'complete' || s === 'completed' || s === 'shipped' || s === 'mailed') return 'complete';
-  if (s === 'problem' || s === 'error' || s === 'failed') return 'problem';
-  if (s === 'cancelled' || s === 'canceled') return 'cancelled';
-  return null;
-}
+import { syncCardOrderStatuses } from '@/lib/card-order-sync';
 
 // POST /api/handwritten-cards/sync — sync order statuses from Handwrytten
 export const POST = withAuth(async (_req, user) => {
-  const userId = user.id;
-
-  // Get orders that are still in progress (not terminal states)
-  const localOrders = await db
-    .select()
-    .from(cardOrders)
-    .where(
-      and(
-        eq(cardOrders.userId, userId),
-        notInArray(cardOrders.status, ['complete', 'cancelled'])
-      )
-    );
-
-  if (localOrders.length === 0) {
-    return NextResponse.json({ synced: 0 });
-  }
-
-  // Fetch current statuses from Handwrytten
-  let remoteOrders;
   try {
-    remoteOrders = await listOrders();
+    const result = await syncCardOrderStatuses(user.id);
+    return NextResponse.json(result);
   } catch (err) {
     console.warn('Handwrytten order sync failed:', err);
-    return NextResponse.json({ synced: 0 });
+    return NextResponse.json({ synced: 0, checked: 0, unmapped: [] });
   }
-
-  // Build lookup by Handwrytten order ID
-  const remoteMap = new Map(remoteOrders.map(o => [String(o.id), o]));
-
-  let synced = 0;
-  for (const local of localOrders) {
-    if (!local.handwriteOrderId) continue;
-    const remote = remoteMap.get(local.handwriteOrderId);
-    if (!remote) continue;
-
-    const mappedStatus = mapStatus(remote.status);
-    if (!mappedStatus || mappedStatus === local.status) continue;
-
-    await db
-      .update(cardOrders)
-      .set({ status: mappedStatus as typeof local.status })
-      .where(eq(cardOrders.id, local.id));
-    synced++;
-  }
-
-  return NextResponse.json({ synced });
 }, 'sync card orders');

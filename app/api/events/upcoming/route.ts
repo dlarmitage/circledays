@@ -4,7 +4,7 @@ import { cardOrders } from '@/lib/db/schema';
 import { withAuth } from '@/lib/api-handler';
 import { eq, or, and, sql } from 'drizzle-orm';
 import { daysUntil, daysSinceOccurrence, turningAge } from '@/lib/utils';
-import { eventIdsWithCardOrdered } from '@/lib/card-order-status';
+import { cardOrdersByEventId } from '@/lib/card-order-status';
 
 export const GET = withAuth(async (req, user) => {
   const { searchParams } = new URL(req.url);
@@ -113,13 +113,15 @@ export const GET = withAuth(async (req, user) => {
   const allResults = [...upcomingEvents, ...recentEvents].map(({ _rawDate, ...rest }) => rest);
   const profileIds = [...new Set(allResults.map(e => e.profileId))];
 
-  let orderedEventIds = new Set<string>();
-  if (profileIds.length > 0) {
+  let orderByEvent = new Map<string, { status: 'pending' | 'processing' | 'written' | 'complete' | 'problem' | 'cancelled'; sendDate: string | null }>();
+  if (profileIds.length > 0 && allResults.length > 0) {
     const orders = await db
       .select({
         eventId: cardOrders.eventId,
         profileId: cardOrders.profileId,
         createdAt: cardOrders.createdAt,
+        status: cardOrders.status,
+        sendDate: cardOrders.sendDate,
       })
       .from(cardOrders)
       .where(
@@ -132,16 +134,21 @@ export const GET = withAuth(async (req, user) => {
           )
         )
       );
-    orderedEventIds = eventIdsWithCardOrdered(
+    orderByEvent = cardOrdersByEventId(
       allResults.map(e => ({ id: e.id, profileId: e.profileId, daysUntil: e.daysUntil })),
       orders,
     );
   }
 
-  const resultsWithCardStatus = allResults.map(e => ({
-    ...e,
-    cardOrdered: orderedEventIds.has(e.id),
-  }));
+  const resultsWithCardStatus = allResults.map(e => {
+    const order = orderByEvent.get(e.id);
+    return {
+      ...e,
+      cardOrdered: !!order,
+      cardStatus: order?.status ?? null,
+      cardSendDate: order?.sendDate ?? null,
+    };
+  });
 
   return NextResponse.json({ events: resultsWithCardStatus });
 }, 'get upcoming events');

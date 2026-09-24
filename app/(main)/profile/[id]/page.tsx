@@ -19,6 +19,7 @@ import { useCardNudge } from '@/components/profile/useCardNudge';
 import type { ProfileData, ProfileEvent } from '@/components/profile/types';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import { daysUntil } from '@/lib/utils';
+import { getCardOrderBadge } from '@/lib/card-order-status';
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -35,7 +36,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [showAllConnections, setShowAllConnections] = useState(false);
   const [showSendCardModal, setShowSendCardModal] = useState(false);
   const [reminderSent, setReminderSent] = useState(false);
-  const nudgeText = useCardNudge(data);
+  const { nudgeText, hasCardOrdered } = useCardNudge(data);
 
   useEffect(() => { fetchProfileData(); }, [id]);
 
@@ -122,6 +123,13 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     .filter(e => e.days >= 0 && e.days <= 90)
     .sort((a, b) => a.days - b.days)[0] ?? null;
 
+  const orderedOccasion = nearestUpcoming?.cardOrdered
+    ? nearestUpcoming
+    : events.find(e => e.cardOrdered) ?? null;
+  const cardStatusLabel = orderedOccasion
+    ? getCardOrderBadge(orderedOccasion.cardStatus ?? 'pending', orderedOccasion.cardSendDate).label
+    : null;
+
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -159,6 +167,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         onRemind={handleSendReminder}
         showCardNudge={showCardNudge}
         nudgeText={nudgeText}
+        cardAlreadyOrdered={hasCardOrdered}
+        cardStatusLabel={cardStatusLabel}
         onSendCard={() => setShowSendCardModal(true)}
       />
 
@@ -257,6 +267,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         daysUntil={nearestUpcoming?.days}
         eventDate={nearestUpcoming?.date}
         eventId={nearestUpcoming?.id}
+        onOrdered={fetchProfileData}
       />
     </div>
   );

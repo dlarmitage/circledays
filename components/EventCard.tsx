@@ -4,8 +4,9 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { getDaysUntilText, getEventTypeLabel, formatDate } from '@/lib/utils';
+import { getCardOrderBadge, type CardOrderStatusValue } from '@/lib/card-order-status';
 import { useRouter } from 'next/navigation';
-import { Cake, Heart, Calendar, Lock, Sparkles, Mail, CheckCircle2 } from 'lucide-react';
+import { Cake, Heart, Calendar, Lock, Sparkles, Mail, CheckCircle2, Clock, PenLine, AlertCircle } from 'lucide-react';
 
 interface EventCardProps {
   id: string;
@@ -19,9 +20,33 @@ interface EventCardProps {
   age?: number;
   isPrivate?: boolean;
   cardOrdered?: boolean;
+  cardStatus?: CardOrderStatusValue | null;
+  cardSendDate?: string | null;
   onClick?: () => void;
   onMessageAssist?: () => void;
   onSendCard?: () => void;
+}
+
+const TONE_STYLES = {
+  scheduled: 'text-amber-700 bg-amber-50 hover:bg-amber-100',
+  ordered: 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
+  progress: 'text-blue-700 bg-blue-50 hover:bg-blue-100',
+  mailed: 'text-teal-700 bg-teal-50 hover:bg-teal-100',
+  problem: 'text-red-700 bg-red-50 hover:bg-red-100',
+} as const;
+
+function BadgeIcon({ tone }: { tone: keyof typeof TONE_STYLES }) {
+  switch (tone) {
+    case 'scheduled':
+      return <Clock className="w-3.5 h-3.5" />;
+    case 'progress':
+      return <PenLine className="w-3.5 h-3.5" />;
+    case 'mailed':
+    case 'ordered':
+      return <CheckCircle2 className="w-3.5 h-3.5" />;
+    case 'problem':
+      return <AlertCircle className="w-3.5 h-3.5" />;
+  }
 }
 
 export function EventCard({
@@ -34,6 +59,8 @@ export function EventCard({
   age,
   isPrivate,
   cardOrdered,
+  cardStatus,
+  cardSendDate,
   onClick,
   onMessageAssist,
   onSendCard,
@@ -55,6 +82,10 @@ export function EventCard({
 
   const showMessageAssist = Math.abs(daysUntil) <= 7 && onMessageAssist;
   const showSendCard = !!onSendCard;
+  const cardBadge =
+    cardOrdered || cardStatus
+      ? getCardOrderBadge(cardStatus ?? 'pending', cardSendDate)
+      : null;
 
   return (
     <Card hover onClick={onClick} className="animate-slide-up">
@@ -86,7 +117,7 @@ export function EventCard({
       </div>
 
       {/* Action buttons row */}
-      {(showMessageAssist || showSendCard || cardOrdered) && (
+      {(showMessageAssist || showSendCard || cardBadge) && (
         <div className="flex flex-wrap items-center gap-1.5 mt-3 ml-[calc(3.5rem+1rem)]">
           {showMessageAssist && (
             <button
@@ -100,16 +131,16 @@ export function EventCard({
               Message Assist
             </button>
           )}
-          {cardOrdered ? (
+          {cardBadge ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 router.push('/cards');
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-colors"
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full transition-colors ${TONE_STYLES[cardBadge.tone]}`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Card Ordered
+              <BadgeIcon tone={cardBadge.tone} />
+              {cardBadge.label}
             </button>
           ) : showSendCard && (
             <button

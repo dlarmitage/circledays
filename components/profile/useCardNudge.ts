@@ -19,15 +19,27 @@ export function useCardNudge(data: ProfileData | null) {
   const shouldShow = data && !data.isOwnProfile && data.isDirectConnection && data.isPlatformAdmin;
   const firstName = data?.profile.name.split(' ')[0] ?? '';
 
+  // Don't generate AI nudge copy when a card is already ordered for an upcoming occasion
+  const hasCardOrdered = useMemo(() => {
+    if (!data?.events?.length) return false;
+    return data.events
+      .map(e => ({ ...e, days: daysUntil(e.date, e.recurring ?? true) }))
+      .filter(e => e.days >= -7 && e.days <= 90)
+      .some(e => e.cardOrdered);
+  }, [data]);
+
   const initialNudge = useMemo(
-    () => (shouldShow ? pickFallback(firstName) : null),
-    [shouldShow, firstName]
+    () => (shouldShow && !hasCardOrdered ? pickFallback(firstName) : null),
+    [shouldShow, hasCardOrdered, firstName]
   );
 
   const [nudgeText, setNudgeText] = useState<string | null>(initialNudge);
 
   useEffect(() => {
-    if (!shouldShow) return;
+    if (!shouldShow || hasCardOrdered) {
+      setNudgeText(null);
+      return;
+    }
 
     let eventContext: string | undefined;
     const upcomingEvents = data!.events
@@ -48,7 +60,7 @@ export function useCardNudge(data: ProfileData | null) {
       .then(res => res.json())
       .then(result => { if (result.nudge) setNudgeText(result.nudge); })
       .catch(() => { /* fallback already set via initialNudge */ });
-  }, [shouldShow, firstName, data]);
+  }, [shouldShow, hasCardOrdered, firstName, data]);
 
-  return nudgeText;
+  return { nudgeText, hasCardOrdered };
 }

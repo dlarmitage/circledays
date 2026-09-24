@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { isContactPickerSupported, pickContact } from '@/lib/hooks/useContactPicker';
 import { DEFAULT_HANDWRYTTEN_CHAR_LIMIT } from '@/lib/constants';
 import { isValidUSAddress } from '@/lib/validators';
+import { pickDefaultCardCategory } from '@/lib/card-category';
 
 import type { Step, AddressData, SenderAddress, HandwryttenCategory, HandwryttenCard, HandwryttenFont, DeliveryOption } from './types';
 
@@ -298,12 +299,11 @@ export function SendCardProvider({
       .finally(() => setLoadingCards(false));
   }, [selectedCategory]);
 
-  // Auto-select category based on eventType
+  // Auto-select category based on occasion (Birthday → Birthday (Personal), etc.)
   useEffect(() => {
     if (categories.length === 0 || selectedCategory !== null) return;
-    const match = categories.find(c => c.name.toLowerCase() === eventType.toLowerCase());
-    const everyday = categories.find(c => c.name.toLowerCase() === 'everyday');
-    setSelectedCategory(match?.id ?? everyday?.id ?? categories[0].id);
+    const id = pickDefaultCardCategory(categories, eventType);
+    if (id != null) setSelectedCategory(id);
   }, [categories, selectedCategory, eventType]);
 
   // Dynamically load selected font

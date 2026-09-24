@@ -31,6 +31,8 @@ interface UpcomingEvent {
   age?: number;
   isPrivate?: boolean;
   cardOrdered?: boolean;
+  cardStatus?: 'pending' | 'processing' | 'written' | 'complete' | 'problem' | 'cancelled' | null;
+  cardSendDate?: string | null;
 }
 
 interface UserData {
@@ -124,6 +126,18 @@ export default function DashboardPage() {
       setDiscoveries(discoveriesRes.discoveries || []);
       setLoading(false);
     });
+
+    // Pull latest Handwrytten production statuses so dashboard badges stay current
+    fetch('/api/handwritten-cards/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.synced > 0) {
+          return fetch(`/api/events/upcoming?days=${days}&pastDays=7`)
+            .then(r => r.json())
+            .then(eventsRes => setEvents(eventsRes.events || []));
+        }
+      })
+      .catch(() => {});
   }, [days, router]);
 
   const refreshEvents = useCallback(async () => {

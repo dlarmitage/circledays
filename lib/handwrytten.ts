@@ -351,28 +351,91 @@ export async function deleteCustomImage(imageId: number): Promise<void> {
   }
 }
 
-/** Fetch order history from Handwrytten to sync statuses. Uses v1 endpoint (v2 sessions expire). */
+function parseOrderStatus(o: Record<string, unknown>): HandwryttenOrderStatus | null {
+  // listGrouped / details use `id`; older list/past responses use `order_id`
+  const rawId = o.id ?? o.order_id;
+  if (rawId == null) return null;
+  const id = typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10);
+  if (!Number.isFinite(id)) return null;
+
+  return {
+    id,
+    status: String(o.status ?? 'unknown'),
+    date_send: o.date_send != null ? String(o.date_send) : undefined,
+    date_fulfilled: o.date_fulfilled != null ? String(o.date_fulfilled) : undefined,
+  };
+}
+
+/**
+ * Fetch order history from Handwrytten to sync statuses.
+ * Prefer listGrouped (current); fall back to deprecated /orders/list.
+ * Official API is GET with uid header — POST was silently failing to refresh statuses.
+ */
 export async function listOrders(): Promise<HandwryttenOrderStatus[]> {
-  const body = new URLSearchParams();
-  body.set('uid', getApiKey());
+  const headers = {
+    ...authedHeaders(),
+    Accept: 'application/json',
+  };
 
-  const res = await fetch(`${BASE_URL}/v1/orders/list`, {
-    method: 'POST',
-    body,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    signal: AbortSignal.timeout(10000),
-  });
+  const endpoints = [
+    `${BASE_URL}/v1/orders/listGrouped`,
+    `${BASE_URL}/v1/orders/list?page=1&per_page=100`,
+  ];
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Handwrytten orders list failed (${res.status}): ${text}`);
+  let lastError: Error | null = null;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        lastError = new Error(`Handwrytten orders list failed (${res.status}): ${text}`);
+        continue;
+      }
+      const data = await res.json();
+      const raw = data.orders ?? data.results ?? [];
+      if (!Array.isArray(raw)) continue;
+      return raw
+        .map((o: Record<string, unknown>) => parseOrderStatus(o))
+        .filter((o: HandwryttenOrderStatus | null): o is HandwryttenOrderStatus => o != null);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
   }
 
-  const data = await res.json();
-  const orders = data.orders ?? [];
-  if (!Array.isArray(orders)) return [];
-  return orders.map((o: Record<string, unknown>) => ({
-    id: o.id as number,
-    status: (o.status as string) ?? 'unknown',
-  }));
+  throw lastError ?? new Error('Handwrytten orders list failed');
+}
+
+/** Fetch a single order's current status from Handwrytten. */
+export async function getOrder(orderId: string): Promise<HandwryttenOrderStatus | null> {
+  const headers = {
+    ...authedHeaders(),
+    Accept: 'application/json',
+  };
+
+  // Try details (query) then get/{id} (SDK path)
+  const urls = [
+    `${BASE_URL}/v1/orders/details?id=${encodeURIComponent(orderId)}`,
+    `${BASE_URL}/v1/orders/get/${encodeURIComponent(orderId)}`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const raw = (data.order ?? data) as Record<string, unknown>;
+      return parseOrderStatus(raw);
+    } catch {
+      // try next endpoint
+    }
+  }
+  return null;
 }
